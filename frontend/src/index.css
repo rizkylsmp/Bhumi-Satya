@@ -1,0 +1,382 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+/* Dark Mode Theme Configuration */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Light Mode Colors (default) */
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f9fafb;
+  --color-surface-tertiary: #f3f4f6;
+  --color-border: #e5e7eb;
+  --color-border-light: #f3f4f6;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-accent: #111827;
+  --color-accent-hover: #1f2937;
+}
+
+/* Dark Mode Overrides */
+.dark {
+  --color-surface: #111827;
+  --color-surface-secondary: #1f2937;
+  --color-surface-tertiary: #374151;
+  --color-border: #374151;
+  --color-border-light: #1f2937;
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #d1d5db;
+  --color-text-tertiary: #9ca3af;
+  --color-text-muted: #6b7280;
+  --color-accent: #f9fafb;
+  --color-accent-hover: #e5e7eb;
+}
+
+/* Base Styles */
+html {
+  @apply transition-colors duration-200;
+}
+
+/* Scale down font for 1366x768 screens (keep normal for 1080p+) */
+@media (max-width: 1440px) and (max-height: 800px) {
+  html {
+    font-size: 12px;
+  }
+}
+
+body {
+  @apply bg-surface-secondary text-text-primary;
+}
+
+/* Focus visible outline for keyboard accessibility */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+*:focus-visible:not(button):not(a):not(input):not(select):not(textarea):not([role="button"]) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button:focus,
+button:focus-visible,
+a:focus,
+a:focus-visible,
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+[role="button"]:focus,
+[role="button"]:focus-visible {
+  outline: none;
+}
+
+button:not(:disabled),
+a[href],
+[role="button"]:not([aria-disabled="true"]),
+label[for],
+select:not(:disabled),
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled),
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+select:disabled,
+input:disabled,
+textarea:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Leaflet Map Container Fix */
+.leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+  z-index: 1;
+}
+
+/* Crosshair cursor for map drawing/picking mode */
+.map-cursor-crosshair .leaflet-container,
+.map-cursor-crosshair .leaflet-grab,
+.map-cursor-crosshair .leaflet-interactive {
+  cursor: crosshair !important;
+}
+
+.custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Custom Leaflet Popup Styling */
+.leaflet-popup-content-wrapper {
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  border-radius: 16px !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow:
+    0 20px 40px -8px rgba(0, 0, 0, 0.15),
+    0 8px 16px -4px rgba(0, 0, 0, 0.08) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  min-width: 240px !important;
+  line-height: 1.5 !important;
+}
+
+.leaflet-popup-tip-container {
+  display: block;
+}
+
+.leaflet-popup-tip {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  border-top: none !important;
+  border-left: none !important;
+  box-shadow: none !important;
+}
+
+.leaflet-popup-close-button {
+  display: none !important;
+}
+
+/* Leaflet tooltip styling */
+.leaflet-tooltip {
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 10px !important;
+  padding: 6px 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  font-family: inherit !important;
+}
+
+.leaflet-tooltip-top::before {
+  border-top-color: var(--color-border) !important;
+}
+
+.leaflet-tooltip-bottom::before {
+  border-bottom-color: var(--color-border) !important;
+}
+
+.leaflet-tooltip.bhumi-satya-marker-number {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+  font-size: clamp(8px, 0.6rem, 9px) !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+  text-align: center !important;
+  text-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.55),
+    0 0 1px rgba(15, 23, 42, 0.8) !important;
+}
+
+.leaflet-tooltip.bhumi-satya-marker-number::before {
+  display: none !important;
+}
+
+/* Ensure map fills container */
+.map-container {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Remove default body scroll */
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  overflow: hidden;
+}
+
+/* Fix for mobile viewport height (address bar issue) */
+@supports (height: 100dvh) {
+  html,
+  body,
+  #root {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+}
+
+/* Safe area support for notched devices */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+/* Map page should not have scroll wrapper */
+.map-page-wrapper {
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Focus ring styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-accent/50 focus:ring-offset-2 focus:ring-offset-surface;
+}
+
+/* Glassmorphism effect */
+.glass {
+  @apply bg-surface/80 backdrop-blur-lg border border-border/50;
+}
+
+/* Gradient text */
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400;
+}
+
+/* Card hover effect */
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-xl hover:shadow-accent/5 dark:hover:shadow-accent/20 hover:-translate-y-0.5;
+}
+
+/* Shimmer loading effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-secondary) 25%,
+    var(--color-surface-tertiary) 50%,
+    var(--color-surface-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Scale in animation */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out forwards;
+}
+
+/* Pulse dot animation */
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+.animate-pulse-dot {
+  animation: pulseDot 2s ease-in-out infinite;
+}
+
+/* Slide up animation */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+/* Stagger children animation */
+.stagger-children > * {
+  opacity: 0;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.stagger-children > *:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.stagger-children > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.stagger-children > *:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.stagger-children > *:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.stagger-children > *:nth-child(5) {
+  animation-delay: 0.25s;
+}
+.stagger-children > *:nth-child(6) {
+  animation-delay: 0.3s;
+}
