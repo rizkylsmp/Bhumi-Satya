@@ -5,6 +5,7 @@ const ALLOWED_SOURCES = new Set([
   "photogrammetry",
   "document",
   "floor_estimate",
+  "model_3d",
   "other",
 ]);
 const ALLOWED_QUALITIES = new Set(["measured", "derived", "estimated"]);
@@ -157,4 +158,3 @@ export const normalizeAsset3dFields = (payload = {}, { partial = false } = {}) =
 
   return Object.fromEntries(Object.entries(result).filter(([, value]) => value !== undefined));
 };
-

@@ -327,7 +327,7 @@ export default function RiwayatPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-linear-to-br from-accent to-accent/80 rounded-xl flex items-center justify-center shadow-lg shadow-accent/25">
+          <div className="w-12 h-12 bg-linear-to-br from-accent to-accent/80 rounded-xl flex items-center justify-center">
             <ClockCounterClockwiseIcon
               size={24}
               weight="duotone"

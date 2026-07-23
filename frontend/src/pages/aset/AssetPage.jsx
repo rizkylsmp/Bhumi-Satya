@@ -3,10 +3,9 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import AssetSearch from "../../components/asset/AssetSearch";
 import Pagination from "../../components/asset/Pagination";
-import AssetFormModal from "../../components/asset/AssetFormModal";
 import AssetViewModal from "../../components/asset/AssetViewModal";
 import ActionButtons from "../../components/asset/ActionButtons";
-import { asetService, assetModel3dService } from "../../services/api";
+import { asetService } from "../../services/api";
 import { useAuthStore } from "../../stores/authStore";
 import { hasPermission } from "../../utils/permissions";
 import { downloadAssetPdf } from "../../utils/pdfExport";
@@ -88,10 +87,6 @@ export default function AssetPage() {
     sumber: "",
     reconciliation_status: "",
   });
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [editingAsset, setEditingAsset] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewingAsset, setViewingAsset] = useState(null);
   const [filterOptions, setFilterOptions] = useState({
@@ -202,19 +197,11 @@ export default function AssetPage() {
   };
 
   const handleOpenAddForm = () => {
-    setEditingAsset(null);
-    setIsFormModalOpen(true);
+    navigate("/aset/tambah");
   };
 
-  const handleOpenEditForm = async (assetId) => {
-    try {
-      const response = await asetService.getById(assetId);
-      setEditingAsset(response.data.data);
-      setIsFormModalOpen(true);
-    } catch (error) {
-      console.error("Error fetching asset:", error);
-      toast.error("Gagal memuat data aset");
-    }
+  const handleOpenEditForm = (assetId) => {
+    navigate(`/aset/${assetId}/edit`);
   };
 
   const handleViewAsset = async (assetId) => {
@@ -272,60 +259,6 @@ export default function AssetPage() {
   const handleCloseViewModal = () => {
     setIsViewModalOpen(false);
     setViewingAsset(null);
-  };
-
-  const handleCloseForm = () => {
-    setIsFormModalOpen(false);
-    setEditingAsset(null);
-  };
-
-  const handleFormSubmit = async (formData) => {
-    setIsSubmitting(true);
-    let assetWasSaved = false;
-    try {
-      const { _model_3d_file: model3dFile, ...assetPayload } = formData;
-      let response;
-      if (editingAsset?.id_aset) {
-        response = await asetService.update(editingAsset.id_aset, assetPayload);
-      } else {
-        response = await asetService.create(assetPayload);
-      }
-      assetWasSaved = true;
-      const assetId = editingAsset?.id_aset || response.data?.data?.id_aset;
-      const modelResponse = model3dFile
-        ? await assetModel3dService.upload(assetId, model3dFile)
-        : null;
-      let conversionError = null;
-      if (modelResponse) {
-        try {
-          await assetModel3dService.convert(
-            assetId,
-            modelResponse.data.data.id_model_3d,
-          );
-        } catch (error) {
-          conversionError = error.response?.data?.error || error.message;
-        }
-      }
-      toast.success(model3dFile ? "Aset dan model 3D berhasil disimpan" : "Aset berhasil disimpan");
-      const locationWarning = modelResponse?.data?.data?.manifest?.locationAssessment;
-      if (locationWarning?.status === "warning") {
-        toast(locationWarning.message, { icon: "⚠️", duration: 6000 });
-      }
-      if (conversionError) {
-        toast(`KMZ tersimpan, tetapi konversi GLB gagal: ${conversionError}`, {
-          icon: "⚠️",
-          duration: 7000,
-        });
-      }
-      handleCloseForm();
-      fetchAssets();
-    } catch (error) {
-      console.error("Error saving asset:", error);
-      const errorMsg = error.response?.data?.error || "Gagal menyimpan aset";
-      toast.error(assetWasSaved ? `Aset tersimpan, tetapi model 3D gagal: ${errorMsg}` : errorMsg);
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleDeleteAsset = async (assetId) => {
@@ -400,7 +333,7 @@ export default function AssetPage() {
       {/* Page Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
             <DatabaseIcon size={24} weight="fill" className="text-surface" />
           </div>
           <div>
@@ -1252,15 +1185,6 @@ export default function AssetPage() {
           />
         </div>
       )}
-
-      {/* Form Modal */}
-      <AssetFormModal
-        isOpen={isFormModalOpen}
-        onClose={handleCloseForm}
-        onSubmit={handleFormSubmit}
-        assetData={editingAsset}
-        isSubmitting={isSubmitting}
-      />
 
       {/* View Modal */}
       <AssetViewModal

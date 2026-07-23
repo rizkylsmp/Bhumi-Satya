@@ -29,7 +29,9 @@ export default function PublicMapPage() {
             onClick: () => navigate("/peta-publik"),
           },
         ]}
-        onLogin={() => navigate("/login")}
+        onLogin={() =>
+          navigate("/login", { state: { openLoginPanel: true } })
+        }
       />
     </div>
   );

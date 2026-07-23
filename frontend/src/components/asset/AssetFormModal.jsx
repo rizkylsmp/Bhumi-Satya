@@ -47,15 +47,63 @@ const Building3dFields = ({
   onModelImport,
 }) => {
   const locationCheck = assessBuildingFootprintLocation(formData);
+  const [active3dSubtab, setActive3dSubtab] = useState("model");
   return (
-    <fieldset className="rounded-xl border border-violet-200 bg-violet-50/60 p-4 dark:border-violet-500/30 dark:bg-violet-500/5">
-      <legend className="px-1 text-sm font-bold text-violet-800 dark:text-violet-300">
-        Data Bangunan 3D (LOD1)
+    <fieldset className="space-y-5">
+      <legend className="sr-only">
+        Data Bangunan 3D
       </legend>
-      <p className="mb-4 text-xs text-violet-700 dark:text-violet-300">
-        Tapak bangunan berbeda dari batas bidang tanah. Gunakan data ukur atau dokumen yang dapat ditelusuri.
-      </p>
-      <div className="mb-4 flex flex-col gap-3 rounded-lg border border-violet-200 bg-surface p-3 sm:flex-row sm:items-center sm:justify-between dark:border-violet-500/30">
+
+      <div
+        role="tablist"
+        aria-label="Bagian data bangunan 3D"
+        className="inline-flex w-full gap-1 rounded-xl border border-border bg-surface p-1 sm:w-auto"
+      >
+        <button
+          type="button"
+          id="building3d-tab-model"
+          role="tab"
+          aria-controls="building3d-panel-model"
+          aria-selected={active3dSubtab === "model"}
+          tabIndex={active3dSubtab === "model" ? 0 : -1}
+          onClick={() => setActive3dSubtab("model")}
+          className={`flex-1 rounded-lg px-4 py-2 text-xs font-bold transition sm:flex-none ${
+            active3dSubtab === "model"
+              ? "bg-accent text-surface shadow-sm"
+              : "text-text-muted hover:bg-surface-secondary hover:text-text-primary"
+          }`}
+        >
+          Data Model
+        </button>
+        <button
+          type="button"
+          id="building3d-tab-lod"
+          role="tab"
+          aria-controls="building3d-panel-lod"
+          aria-selected={active3dSubtab === "lod"}
+          tabIndex={active3dSubtab === "lod" ? 0 : -1}
+          onClick={() => setActive3dSubtab("lod")}
+          className={`flex-1 rounded-lg px-4 py-2 text-xs font-bold transition sm:flex-none ${
+            active3dSubtab === "lod"
+              ? "bg-accent text-surface shadow-sm"
+              : "text-text-muted hover:bg-surface-secondary hover:text-text-primary"
+          }`}
+        >
+          LOD & Metadata
+        </button>
+      </div>
+
+      <div
+        id="building3d-panel-model"
+        role="tabpanel"
+        aria-labelledby="building3d-tab-model"
+        hidden={active3dSubtab !== "model"}
+        className="space-y-5"
+      >
+        <p className="text-sm leading-relaxed text-text-muted">
+          Tapak bangunan berbeda dari batas bidang tanah. Gunakan data ukur atau dokumen yang dapat ditelusuri.
+        </p>
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-text-primary">
             {getPolygonPointCount(formData.building_footprint) >= 3
@@ -63,9 +111,9 @@ const Building3dFields = ({
               : "Belum ada tapak bangunan"}
           </p>
           <p className="text-xs text-text-muted">Impor GeoJSON Polygon tapak bangunan.</p>
-          {fileName && <p className="mt-1 text-xs text-violet-600">{fileName}</p>}
+          {fileName && <p className="mt-1 text-xs font-medium text-accent">{fileName}</p>}
         </div>
-        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-violet-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 focus-within:ring-2 focus-within:ring-violet-500 focus-within:ring-offset-2">
+        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:opacity-90 focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2">
           <UploadSimpleIcon size={16} weight="bold" />
           Impor Tapak
           <input
@@ -75,20 +123,20 @@ const Building3dFields = ({
             className="sr-only"
           />
         </label>
-      </div>
-      {formData.building_footprint && locationCheck.status !== "missing" && (
-        <p
-          role={locationCheck.status === "warning" ? "alert" : "status"}
-          className={`mb-4 rounded-lg border px-3 py-2 text-xs ${
-            locationCheck.status === "warning"
-              ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300"
-              : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
-          }`}
-        >
-          {locationCheck.message}
-        </p>
-      )}
-      <div className="mb-4 flex flex-col gap-3 rounded-lg border border-violet-200 bg-surface p-3 sm:flex-row sm:items-center sm:justify-between dark:border-violet-500/30">
+        </div>
+        {formData.building_footprint && locationCheck.status !== "missing" && (
+          <p
+            role={locationCheck.status === "warning" ? "alert" : "status"}
+            className={`rounded-lg border px-3 py-2 text-xs ${
+              locationCheck.status === "warning"
+                ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+            }`}
+          >
+            {locationCheck.message}
+          </p>
+        )}
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-text-primary">
             {modelFile ? modelFile.name : "Belum ada file model KMZ baru"}
@@ -97,12 +145,12 @@ const Building3dFields = ({
             KMZ akan diperiksa dan diunggah sebagai versi baru setelah aset disimpan.
           </p>
           {modelFile && (
-            <p className="mt-1 text-xs font-medium text-violet-600 dark:text-violet-300" aria-live="polite">
+            <p className="mt-1 text-xs font-medium text-accent" aria-live="polite">
               {(modelFile.size / 1024).toLocaleString("id-ID", { maximumFractionDigits: 1 })} KB · KMZ
             </p>
           )}
         </div>
-        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-100 px-3.5 py-2.5 text-sm font-semibold text-violet-800 hover:bg-violet-200 focus-within:ring-2 focus-within:ring-violet-500 focus-within:ring-offset-2 dark:border-violet-500/40 dark:bg-violet-500/15 dark:text-violet-200">
+        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-border bg-surface-secondary px-4 py-2.5 text-sm font-semibold text-text-primary transition hover:border-accent/40 hover:bg-accent/5 hover:text-accent focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2">
           <UploadSimpleIcon size={16} weight="bold" />
           Pilih Model KMZ
           <input
@@ -116,15 +164,28 @@ const Building3dFields = ({
         <span id="kmz-upload-help" className="sr-only">
           Maksimum 50 megabita. File harus berisi KML dan model DAE, GLB, atau glTF.
         </span>
+        </div>
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+
+      <div
+        id="building3d-panel-lod"
+        role="tabpanel"
+        aria-labelledby="building3d-tab-lod"
+        hidden={active3dSubtab !== "lod"}
+        className="space-y-4"
+      >
+        <p className="mb-4 text-xs font-bold uppercase tracking-wide text-text-muted">
+          LOD dan metadata bangunan
+        </p>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         <FormInput label="Tinggi (m)" name="building_height_m" type="number" min="0.1" max="1000" step="0.01" value={formData.building_height_m} onChange={onChange} size="lg" />
         <FormInput label="Jumlah Lantai" name="building_floors" type="number" min="1" max="300" step="1" value={formData.building_floors} onChange={onChange} size="lg" />
         <FormInput label="Elevasi Dasar (m)" name="building_base_elevation_m" type="number" min="-500" max="10000" step="0.01" value={formData.building_base_elevation_m} onChange={onChange} size="lg" />
         <FormSelect label="Sumber Tinggi" name="building_height_source" value={formData.building_height_source} onChange={onChange} placeholder="Pilih sumber" options={[
           { value: "survey", label: "Survei Lapangan" }, { value: "lidar", label: "LiDAR" },
           { value: "photogrammetry", label: "Fotogrametri/Drone" }, { value: "document", label: "Dokumen Resmi" },
-          { value: "floor_estimate", label: "Turunan Jumlah Lantai" }, { value: "other", label: "Sumber Lain" },
+          { value: "floor_estimate", label: "Turunan Jumlah Lantai" }, { value: "model_3d", label: "Metadata Model 3D" },
+          { value: "other", label: "Sumber Lain" },
         ]} size="lg" />
         <FormSelect label="Kualitas" name="building_height_quality" value={formData.building_height_quality} onChange={onChange} placeholder="Pilih kualitas" options={[
           { value: "measured", label: "Terukur" }, { value: "derived", label: "Hasil Turunan" },
@@ -136,7 +197,8 @@ const Building3dFields = ({
         ]} size="lg" />
         <FormInput label="CRS Sumber" name="model_3d_source_crs" value={formData.model_3d_source_crs} onChange={onChange} placeholder="EPSG:32749" size="lg" />
         <FormInput label="Tanggal Perekaman" name="model_3d_recorded_at" type="date" value={formData.model_3d_recorded_at} onChange={onChange} size="lg" />
-        <FormInput label="Akurasi (m)" name="model_3d_accuracy_m" type="number" min="0.001" max="1000" step="0.001" value={formData.model_3d_accuracy_m} onChange={onChange} size="lg" />
+          <FormInput label="Akurasi (m)" name="model_3d_accuracy_m" type="number" min="0.001" max="1000" step="0.001" value={formData.model_3d_accuracy_m} onChange={onChange} size="lg" />
+        </div>
       </div>
     </fieldset>
   );
@@ -149,7 +211,7 @@ const initialFormData = {
   koordinat_lat: "",
   koordinat_long: "",
   luas: "",
-  status: "",
+  status: "Aktif",
   jenis_masalah: "",
   jenis_aset: "",
   tahun_perolehan: new Date().getFullYear().toString(),
@@ -267,7 +329,11 @@ export default function AssetFormModal({
   assetData = null,
   isSubmitting = false,
   activeSubstansi = null,
+  activeSection = null,
+  onSectionChange,
+  presentation = "modal",
 }) {
+  const isPage = presentation === "page";
   const isFullForm = !activeSubstansi;
   const isCreateMode = isFullForm && !assetData;
   const isLegacyCompactForm = false;
@@ -358,19 +424,6 @@ export default function AssetFormModal({
       setModel3dFile(null);
     }
   }, [assetData, isOpen]);
-
-  const statusOptions = [
-    { value: "Aktif", label: "Aktif" },
-    { value: "Bermasalah", label: "Bermasalah" },
-    { value: "Indikasi Bermasalah", label: "Indikasi Bermasalah" },
-    { value: "Diblokir", label: "Diblokir" },
-  ];
-
-  const jenisMasalahOptions = [
-    { value: "Sengketa", label: "Sengketa" },
-    { value: "Konflik", label: "Konflik" },
-    { value: "Berperkara", label: "Berperkara" },
-  ];
 
   const statusSertifikatOptions = [
     { value: "Telah Bersertifikat", label: "Telah Bersertifikat" },
@@ -584,6 +637,25 @@ export default function AssetFormModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const requiredFields = [
+      { name: "kode_aset", label: "Kode Aset", section: "identitas" },
+      { name: "nama_aset", label: "Nama Aset", section: "identitas" },
+    ];
+    const missingField = requiredFields.find((field) => (
+      formData[field.name] === null
+      || formData[field.name] === undefined
+      || String(formData[field.name]).trim() === ""
+    ));
+    if (missingField) {
+      onSectionChange?.(missingField.section);
+      toast.error(`${missingField.label} wajib diisi`);
+      window.requestAnimationFrame(() => {
+        document.querySelector(`[name="${missingField.name}"]`)?.focus();
+      });
+      return;
+    }
+
     setUploading(true);
 
     try {
@@ -717,20 +789,23 @@ export default function AssetFormModal({
     : null;
   const HeaderIcon = currentSubstansi ? currentSubstansi.icon : BuildingsIcon;
 
-  if (!isOpen) return null;
+  if (!isPage && !isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className={isPage ? "min-h-full" : "fixed inset-0 z-50 overflow-y-auto"}>
       {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-accent/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      {!isPage && (
+        <div
+          className="fixed inset-0 bg-accent/60 backdrop-blur-sm"
+          onClick={onClose}
+        />
+      )}
 
       {/* Modal Container */}
-      <div className="min-h-full flex items-start justify-center p-4 py-8">
-        <div className="relative bg-surface border border-border shadow-2xl w-full max-w-5xl rounded-2xl overflow-hidden">
+      <div className={`min-h-full flex items-start justify-center ${isPage ? "" : "p-4 py-8"}`}>
+        <div className={`relative w-full ${isPage ? "bg-transparent" : "max-w-5xl overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl"}`}>
           {/* Header */}
+          {!isPage && (
           <div className="bg-linear-to-r from-accent to-accent/90 px-6 py-5 text-surface">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -761,18 +836,22 @@ export default function AssetFormModal({
                 </div>
               </div>
               <button
+                type="button"
                 onClick={onClose}
-                aria-label="Tutup form"
+                aria-label={isPage ? "Kembali ke daftar aset" : "Tutup form"}
                 className="p-2.5 hover:bg-surface/20 rounded-lg transition-colors"
               >
-                <XIcon size={20} weight="bold" />
+                {isPage
+                  ? <ArrowLeftIcon size={20} weight="bold" />
+                  : <XIcon size={20} weight="bold" />}
               </button>
             </div>
           </div>
+          )}
 
           {/* Form Content - scrollable */}
-          <div className="max-h-[calc(100vh-220px)] overflow-y-auto">
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className={isPage ? "" : "max-h-[calc(100vh-220px)] overflow-y-auto"}>
+            <form noValidate onSubmit={handleSubmit} className={isPage ? "space-y-5" : "p-6 space-y-6"}>
               {/* Identity info bar - shown in substansi mode */}
               {activeSubstansi && assetData && (
                 <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 flex items-center gap-4">
@@ -797,7 +876,7 @@ export default function AssetFormModal({
 
               {/* ========== IDENTITAS ASET ========== */}
               {isFullForm && !isLegacyCompactForm && (
-                <div className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
+                <div id="identitas" role="tabpanel" aria-labelledby="form-tab-identitas" hidden={isPage && activeSection !== "identitas"} data-form-section="identitas" className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                   <SectionHeader
                     icon={ClipboardTextIcon}
                     title="Identitas Aset"
@@ -823,52 +902,6 @@ export default function AssetFormModal({
                       required
                       size="lg"
                     />
-                  </div>
-
-                  {/* Row 2: Status + Jenis Masalah + conditionally Kode BMD, OPD */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    <FormSelect
-                      label="Status"
-                      name="status"
-                      value={formData.status}
-                      onChange={handleInputChange}
-                      options={statusOptions}
-                      placeholder="Pilih Status"
-                      required
-                      size="lg"
-                    />
-                    {(formData.status === "Bermasalah" ||
-                      formData.status === "Indikasi Bermasalah") && (
-                      <FormSelect
-                        label="Jenis Masalah"
-                        name="jenis_masalah"
-                        value={formData.jenis_masalah}
-                        onChange={handleInputChange}
-                        options={jenisMasalahOptions}
-                        placeholder="Pilih Jenis Masalah"
-                        size="lg"
-                      />
-                    )}
-                    {isFullForm && (
-                      <>
-                        <FormInput
-                          label="Kode BMD"
-                          name="kode_bmd"
-                          placeholder="Kodefikasi Barang Milik Daerah"
-                          value={formData.kode_bmd}
-                          onChange={handleInputChange}
-                          size="lg"
-                        />
-                        <FormInput
-                          label="OPD Pengguna"
-                          name="opd_pengguna"
-                          placeholder="Nama OPD/Instansi pengguna"
-                          value={formData.opd_pengguna}
-                          onChange={handleInputChange}
-                          size="lg"
-                        />
-                      </>
-                    )}
                   </div>
                 </div>
               )}
@@ -1113,7 +1146,6 @@ export default function AssetFormModal({
                       placeholder="Alamat lengkap aset"
                       value={formData.lokasi}
                       onChange={handleInputChange}
-                      required
                       rows={2}
                       size="lg"
                     />
@@ -1167,7 +1199,6 @@ export default function AssetFormModal({
                         placeholder="0.00"
                         value={formData.luas}
                         onChange={handleInputChange}
-                        required
                         step="0.01"
                         size="lg"
                       />
@@ -1292,7 +1323,7 @@ export default function AssetFormModal({
 
               {/* ========== DATA LEGAL ========== */}
               {!isLegacyCompactForm && (isFullForm || activeSubstansi === "legal") && (
-                <div className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
+                <div id="legal" role="tabpanel" aria-labelledby="form-tab-legal" hidden={isPage && activeSection !== "legal"} data-form-section="legal" className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                   <SectionHeader icon={ScalesIcon} title="Data Legal" />
 
                   {/* Row 1: Nomor Sertifikat, Status Sertifikat, Jenis Hak, KW */}
@@ -1396,7 +1427,7 @@ export default function AssetFormModal({
 
               {/* ========== DATA FISIK ========== */}
               {!isLegacyCompactForm && (isFullForm || activeSubstansi === "fisik") && (
-                <div className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
+                <div id="fisik" role="tabpanel" aria-labelledby="form-tab-fisik" hidden={isPage && activeSection !== "fisik"} data-form-section="fisik" className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                   <SectionHeader icon={MapPinIcon} title="Data Fisik" />
 
                   {/* Lokasi/Alamat */}
@@ -1406,7 +1437,6 @@ export default function AssetFormModal({
                     placeholder="Alamat lengkap aset"
                     value={formData.lokasi}
                     onChange={handleInputChange}
-                    required
                     rows={2}
                     size="lg"
                   />
@@ -1463,7 +1493,6 @@ export default function AssetFormModal({
                       placeholder="0.00"
                       value={formData.luas}
                       onChange={handleInputChange}
-                      required
                       step="0.01"
                       size="lg"
                     />
@@ -1533,7 +1562,7 @@ export default function AssetFormModal({
 
               {/* ========== DATA SPASIAL ========== */}
               {!isLegacyCompactForm && (isFullForm || activeSubstansi === "spasial") && (
-                <div className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
+                <div id="spasial" role="tabpanel" aria-labelledby="form-tab-spasial" hidden={isPage && activeSection !== "spasial"} data-form-section="spasial" className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                   <SectionHeader icon={MapPinIcon} title="Data Spasial" />
 
                   <AssetCoordinatePicker
@@ -1590,15 +1619,6 @@ export default function AssetFormModal({
                     </div>
                   </div>
 
-                  <Building3dFields
-                    formData={formData}
-                    onChange={handleInputChange}
-                    onImport={handleBuildingFootprintImport}
-                    fileName={buildingFootprintFileName}
-                    modelFile={model3dFile}
-                    onModelImport={handleModel3dImport}
-                  />
-
                   <AssetPolygonDrawer
                     polygonData={formData.polygon_bidang}
                     onPolygonChange={(polygon) => {
@@ -1616,7 +1636,7 @@ export default function AssetFormModal({
 
               {/* ========== DATA KEUANGAN ========== */}
               {!isLegacyCompactForm && isFullForm && (
-                <div className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
+                <div id="administratif" role="tabpanel" aria-labelledby="form-tab-administratif" hidden={isPage && activeSection !== "administratif"} data-form-section="administratif" className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                   <SectionHeader
                     icon={CurrencyDollarIcon}
                     title="Data Keuangan"
@@ -1659,7 +1679,7 @@ export default function AssetFormModal({
 
               {/* ========== DATA ADMINISTRATIF (substansi mode) ========== */}
               {!isLegacyCompactForm && activeSubstansi === "administratif" && (
-                <div className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
+                <div id="administratif" role="tabpanel" aria-labelledby="form-tab-administratif" hidden={isPage && activeSection !== "administratif"} data-form-section="administratif" className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                   <SectionHeader
                     icon={CurrencyDollarIcon}
                     title="Data Administratif"
@@ -1739,7 +1759,7 @@ export default function AssetFormModal({
 
               {/* ========== LOKASI DASAR (create mode only) ========== */}
               {isCreateMode && !isLegacyCompactForm && !isFullForm && (
-                <div className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
+                <div id="dokumentasi" className="scroll-mt-28 bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                   <SectionHeader icon={MapPinIcon} title="Lokasi Aset" />
 
                   <FormTextarea
@@ -1748,7 +1768,6 @@ export default function AssetFormModal({
                     placeholder="Alamat lengkap aset"
                     value={formData.lokasi}
                     onChange={handleInputChange}
-                    required
                     rows={2}
                     size="lg"
                   />
@@ -1761,7 +1780,6 @@ export default function AssetFormModal({
                       placeholder="0.00"
                       value={formData.luas}
                       onChange={handleInputChange}
-                      required
                       step="0.01"
                       size="lg"
                     />
@@ -1793,7 +1811,7 @@ export default function AssetFormModal({
 
               {/* ========== DOKUMENTASI ========== */}
               {isFullForm && !isLegacyCompactForm && (
-                <div className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
+                <div id="dokumentasi" role="tabpanel" aria-labelledby="form-tab-dokumentasi" hidden={isPage && activeSection !== "dokumentasi"} data-form-section="dokumentasi" className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                   <SectionHeader icon={FolderOpenIcon} title="Dokumentasi" />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

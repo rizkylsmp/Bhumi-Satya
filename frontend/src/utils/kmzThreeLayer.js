@@ -79,6 +79,17 @@ export const loadKmzScene = async (model, signal) => {
     }
   }
 
+  const isDirectGlb = String(model.format || "").toUpperCase() === "GLB"
+    || String(model.model_type || "").toUpperCase() === "GLB"
+    || /\.glb(?:$|[?#])/i.test(model.original_name || model.public_url || "");
+  if (isDirectGlb) {
+    const response = await fetch(model.public_url, { signal, mode: "cors" });
+    if (!response.ok) throw new Error(`Unduhan GLB gagal (${response.status})`);
+    const data = new Uint8Array(await response.arrayBuffer());
+    const object = await parseGltf(new GLTFLoader(), data, "GLB");
+    return createLitScene(object);
+  }
+
   const response = await fetch(model.public_url, { signal, mode: "cors" });
   if (!response.ok) throw new Error(`Unduhan KMZ gagal (${response.status})`);
   const entries = unzipSync(new Uint8Array(await response.arrayBuffer()));

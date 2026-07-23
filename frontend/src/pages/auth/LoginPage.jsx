@@ -415,7 +415,7 @@ function PublicMapLayerControl({
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex w-10 h-10 md:w-11 md:h-11 items-center justify-center rounded-xl border border-surface/10 bg-gray-900/80 text-surface shadow-xl backdrop-blur-xl transition-all hover:scale-105 hover:bg-gray-900"
+        className="flex w-10 h-10 md:w-11 md:h-11 items-center justify-center rounded-xl border border-white/10 bg-gray-900/80 text-white shadow-xl backdrop-blur-xl transition-all hover:scale-105 hover:bg-gray-900"
         title="Layer peta"
         aria-label="Layer peta"
       >

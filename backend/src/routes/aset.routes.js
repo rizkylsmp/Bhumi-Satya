@@ -17,11 +17,12 @@ const model3dUpload = multer({
       "application/vnd.google-earth.kmz",
       "application/zip",
       "application/octet-stream",
+      "model/gltf-binary",
     ]);
-    const isKmz = file.originalname?.toLowerCase().endsWith(".kmz");
-    callback(isKmz && allowedMimeTypes.has(file.mimetype)
+    const isSupported = /\.(kmz|glb)$/i.test(file.originalname || "");
+    callback(isSupported && allowedMimeTypes.has(file.mimetype)
       ? null
-      : new Error("File model harus berformat KMZ"), isKmz);
+      : new Error("File model harus berformat KMZ atau GLB"), isSupported);
   },
 });
 
@@ -71,6 +72,11 @@ router.put(
   AssetModel3dController.activate,
 );
 router.put(
+  "/:id/models-3d/:modelId/restore",
+  permissionMiddleware(PERMISSIONS.ASET_UPDATE),
+  AssetModel3dController.restore,
+);
+router.put(
   "/:id/models-3d/:modelId",
   permissionMiddleware(PERMISSIONS.ASET_UPDATE),
   AssetModel3dController.updateMetadata,
@@ -82,6 +88,11 @@ router.put(
 );
 
 // DELETE routes
+router.delete(
+  "/:id/models-3d/:modelId/permanent",
+  permissionMiddleware(PERMISSIONS.ASET_DELETE),
+  AssetModel3dController.removeArchived,
+);
 router.delete(
   "/:id/models-3d/:modelId",
   permissionMiddleware(PERMISSIONS.ASET_UPDATE),

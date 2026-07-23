@@ -31,3 +31,11 @@ test("partial normalization excludes unrelated fields", () => {
   );
 });
 
+test("accepts height metadata generated from an imported 3D model", () => {
+  const result = normalizeAsset3dFields(
+    { building_height_source: "model_3d" },
+    { partial: true },
+  );
+
+  assert.equal(result.building_height_source, "model_3d");
+});

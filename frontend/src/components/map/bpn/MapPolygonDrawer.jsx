@@ -707,7 +707,7 @@ export default function MapPolygonDrawer({
                     type="button"
                     onClick={handleFinishDraw}
                     disabled={points.length < 3}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-500 text-surface rounded-lg text-xs font-semibold hover:opacity-90 transition shadow-sm disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 transition shadow-sm disabled:opacity-50"
                   >
                     <CheckCircleIcon size={14} weight="bold" />
                     Selesai

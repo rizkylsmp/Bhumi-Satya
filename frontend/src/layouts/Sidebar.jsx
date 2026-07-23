@@ -200,7 +200,17 @@ export default function Sidebar({
     );
   };
 
-  const isActivePath = (path) => location.pathname === path;
+  const isActivePath = (path) => {
+    if (location.pathname === path) return true;
+    const isAssetFormRoute = location.pathname === "/aset/tambah"
+      || /^\/aset\/[^/]+\/edit$/.test(location.pathname);
+    if (!isAssetFormRoute) return false;
+    const params = new URLSearchParams(location.search);
+    const formSection = params.get("bagian") || params.get("kembali");
+    return formSection
+      ? path === `/aset/${formSection}`
+      : path === "/aset";
+  };
 
   const isParentActive = (children) =>
     children?.some((child) => location.pathname === child.path);
@@ -293,7 +303,7 @@ export default function Sidebar({
                         className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                           isActive
                             ? "bg-surface/20 text-surface"
-                            : "bg-red-500 text-surface"
+                            : "bg-red-600 text-white"
                         }`}
                       >
                         {item.badge > 9 ? "9+" : item.badge}
@@ -352,7 +362,7 @@ export default function Sidebar({
                               {child.label}
                             </span>
                             {child.badge > 0 && (
-                              <span className="ml-auto rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-surface">
+                              <span className="ml-auto rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
                                 {child.badge > 9 ? "9+" : child.badge}
                               </span>
                             )}
@@ -396,7 +406,7 @@ export default function Sidebar({
                             <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                               isChildActive
                                 ? "bg-surface/20 text-surface"
-                                : "bg-red-500 text-surface"
+                                : "bg-red-600 text-white"
                             }`}>
                               {child.badge > 9 ? "9+" : child.badge}
                             </span>

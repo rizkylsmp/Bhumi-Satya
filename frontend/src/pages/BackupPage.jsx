@@ -399,7 +399,7 @@ export default function BackupPage() {
       {/* ==================== PAGE HEADER ==================== */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-linear-to-br from-accent to-accent/70 rounded-xl flex items-center justify-center shadow-lg shadow-accent/20">
+          <div className="w-12 h-12 bg-linear-to-br from-accent to-accent/70 rounded-xl flex items-center justify-center">
             <HardDrivesIcon
               size={24}
               weight="duotone"
@@ -728,7 +728,7 @@ export default function BackupPage() {
                 disabled={!uploadedFile || restoring}
                 className={`w-full px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
                   uploadedFile && !restoring
-                    ? "bg-red-600 text-surface hover:bg-red-700 shadow-lg shadow-red-600/20"
+                    ? "bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/20"
                     : "bg-surface-secondary text-text-muted cursor-not-allowed border border-border"
                 }`}
               >

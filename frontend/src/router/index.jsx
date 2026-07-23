@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- Router modules intentionally define route wrapper components. */
 import { createHashRouter, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 
@@ -41,6 +42,7 @@ const DashboardPage = lazyWithRetry(() => import("../pages/DashboardPage"));
 const EkasmatPage = lazyWithRetry(() => import("../pages/EkasmatPage"));
 const MapPage = lazyWithRetry(() => import("../pages/MapPage"));
 const Kelola3dPage = lazyWithRetry(() => import("../pages/Kelola3dPage"));
+const Kelola3dDetailPage = lazyWithRetry(() => import("../pages/Kelola3dDetailPage"));
 const RiwayatPage = lazyWithRetry(() => import("../pages/RiwayatPage"));
 const NotifikasiPage = lazyWithRetry(() => import("../pages/NotifikasiPage"));
 const BackupPage = lazyWithRetry(() => import("../pages/BackupPage"));
@@ -48,6 +50,7 @@ const ProfilPage = lazyWithRetry(() => import("../pages/ProfilPage"));
 const PengaturanPage = lazyWithRetry(() => import("../pages/PengaturanPage"));
 const UserManagementPage = lazyWithRetry(() => import("../pages/UserManagementPage"));
 const AssetPage = lazyWithRetry(() => import("../pages/aset/AssetPage"));
+const AssetFormPage = lazyWithRetry(() => import("../pages/aset/AssetFormPage"));
 const DataLegalPage = lazyWithRetry(() => import("../pages/aset/DataLegalPage"));
 const DataFisikPage = lazyWithRetry(() => import("../pages/aset/DataFisikPage"));
 const DataAdministratifPage = lazyWithRetry(
@@ -177,6 +180,26 @@ const router = createHashRouter([
         ),
       },
       {
+        path: "aset/tambah",
+        element: (
+          <RoleGuard menuId="aset">
+            <LazyPage>
+              <AssetFormPage />
+            </LazyPage>
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "aset/:id/edit",
+        element: (
+          <RoleGuard menuId="aset">
+            <LazyPage>
+              <AssetFormPage />
+            </LazyPage>
+          </RoleGuard>
+        ),
+      },
+      {
         path: "aset/legal",
         element: (
           <RoleGuard menuId="aset">
@@ -222,6 +245,16 @@ const router = createHashRouter([
           <RoleGuard menuId="kelola3d">
             <LazyPage>
               <Kelola3dPage />
+            </LazyPage>
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "kelola-3d/:kode3d",
+        element: (
+          <RoleGuard menuId="kelola3d">
+            <LazyPage>
+              <Kelola3dDetailPage />
             </LazyPage>
           </RoleGuard>
         ),

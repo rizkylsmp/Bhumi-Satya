@@ -10,7 +10,7 @@ export default function SewaAsetPage() {
     <div className="p-4 lg:p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-linear-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
+        <div className="w-12 h-12 bg-linear-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center">
           <HandshakeIcon size={24} weight="fill" className="text-surface" />
         </div>
         <div>

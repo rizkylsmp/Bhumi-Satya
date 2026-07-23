@@ -49,6 +49,8 @@ export const getModel3dTileset = async (req, res) => {
         model: Aset,
         as: "aset",
         attributes: [
+          "koordinat_lat",
+          "koordinat_long",
           "building_footprint",
           "building_height_m",
           "building_base_elevation_m",
@@ -57,7 +59,14 @@ export const getModel3dTileset = async (req, res) => {
       }],
       order: [["id_aset", "ASC"]],
     });
-    const tileset = createModel3dTileset(models.map((model) => model.toJSON()));
+    const tileset = createModel3dTileset(models.map((model) => {
+      const value = model.toJSON();
+      return {
+        ...value,
+        location_lat: value.location_lat ?? value.aset?.koordinat_lat,
+        location_long: value.location_long ?? value.aset?.koordinat_long,
+      };
+    }));
     if (!tileset) {
       return res.status(404).json({ success: false, error: "Belum ada GLB aktif untuk tileset 3D" });
     }

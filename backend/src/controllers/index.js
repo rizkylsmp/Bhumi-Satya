@@ -4,6 +4,7 @@ export * as AuthController from "./auth.controller.js";
 // Aset Controller
 export * as AsetController from "./aset.controller.js";
 export * as AssetModel3dController from "./assetModel3d.controller.js";
+export * as Aset3dCatalogController from "./aset3dCatalog.controller.js";
 
 // User Controller
 export * as UserController from "./user.controller.js";

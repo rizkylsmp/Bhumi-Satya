@@ -1,6 +1,12 @@
 import crypto from "node:crypto";
-import { Aset, AsetModel3d, sequelize } from "../models/index.js";
+import {
+  Aset,
+  Aset3dCatalog,
+  AsetModel3d,
+  sequelize,
+} from "../models/index.js";
 import AuditService from "../services/audit.service.js";
+import { processModel3dConversion } from "../services/model3dConversion.service.js";
 import {
   deleteFromSupabase,
   getFileBuffer,
@@ -19,6 +25,52 @@ import {
   Model3dMetadataValidationError,
   normalizeModel3dMetadata,
 } from "../utils/model3dMetadata.js";
+import { analyzeGlb } from "../utils/glbOptimization.js";
+
+class ModelUploadValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "ModelUploadValidationError";
+  }
+}
+
+const collectCoordinatePairs = (value, pairs = []) => {
+  if (!Array.isArray(value)) return pairs;
+  if (
+    value.length >= 2
+    && Number.isFinite(Number(value[0]))
+    && Number.isFinite(Number(value[1]))
+  ) {
+    pairs.push([Number(value[0]), Number(value[1])]);
+    return pairs;
+  }
+  value.forEach((entry) => collectCoordinatePairs(entry, pairs));
+  return pairs;
+};
+
+const resolveAssetLocation = (asset) => {
+  const latitude = Number(asset.koordinat_lat);
+  const longitude = Number(asset.koordinat_long);
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    return { latitude, longitude };
+  }
+
+  const spatialValue = asset.building_footprint || asset.polygon_bidang;
+  let geometry = spatialValue;
+  if (typeof geometry === "string") {
+    try {
+      geometry = JSON.parse(geometry);
+    } catch {
+      geometry = null;
+    }
+  }
+  const pairs = collectCoordinatePairs(geometry?.coordinates || geometry);
+  if (pairs.length === 0) return { latitude: null, longitude: null };
+  return {
+    longitude: pairs.reduce((sum, pair) => sum + pair[0], 0) / pairs.length,
+    latitude: pairs.reduce((sum, pair) => sum + pair[1], 0) / pairs.length,
+  };
+};
 
 const serializeModel = (model) => {
   const value = model.toJSON ? model.toJSON() : model;
@@ -108,21 +160,68 @@ export const upload = async (req, res) => {
   try {
     const asset = await Aset.findByPk(req.params.id);
     if (!asset) return res.status(404).json({ success: false, error: "Aset tidak ditemukan" });
-    if (!req.file) return res.status(400).json({ success: false, error: "File KMZ diperlukan" });
+    const catalog = await Aset3dCatalog.findOne({ where: { id_aset: asset.id_aset } });
+    if (!catalog) {
+      return res.status(409).json({
+        success: false,
+        error: "Tambahkan aset ke katalog Kelola 3D sebelum mengimpor model",
+      });
+    }
+    if (!req.file) return res.status(400).json({ success: false, error: "File KMZ atau GLB diperlukan" });
 
-    const originalName = req.file.originalname || "model.kmz";
-    if (!originalName.toLowerCase().endsWith(".kmz")) {
-      return res.status(400).json({ success: false, error: "Tahap ini hanya menerima file .kmz" });
+    const originalName = req.file.originalname || "model.glb";
+    const extension = originalName.split(".").pop()?.toLowerCase();
+    if (!["kmz", "glb"].includes(extension)) {
+      throw new ModelUploadValidationError("File model harus berformat KMZ atau GLB");
     }
 
-    const inspectedManifest = inspectKmzModel(req.file.buffer);
-    const locationAssessment = assessKmzModelLocation({
-      assetLat: asset.koordinat_lat,
-      assetLng: asset.koordinat_long,
-      modelLat: inspectedManifest.latitude,
-      modelLng: inspectedManifest.longitude,
-    });
-    const manifest = { ...inspectedManifest, locationAssessment };
+    const assetLocation = resolveAssetLocation(asset);
+    let manifest;
+    if (extension === "kmz") {
+      const inspectedManifest = inspectKmzModel(req.file.buffer);
+      const locationAssessment = assessKmzModelLocation({
+        assetLat: assetLocation.latitude,
+        assetLng: assetLocation.longitude,
+        modelLat: inspectedManifest.latitude,
+        modelLng: inspectedManifest.longitude,
+      });
+      manifest = { ...inspectedManifest, locationAssessment };
+    } else {
+      if (!Number.isFinite(assetLocation.latitude) || !Number.isFinite(assetLocation.longitude)) {
+        throw new ModelUploadValidationError(
+          "GLB tidak menyimpan koordinat peta. Lengkapi koordinat atau geometri spasial aset terlebih dahulu.",
+        );
+      }
+      let analysis;
+      try {
+        analysis = await analyzeGlb(req.file.buffer);
+      } catch {
+        throw new ModelUploadValidationError("Isi file GLB tidak valid atau tidak dapat dibaca");
+      }
+      manifest = {
+        format: "GLB",
+        modelEntry: originalName,
+        modelType: "GLB",
+        latitude: assetLocation.latitude,
+        longitude: assetLocation.longitude,
+        altitudeM: 0,
+        altitudeMode: "relativeToGround",
+        heading: 0,
+        tilt: 0,
+        roll: 0,
+        scaleX: 1,
+        scaleY: 1,
+        scaleZ: 1,
+        entryCount: 1,
+        source: "direct-glb",
+        bounds: analysis.bounds,
+        triangleCount: analysis.triangleCount,
+        locationAssessment: {
+          status: "asset-location",
+          message: "GLB ditempatkan mengikuti koordinat/geometri spasial aset",
+        },
+      };
+    }
     const checksum = crypto.createHash("sha256").update(req.file.buffer).digest("hex");
     const duplicate = await AsetModel3d.findOne({
       where: { id_aset: asset.id_aset, checksum_sha256: checksum, archived_at: null },
@@ -141,7 +240,9 @@ export const upload = async (req, res) => {
     const version = latestVersion + 1;
     const safeName = originalName.replace(/[^a-zA-Z0-9._-]/g, "_");
     uploadedStoragePath = `model-3d/aset-${asset.id_aset}/v${version}-${Date.now()}-${safeName}`;
-    const mimeType = "application/vnd.google-earth.kmz";
+    const mimeType = extension === "glb"
+      ? "model/gltf-binary"
+      : "application/vnd.google-earth.kmz";
     const publicUrl = await uploadToSupabase(
       uploadedStoragePath,
       req.file.buffer,
@@ -208,7 +309,9 @@ export const upload = async (req, res) => {
       }
     }
     console.error("Error uploading asset 3D model:", error);
-    return res.status(error instanceof KmzValidationError ? 400 : 500).json({
+    return res.status(
+      error instanceof KmzValidationError || error instanceof ModelUploadValidationError ? 400 : 500,
+    ).json({
       success: false,
       error: error.message,
     });
@@ -228,19 +331,18 @@ export const convert = async (req, res) => {
     if (model.conversion_status === "ready" && model.converted_public_url) {
       return res.json({ success: true, message: "GLB sudah tersedia", data: serializeModel(model) });
     }
-    if (["pending", "processing"].includes(model.conversion_status)) {
+    if (model.conversion_status === "processing") {
       return res.status(202).json({
         success: true,
-        message: model.conversion_status === "processing"
-          ? "Model sedang dikonversi oleh worker"
-          : "Model sudah berada dalam antrean konversi",
+        message: "Model sedang dikonversi",
         data: serializeModel(model),
       });
     }
 
     const oldData = serializeModel(model);
+    const queueOnly = process.env.MODEL3D_CONVERSION_MODE === "queue";
     await model.update({
-      conversion_status: "pending",
+      conversion_status: queueOnly ? "pending" : "processing",
       conversion_error: null,
       updated_at: new Date(),
     });
@@ -249,10 +351,20 @@ export const convert = async (req, res) => {
       id_referensi: model.id_model_3d,
       data_lama: oldData,
       data_baru: serializeModel(model),
-      keterangan: `Memasukkan ulang konversi model 3D aset ${model.id_aset} versi ${model.version} ke antrean`,
+      keterangan: `${queueOnly ? "Memasukkan" : "Memulai"} konversi model 3D aset ${model.id_aset} versi ${model.version}`,
       user_id: req.user.id_user,
       req,
     });
+    if (!queueOnly) {
+      await processModel3dConversion(model);
+      return res.json({
+        success: true,
+        message: String(model.format).toUpperCase() === "GLB"
+          ? "GLB berhasil divalidasi dan disiapkan untuk peta 3D"
+          : "KMZ berhasil dikonversi menjadi GLB",
+        data: serializeModel(model),
+      });
+    }
     return res.status(202).json({
       success: true,
       message: "Model dimasukkan ke antrean konversi",
@@ -442,6 +554,132 @@ export const archive = async (req, res) => {
     });
   } catch (error) {
     console.error("Error archiving asset 3D model:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const restore = async (req, res) => {
+  try {
+    const model = await AsetModel3d.findOne({
+      where: {
+        id_model_3d: req.params.modelId,
+        id_aset: req.params.id,
+        status: "archived",
+      },
+    });
+    if (!model || !model.archived_at) {
+      return res.status(404).json({
+        success: false,
+        error: "Versi model 3D yang diarsipkan tidak ditemukan",
+      });
+    }
+
+    const oldData = serializeModel(model);
+    let restoredAsActive = false;
+    await sequelize.transaction(async (transaction) => {
+      const activeModel = await AsetModel3d.findOne({
+        where: {
+          id_aset: model.id_aset,
+          is_active: true,
+          archived_at: null,
+        },
+        transaction,
+      });
+      restoredAsActive = !activeModel;
+      await model.update({
+        is_active: restoredAsActive,
+        status: "ready",
+        archived_at: null,
+        updated_at: new Date(),
+      }, { transaction });
+    });
+
+    await AuditService.logUpdate({
+      tabel: "aset_model_3d",
+      id_referensi: model.id_model_3d,
+      data_lama: oldData,
+      data_baru: serializeModel(model),
+      keterangan: `Memulihkan model 3D aset ${model.id_aset} versi ${model.version} dari arsip`,
+      user_id: req.user.id_user,
+      req,
+    });
+
+    return res.json({
+      success: true,
+      message: restoredAsActive
+        ? `Model versi ${model.version} dipulihkan dan dijadikan aktif`
+        : `Model versi ${model.version} dipulihkan`,
+      data: serializeModel(model),
+    });
+  } catch (error) {
+    console.error("Error restoring archived asset 3D model:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const removeArchived = async (req, res) => {
+  try {
+    const model = await AsetModel3d.findOne({
+      where: {
+        id_model_3d: req.params.modelId,
+        id_aset: req.params.id,
+        status: "archived",
+      },
+    });
+    if (!model || !model.archived_at) {
+      return res.status(404).json({
+        success: false,
+        error: "Versi model 3D yang diarsipkan tidak ditemukan",
+      });
+    }
+
+    const oldData = serializeModel(model);
+    const storagePaths = [...new Set([
+      model.storage_path,
+      model.converted_storage_path,
+      model.lod_medium_storage_path,
+      model.lod_low_storage_path,
+    ].filter(Boolean))];
+
+    await model.destroy();
+
+    const cleanupResults = await Promise.allSettled(
+      storagePaths.map((storagePath) => deleteFromSupabase(storagePath)),
+    );
+    const failedStoragePaths = cleanupResults
+      .map((result, index) => (result.status === "rejected" ? storagePaths[index] : null))
+      .filter(Boolean);
+
+    try {
+      await AuditService.logDelete({
+        tabel: "aset_model_3d",
+        id_referensi: model.id_model_3d,
+        data_lama: oldData,
+        keterangan: `Menghapus permanen model 3D aset ${model.id_aset} versi ${model.version} dari arsip`,
+        user_id: req.user.id_user,
+        req,
+      });
+    } catch (auditError) {
+      console.error("Failed logging permanent 3D model deletion:", auditError.message);
+    }
+
+    if (failedStoragePaths.length > 0) {
+      console.error("Failed deleting archived 3D storage objects:", failedStoragePaths);
+    }
+
+    return res.json({
+      success: true,
+      message: failedStoragePaths.length > 0
+        ? `Model versi ${model.version} dihapus permanen, tetapi ${failedStoragePaths.length} file penyimpanan perlu dibersihkan ulang`
+        : `Model versi ${model.version} dihapus permanen`,
+      data: {
+        id_model_3d: model.id_model_3d,
+        deleted_file_count: storagePaths.length - failedStoragePaths.length,
+        failed_file_count: failedStoragePaths.length,
+      },
+    });
+  } catch (error) {
+    console.error("Error permanently deleting archived asset 3D model:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
 };

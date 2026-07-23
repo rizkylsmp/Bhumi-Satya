@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import AssetSearch from "./AssetSearch";
 import Pagination from "./Pagination";
-import AssetFormModal from "./AssetFormModal";
 import AssetViewModal from "./AssetViewModal";
 import ActionButtons from "./ActionButtons";
-import { asetService, assetModel3dService } from "../../services/api";
+import { asetService } from "../../services/api";
 import { useAuthStore } from "../../stores/authStore";
 import { hasPermission } from "../../utils/permissions";
 import { downloadAssetPdf } from "../../utils/pdfExport";
@@ -245,6 +245,7 @@ const SortIcon = ({ column, sortBy, sortOrder }) => {
 export default function SubstansiAssetPage({
   title,
   subtitle,
+  // eslint-disable-next-line no-unused-vars -- Icon is rendered as a React component in JSX below.
   icon: Icon,
   iconColor = "from-blue-500 to-blue-600",
   columns = [],
@@ -258,6 +259,7 @@ export default function SubstansiAssetPage({
   const canUpdate = hasPermission(userRole, "aset", "update");
   const canDelete = hasPermission(userRole, "aset", "delete");
   const confirm = useConfirm();
+  const navigate = useNavigate();
 
   // Data state
   const [assets, setAssets] = useState([]);
@@ -269,10 +271,6 @@ export default function SubstansiAssetPage({
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({});
 
-  // Modal state
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [editingAsset, setEditingAsset] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewingAsset, setViewingAsset] = useState(null);
 
@@ -291,6 +289,7 @@ export default function SubstansiAssetPage({
         page: currentPage,
         limit: 10,
         ...(searchTerm && { search: searchTerm }),
+        ...filters,
       };
       const response = await asetService.getAll(params);
       const { data, pagination } = response.data;
@@ -350,19 +349,14 @@ export default function SubstansiAssetPage({
   };
 
   const handleOpenAddForm = () => {
-    setEditingAsset(null);
-    setIsFormModalOpen(true);
+    navigate(`/aset/tambah?kembali=${encodeURIComponent(substansi || "")}`);
   };
 
-  const handleOpenEditForm = async (assetId) => {
-    try {
-      const response = await asetService.getById(assetId);
-      setEditingAsset(response.data.data);
-      setIsFormModalOpen(true);
-    } catch (error) {
-      console.error("Error fetching asset:", error);
-      toast.error("Gagal memuat data aset");
-    }
+  const handleOpenEditForm = (assetId) => {
+    const query = substansi
+      ? `?bagian=${encodeURIComponent(substansi)}`
+      : "";
+    navigate(`/aset/${assetId}/edit${query}`);
   };
 
   const handleViewAsset = async (assetId) => {
@@ -411,61 +405,6 @@ export default function SubstansiAssetPage({
       console.error("Error downloading asset GeoJSON:", error);
       const downloaded = downloadAssetGeojson(asset);
       if (!downloaded) toast.error("Data polygon aset belum tersedia");
-    }
-  };
-
-  const handleCloseForm = () => {
-    setIsFormModalOpen(false);
-    setEditingAsset(null);
-  };
-
-  const handleFormSubmit = async (formData) => {
-    setIsSubmitting(true);
-    let assetWasSaved = false;
-    try {
-      const { _model_3d_file: model3dFile, ...assetPayload } = formData;
-      let response;
-      if (editingAsset?.id_aset) {
-        response = await asetService.update(editingAsset.id_aset, assetPayload);
-      } else {
-        response = await asetService.create(assetPayload);
-      }
-      assetWasSaved = true;
-      const assetId = editingAsset?.id_aset || response.data?.data?.id_aset;
-      const modelResponse = model3dFile
-        ? await assetModel3dService.upload(assetId, model3dFile)
-        : null;
-      let conversionError = null;
-      if (modelResponse) {
-        try {
-          await assetModel3dService.convert(
-            assetId,
-            modelResponse.data.data.id_model_3d,
-          );
-        } catch (error) {
-          conversionError = error.response?.data?.error || error.message;
-        }
-      }
-      toast.success(model3dFile ? "Aset dan model 3D berhasil disimpan" : "Aset berhasil disimpan");
-      const locationWarning = modelResponse?.data?.data?.manifest?.locationAssessment;
-      if (locationWarning?.status === "warning") {
-        toast(locationWarning.message, { icon: "⚠️", duration: 6000 });
-      }
-      if (conversionError) {
-        toast(`KMZ tersimpan, tetapi konversi GLB gagal: ${conversionError}`, {
-          icon: "⚠️",
-          duration: 7000,
-        });
-      }
-      handleCloseForm();
-      fetchAssets();
-      fetchAssetStats();
-    } catch (error) {
-      console.error("Error saving asset:", error);
-      const errorMsg = error.response?.data?.error || "Gagal menyimpan aset";
-      toast.error(assetWasSaved ? `Aset tersimpan, tetapi model 3D gagal: ${errorMsg}` : errorMsg);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -645,7 +584,7 @@ export default function SubstansiAssetPage({
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div
-            className={`w-12 h-12 bg-linear-to-br ${iconColor} rounded-xl flex items-center justify-center shadow-lg shadow-accent/10`}
+            className={`w-12 h-12 bg-linear-to-br ${iconColor} rounded-xl flex items-center justify-center`}
           >
             <Icon size={24} weight="fill" className="text-surface" />
           </div>
@@ -670,6 +609,16 @@ export default function SubstansiAssetPage({
             />
             <span className="hidden sm:inline">Refresh</span>
           </button>
+          {canCreate && (
+            <button
+              type="button"
+              onClick={handleOpenAddForm}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-surface shadow-md shadow-accent/20 transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            >
+              <PlusIcon size={18} weight="bold" />
+              <span className="hidden sm:inline">Tambah Aset</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -922,16 +871,6 @@ export default function SubstansiAssetPage({
           />
         </div>
       )}
-
-      {/* Form Modal */}
-      <AssetFormModal
-        isOpen={isFormModalOpen}
-        onClose={handleCloseForm}
-        onSubmit={handleFormSubmit}
-        assetData={editingAsset}
-        isSubmitting={isSubmitting}
-        activeSubstansi={substansi}
-      />
 
       {/* View Modal */}
       <AssetViewModal

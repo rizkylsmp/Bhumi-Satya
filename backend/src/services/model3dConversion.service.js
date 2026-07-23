@@ -70,17 +70,28 @@ export const resetStaleModel3dConversions = async (staleMinutes = 30) => {
 export const processModel3dConversion = async (model) => {
   const oldData = serializeForAudit(model);
   let convertedStoragePath = null;
+  let convertedUsesSource = false;
   const uploadedLodPaths = [];
   try {
     const sourceBuffer = await getFileBuffer(model.storage_path);
-    const converted = await convertKmzToGlb(sourceBuffer, model.model_entry);
+    const isDirectGlb = String(model.format || "").toUpperCase() === "GLB"
+      || String(model.model_type || "").toUpperCase() === "GLB"
+      || /\.glb$/i.test(model.original_name || "");
+    const converted = isDirectGlb
+      ? { buffer: sourceBuffer, source: "GLB" }
+      : await convertKmzToGlb(sourceBuffer, model.model_entry);
     const checksum = crypto.createHash("sha256").update(converted.buffer).digest("hex");
-    convertedStoragePath = `model-3d/aset-${model.id_aset}/v${model.version}-web-${checksum.slice(0, 12)}.glb`;
-    const publicUrl = await uploadToSupabase(
-      convertedStoragePath,
-      converted.buffer,
-      "model/gltf-binary",
-    );
+    convertedStoragePath = isDirectGlb
+      ? model.storage_path
+      : `model-3d/aset-${model.id_aset}/v${model.version}-web-${checksum.slice(0, 12)}.glb`;
+    convertedUsesSource = isDirectGlb;
+    const publicUrl = isDirectGlb
+      ? model.public_url
+      : await uploadToSupabase(
+          convertedStoragePath,
+          converted.buffer,
+          "model/gltf-binary",
+        );
 
     let optimizationError = null;
     let lods;
@@ -169,13 +180,13 @@ export const processModel3dConversion = async (model) => {
       id_referensi: model.id_model_3d,
       data_lama: oldData,
       data_baru: serializeForAudit(model),
-      keterangan: `Worker mengonversi model 3D aset ${model.id_aset} versi ${model.version} ke GLB${mediumLod || lowLod ? " dan LOD turunan" : ""}`,
+      keterangan: `Sistem menyiapkan model 3D aset ${model.id_aset} versi ${model.version} sebagai GLB${mediumLod || lowLod ? " dan LOD turunan" : ""}`,
       user_id: model.uploaded_by,
       req: null,
     });
     return model;
   } catch (error) {
-    if (convertedStoragePath) {
+    if (convertedStoragePath && !convertedUsesSource) {
       try {
         await deleteFromSupabase(convertedStoragePath);
       } catch (cleanupError) {

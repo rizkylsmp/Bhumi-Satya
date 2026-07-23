@@ -757,10 +757,10 @@ export const create = async (req, res) => {
     } = req.body;
 
     // Validasi required fields
-    if (!kode_aset || !nama_aset || !lokasi) {
+    if (!kode_aset || !nama_aset) {
       return res.status(400).json({
         success: false,
-        error: "Kode aset, nama aset, dan lokasi wajib diisi",
+        error: "Kode aset dan nama aset wajib diisi",
       });
     }
 
@@ -797,7 +797,7 @@ export const create = async (req, res) => {
     const newAset = await Aset.create({
       kode_aset,
       nama_aset,
-      lokasi,
+      lokasi: lokasi || "-",
       koordinat_lat: koordinat_lat || polygonCentroid.lat || null,
       koordinat_long: koordinat_long || polygonCentroid.lng || null,
       luas: luas || null,

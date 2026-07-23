@@ -120,6 +120,18 @@ export const assetModel3dService = {
     }),
   archive: (assetId, modelId) =>
     api.delete(`/aset/${assetId}/models-3d/${modelId}`),
+  restore: (assetId, modelId) =>
+    api.put(`/aset/${assetId}/models-3d/${modelId}/restore`),
+  removeArchived: (assetId, modelId) =>
+    api.delete(`/aset/${assetId}/models-3d/${modelId}/permanent`),
+};
+
+export const aset3dCatalogService = {
+  list: (params) => api.get("/aset-3d", { params }),
+  candidates: (params) => api.get("/aset-3d/candidates", { params }),
+  getByCode: (kode3d) => api.get(`/aset-3d/${encodeURIComponent(kode3d)}`),
+  create: (assetId) => api.post("/aset-3d", { id_aset: assetId }),
+  remove: (kode3d) => api.delete(`/aset-3d/${encodeURIComponent(kode3d)}`),
 };
 
 export const petaService = {

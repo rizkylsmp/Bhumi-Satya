@@ -11,6 +11,7 @@ import ChatMessage from "./ChatMessage.js";
 import AsetSumber from "./AsetSumber.js";
 import AsetReconciliation from "./AsetReconciliation.js";
 import AsetModel3d from "./AsetModel3d.js";
+import Aset3dCatalog from "./Aset3dCatalog.js";
 
 // Define associations here to avoid circular dependencies
 // User has many Aset (created_by)
@@ -189,6 +190,26 @@ User.hasMany(AsetModel3d, {
   as: "uploadedModels3d",
 });
 
+Aset.hasOne(Aset3dCatalog, {
+  foreignKey: "id_aset",
+  as: "catalog3d",
+});
+
+Aset3dCatalog.belongsTo(Aset, {
+  foreignKey: "id_aset",
+  as: "aset",
+});
+
+Aset3dCatalog.belongsTo(User, {
+  foreignKey: "created_by",
+  as: "creator",
+});
+
+User.hasMany(Aset3dCatalog, {
+  foreignKey: "created_by",
+  as: "createdCatalogs3d",
+});
+
 export {
   sequelize,
   User,
@@ -203,4 +224,5 @@ export {
   AsetSumber,
   AsetReconciliation,
   AsetModel3d,
+  Aset3dCatalog,
 };

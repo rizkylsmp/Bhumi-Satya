@@ -47,19 +47,19 @@ export function ConfirmProvider({ children }) {
         return {
           icon: TrashIcon,
           iconBg: "bg-red-100 dark:bg-red-900/30",
-          buttonBg: "bg-red-600 hover:bg-red-700 text-surface",
+          buttonBg: "bg-red-600 hover:bg-red-700 text-white",
         };
       case "info":
         return {
           icon: InfoIcon,
           iconBg: "bg-blue-100 dark:bg-blue-900/30",
-          buttonBg: "bg-blue-600 hover:bg-blue-700 text-surface",
+          buttonBg: "bg-blue-600 hover:bg-blue-700 text-white",
         };
       default:
         return {
           icon: WarningIcon,
           iconBg: "bg-yellow-100 dark:bg-yellow-900/30",
-          buttonBg: "bg-yellow-600 hover:bg-yellow-700 text-surface",
+          buttonBg: "bg-yellow-400 hover:bg-yellow-500 text-gray-950",
         };
     }
   };

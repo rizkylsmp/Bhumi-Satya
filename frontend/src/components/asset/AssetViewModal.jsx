@@ -153,19 +153,29 @@ const MODEL_CONVERSION_CONFIG = {
   failed: { label: "Konversi gagal", className: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300" },
 };
 
+const DETAIL_NAV_ITEMS = [
+  { id: "detail-identitas-aset", label: "Identitas" },
+  { id: "detail-data-legal", label: "Legal" },
+  { id: "detail-data-fisik", label: "Fisik" },
+  { id: "detail-data-kib", label: "KIB" },
+  { id: "detail-data-administratif-keuangan", label: "Keuangan" },
+  { id: "detail-data-spasial", label: "Spasial" },
+  { id: "detail-data-bangunan-3d", label: "3D" },
+];
+
 const getStatusHukumConfig = (statusHukum) => {
   return STATUS_HUKUM_CONFIGS[statusHukum] || null;
 };
 
 // Sub-components - moved outside to prevent re-creation on every render
 const InfoItem = ({ label, value, icon: Icon, highlight = false }) => (
-  <div className="space-y-1">
-    <p className="text-xs font-medium text-text-muted uppercase tracking-wide flex items-center gap-1.5">
+  <div className="min-w-0 rounded-xl border border-border/80 bg-surface px-3.5 py-3">
+    <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
       {Icon && <Icon size={12} />}
       {label}
     </p>
     <p
-      className={`text-sm ${highlight ? "font-semibold text-text-primary" : "text-text-secondary"}`}
+      className={`mt-1.5 break-words text-sm leading-relaxed ${highlight ? "font-bold text-text-primary" : "font-medium text-text-secondary"}`}
     >
       {value || "-"}
     </p>
@@ -173,22 +183,31 @@ const InfoItem = ({ label, value, icon: Icon, highlight = false }) => (
 );
 
 // eslint-disable-next-line no-unused-vars -- Icon is rendered as a JSX component below
-const Section = ({ title, icon: Icon, children, columns = 2 }) => {
+const Section = ({ title, icon: Icon, children, columns = 2, hidden = false }) => {
   const columnClass =
     columns === 3
       ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
       : "grid-cols-1 md:grid-cols-2";
 
+  const sectionId = `detail-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-bold text-text-primary uppercase tracking-wide flex items-center gap-2 pb-2 border-b border-border">
-        <Icon size={18} weight="duotone" className="text-accent" />
+    <section
+      id={sectionId}
+      role="tabpanel"
+      aria-labelledby={`tab-${sectionId}`}
+      hidden={hidden}
+      className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
+    >
+      <h3 className="flex items-center gap-2 border-b border-border bg-surface-secondary/70 px-4 py-3.5 text-xs font-black uppercase tracking-[0.1em] text-text-primary">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10 text-accent">
+          <Icon size={17} weight="duotone" />
+        </span>
         {title}
       </h3>
-      <div className={`grid ${columnClass} gap-x-8 gap-y-4`}>
+      <div className={`grid ${columnClass} gap-3 p-4`}>
         {children}
       </div>
-    </div>
+    </section>
   );
 };
 
@@ -204,11 +223,33 @@ export default function AssetViewModal({
   const navigate = useNavigate();
   const confirm = useConfirm();
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [activeDetailTab, setActiveDetailTab] = useState(DETAIL_NAV_ITEMS[0].id);
   const [model3dCatalog, setModel3dCatalog] = useState({ assetId: null, versions: [] });
   const [convertingModelId, setConvertingModelId] = useState(null);
   const [downloadingModel, setDownloadingModel] = useState(null);
   const [archivingModelId, setArchivingModelId] = useState(null);
   const downloadMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) setActiveDetailTab(DETAIL_NAV_ITEMS[0].id);
+  }, [asset?.id_aset, isOpen]);
+
+  const handleDetailTabKeyDown = (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const currentIndex = Math.max(
+      0,
+      DETAIL_NAV_ITEMS.findIndex((item) => item.id === activeDetailTab),
+    );
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % DETAIL_NAV_ITEMS.length;
+    if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + DETAIL_NAV_ITEMS.length) % DETAIL_NAV_ITEMS.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = DETAIL_NAV_ITEMS.length - 1;
+    const nextId = DETAIL_NAV_ITEMS[nextIndex].id;
+    setActiveDetailTab(nextId);
+    window.requestAnimationFrame(() => document.getElementById(`tab-${nextId}`)?.focus());
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -404,7 +445,7 @@ export default function AssetViewModal({
     : [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4">
       {/* Overlay */}
       <div
         className="fixed inset-0 bg-accent/60 backdrop-blur-sm"
@@ -412,20 +453,20 @@ export default function AssetViewModal({
       />
 
       {/* Modal Container */}
-      <div className="relative bg-surface border border-border shadow-2xl w-full max-w-[96rem] max-h-[calc(100vh-32px)] rounded-2xl overflow-hidden flex flex-col">
+      <div className="relative flex h-full w-full max-w-[96rem] flex-col overflow-hidden border-border bg-surface shadow-2xl md:h-auto md:max-h-[calc(100vh-32px)] md:rounded-2xl md:border">
         {/* Header */}
-        <div className="bg-linear-to-r from-accent to-accent/90 px-6 py-5 text-surface shrink-0">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-surface/20 rounded-xl flex items-center justify-center">
-                <BuildingsIcon size={28} weight="fill" />
+        <div className="shrink-0 border-b border-border bg-surface px-4 py-4 md:px-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3 md:gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent text-surface shadow-md shadow-accent/20 md:h-14 md:w-14">
+                <BuildingsIcon size={26} weight="fill" />
               </div>
-              <div>
-                <p className="text-xs font-medium opacity-80 mb-1">
-                  {asset.kode_aset}
+              <div className="min-w-0">
+                <p className="mb-1 text-[10px] font-black uppercase tracking-[0.12em] text-accent">
+                  Data Lengkap Aset · {asset.kode_aset}
                 </p>
-                <h2 className="text-xl font-bold">{asset.nama_aset}</h2>
-                <div className="flex items-center gap-2 mt-2">
+                <h2 className="truncate text-lg font-black text-text-primary md:text-xl">{asset.nama_aset}</h2>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
                   <span
                     className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${statusConfig.bg} ${statusConfig.text}`}
                   >
@@ -448,13 +489,13 @@ export default function AssetViewModal({
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               {(onDownloadPdf || onDownloadGeojson) && (
                 <div className="relative" ref={downloadMenuRef}>
                   <button
                     type="button"
                     onClick={() => setShowDownloadMenu((value) => !value)}
-                    className="flex items-center gap-2 px-4 py-2 bg-surface/20 hover:bg-surface/30 rounded-lg text-sm font-medium transition-colors"
+                    className="flex h-9 items-center gap-2 rounded-lg border border-border bg-surface-secondary px-3 text-xs font-bold text-text-secondary transition hover:border-accent hover:text-accent"
                   >
                     <DownloadSimpleIcon size={16} weight="bold" />
                     Unduh
@@ -497,7 +538,7 @@ export default function AssetViewModal({
                     onClose();
                     onEdit(asset.id_aset);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-surface/20 hover:bg-surface/30 rounded-lg text-sm font-medium transition-colors"
+                  className="flex h-9 items-center gap-2 rounded-lg bg-accent px-3 text-xs font-bold text-surface transition hover:bg-accent/90"
                 >
                   <PencilSimpleIcon size={16} weight="bold" />
                   Edit
@@ -506,7 +547,7 @@ export default function AssetViewModal({
               <button
                 onClick={onClose}
                 aria-label="Tutup detail"
-                className="p-2 hover:bg-surface/20 rounded-lg transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted transition hover:bg-surface-secondary hover:text-text-primary"
               >
                 <XIcon size={20} weight="bold" />
               </button>
@@ -514,16 +555,46 @@ export default function AssetViewModal({
           </div>
         </div>
 
+        <nav aria-label="Navigasi data lengkap" className="shrink-0 overflow-x-auto border-b border-border bg-surface px-4 py-2 md:px-6">
+          <div
+            role="tablist"
+            aria-label="Bagian data aset"
+            onKeyDown={handleDetailTabKeyDown}
+            className="flex min-w-max items-center gap-1"
+          >
+            {DETAIL_NAV_ITEMS.map((item) => (
+              <button
+                type="button"
+                key={item.id}
+                id={`tab-${item.id}`}
+                role="tab"
+                aria-controls={item.id}
+                aria-selected={activeDetailTab === item.id}
+                tabIndex={activeDetailTab === item.id ? 0 : -1}
+                onClick={() => setActiveDetailTab(item.id)}
+                className={`rounded-lg px-3 py-2 text-[10px] font-bold transition focus-visible:ring-2 focus-visible:ring-accent ${
+                  activeDetailTab === item.id
+                    ? "bg-accent text-surface shadow-sm"
+                    : "text-text-secondary hover:bg-accent/10 hover:text-accent"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </nav>
+
         {/* Content */}
-        <div className="p-6 flex-1 min-h-0 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-surface-secondary/50 p-4 md:p-6">
           <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             {/* Main Content */}
-            <div className="xl:col-span-3 space-y-6">
+            <div className={`${activeDetailTab === "detail-identitas-aset" ? "xl:col-span-3" : "xl:col-span-4"} space-y-6`}>
               {/* Identitas Aset */}
               <Section
                 title="Identitas Aset"
                 icon={ClipboardTextIcon}
                 columns={3}
+                hidden={activeDetailTab !== "detail-identitas-aset"}
               >
                 <InfoItem label="Kode Aset" value={asset.kode_aset} highlight />
                 <InfoItem label="Nama Aset" value={asset.nama_aset} highlight />
@@ -544,7 +615,7 @@ export default function AssetViewModal({
               </Section>
 
               {/* Data Legal */}
-              <Section title="Data Legal" icon={ScalesIcon} columns={3}>
+              <Section title="Data Legal" icon={ScalesIcon} columns={3} hidden={activeDetailTab !== "detail-data-legal"}>
                 <InfoItem label="Jenis Hak" value={asset.jenis_hak} />
                 <InfoItem label="NIB" value={asset.nib} />
                 <InfoItem
@@ -574,7 +645,7 @@ export default function AssetViewModal({
               </Section>
 
               {/* Data Fisik */}
-              <Section title="Data Fisik" icon={MapPinIcon} columns={2}>
+              <Section title="Data Fisik" icon={MapPinIcon} columns={2} hidden={activeDetailTab !== "detail-data-fisik"}>
                 <div className="md:col-span-2">
                   <InfoItem
                     label="Lokasi / Alamat"
@@ -611,6 +682,7 @@ export default function AssetViewModal({
                 title="Data KIB"
                 icon={ClipboardTextIcon}
                 columns={3}
+                hidden={activeDetailTab !== "detail-data-kib"}
               >
                 <InfoItem label="NIBAR" value={asset.nibar} highlight />
                 <InfoItem label="ID Pemda" value={asset.id_pemda} />
@@ -647,6 +719,7 @@ export default function AssetViewModal({
                 title="Data Administratif / Keuangan"
                 icon={CurrencyDollarIcon}
                 columns={3}
+                hidden={activeDetailTab !== "detail-data-administratif-keuangan"}
               >
                 <InfoItem
                   label="Nilai Aset"
@@ -671,7 +744,7 @@ export default function AssetViewModal({
 
               {/* Data Sewa */}
               {(asset.status_sewa || asset.penyewa_aktif) && (
-                <Section title="Data Sewa" icon={BuildingsIcon} columns={3}>
+                <Section title="Data Sewa" icon={BuildingsIcon} columns={3} hidden={activeDetailTab !== "detail-data-administratif-keuangan"}>
                   <InfoItem label="Status Sewa" value={asset.status_sewa} />
                   <InfoItem label="Penyewa Aktif" value={asset.penyewa_aktif} />
                   <InfoItem
@@ -682,7 +755,7 @@ export default function AssetViewModal({
               )}
 
               {/* Batas Tanah */}
-              <div className="bg-surface-secondary rounded-xl p-4">
+              <div hidden={activeDetailTab !== "detail-data-fisik"} className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
                 <h4 className="text-xs font-bold text-text-muted uppercase tracking-wide mb-3">
                   Batas-Batas Tanah
                 </h4>
@@ -723,8 +796,8 @@ export default function AssetViewModal({
               </div>
 
               {/* Foto Kondisi Eksisting */}
-              {asset.foto_aset && (
-                <div className="bg-surface-secondary rounded-xl p-4">
+              {activeDetailTab === "detail-data-fisik" && asset.foto_aset && (
+                <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
                   <h4 className="text-xs font-bold text-text-muted uppercase tracking-wide flex items-center gap-2 mb-3">
                     <ImageIcon size={14} />
                     Foto Kondisi Eksisting
@@ -745,10 +818,10 @@ export default function AssetViewModal({
               )}
 
               {/* Data Spasial */}
-              {(asset.koordinat_lat ||
+              {activeDetailTab === "detail-data-spasial" && (asset.koordinat_lat ||
                 asset.koordinat_long ||
                 hasPolygonData(asset.polygon_bidang)) && (
-                <div className="bg-surface-secondary rounded-xl p-4">
+                <div id="detail-data-spasial" role="tabpanel" aria-labelledby="tab-detail-data-spasial" className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="text-xs font-bold text-text-muted uppercase tracking-wide flex items-center gap-2">
                       <MapTrifoldIcon size={14} />
@@ -794,8 +867,16 @@ export default function AssetViewModal({
                 </div>
               )}
 
-              {(hasPolygonData(asset.building_footprint) || asset3d.height || model3dVersions.length > 0) && (
-                <section className="rounded-xl border border-violet-200 bg-violet-50/60 p-4 dark:border-violet-500/30 dark:bg-violet-500/5" aria-labelledby="asset-3d-summary">
+              {activeDetailTab === "detail-data-spasial" && !asset.koordinat_lat && !asset.koordinat_long && !hasPolygonData(asset.polygon_bidang) && (
+                <div id="detail-data-spasial" role="tabpanel" aria-labelledby="tab-detail-data-spasial" className="rounded-2xl border border-dashed border-border bg-surface p-10 text-center">
+                  <MapTrifoldIcon size={30} className="mx-auto text-text-muted" />
+                  <p className="mt-3 text-sm font-bold text-text-primary">Data spasial belum tersedia</p>
+                  <p className="mt-1 text-xs text-text-muted">Tambahkan koordinat atau polygon bidang melalui halaman edit aset.</p>
+                </div>
+              )}
+
+              {activeDetailTab === "detail-data-bangunan-3d" && (hasPolygonData(asset.building_footprint) || asset3d.height || model3dVersions.length > 0) && (
+                <section id="detail-data-bangunan-3d" role="tabpanel" aria-labelledby="tab-detail-data-bangunan-3d" className="rounded-2xl border border-violet-200 bg-violet-50/60 p-4 shadow-sm dark:border-violet-500/30 dark:bg-violet-500/5">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <h4 id="asset-3d-summary" className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-violet-800 dark:text-violet-300">
                       <BuildingsIcon size={15} weight="fill" />
@@ -981,12 +1062,20 @@ export default function AssetViewModal({
                   </div>
                 </section>
               )}
+
+              {activeDetailTab === "detail-data-bangunan-3d" && !hasPolygonData(asset.building_footprint) && !asset3d.height && model3dVersions.length === 0 && (
+                <div id="detail-data-bangunan-3d" role="tabpanel" aria-labelledby="tab-detail-data-bangunan-3d" className="rounded-2xl border border-dashed border-violet-300 bg-violet-50/40 p-10 text-center dark:border-violet-500/30 dark:bg-violet-500/5">
+                  <BuildingsIcon size={30} className="mx-auto text-violet-400" />
+                  <p className="mt-3 text-sm font-bold text-text-primary">Data bangunan 3D belum tersedia</p>
+                  <p className="mt-1 text-xs text-text-muted">Tambahkan footprint bangunan atau import model KMZ/GLB melalui Kelola 3D.</p>
+                </div>
+              )}
             </div>
 
             {/* Sidebar - 1 column */}
-            <div className="space-y-6">
+            {activeDetailTab === "detail-identitas-aset" && <div className="space-y-6">
               {/* Nilai Aset Card */}
-              <div className="bg-linear-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 text-surface">
+              <div className="bg-linear-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 text-white">
                 <div className="flex items-center gap-2 mb-3">
                   <CurrencyDollarIcon size={20} weight="bold" />
                   <span className="text-xs font-semibold uppercase tracking-wide opacity-80">
@@ -1144,7 +1233,7 @@ export default function AssetViewModal({
                   <p className="text-sm text-text-secondary">{asset.notes}</p>
                 </div>
               )}
-            </div>
+            </div>}
           </div>
         </div>
 

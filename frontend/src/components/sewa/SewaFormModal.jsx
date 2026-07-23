@@ -673,7 +673,7 @@ export default function SewaFormModal({
                     <button
                       type="button"
                       onClick={() => geojsonInputRef.current?.click()}
-                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-white hover:bg-accent-dark transition-colors"
+                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-surface hover:bg-accent-dark transition-colors"
                     >
                       <UploadIcon size={16} weight="bold" />
                       Impor GeoJSON

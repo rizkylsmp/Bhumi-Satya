@@ -136,7 +136,7 @@ export default function PengaturanPage() {
     <div className="p-4 lg:p-6 space-y-6">
       {/* ==================== PAGE HEADER ==================== */}
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-linear-to-br from-accent to-accent/70 rounded-xl flex items-center justify-center shadow-lg shadow-accent/20">
+        <div className="w-12 h-12 bg-linear-to-br from-accent to-accent/70 rounded-xl flex items-center justify-center">
           <GearIcon size={24} weight="duotone" className="text-surface" />
         </div>
         <div>

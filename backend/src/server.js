@@ -17,6 +17,7 @@ import sewaAsetRoutes from "./routes/sewaAset.routes.js";
 import permintaanRoutes from "./routes/permintaan.routes.js";
 import ekasmatRoutes from "./routes/ekasmat.routes.js";
 import chatbotRoutes from "./routes/chatbot.routes.js";
+import aset3dRoutes from "./routes/aset3d.routes.js";
 
 // Load .env only for local development (Vercel injects env vars directly)
 if (!process.env.VERCEL) {
@@ -103,6 +104,7 @@ app.use("/api/sewa", sewaAsetRoutes);
 app.use("/api/permintaan", permintaanRoutes);
 app.use("/api/ekasmat", ekasmatRoutes);
 app.use("/api/chatbot", chatbotRoutes);
+app.use("/api/aset-3d", aset3dRoutes);
 
 // Landing page - inline HTML for serverless compatibility
 app.get("/", (req, res) => {

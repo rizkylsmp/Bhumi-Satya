@@ -2,6 +2,7 @@ import { createElement, useState } from "react";
 import {
   ArrowsOutIcon,
   BuildingsIcon,
+  CheckCircleIcon,
   CrosshairIcon,
   CubeIcon,
   EyeIcon,
@@ -12,6 +13,7 @@ import {
   MapTrifoldIcon,
   RulerIcon,
   TableIcon,
+  TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import Switch from "../../ui/Switch";
@@ -23,20 +25,55 @@ const TABS = [
   { id: "analisis", label: "Analisis" },
 ];
 
-function ToolButton({ icon, label, description, onClick, disabled = false }) {
+const ANALYSIS_TOOL_COPY = {
+  distance: {
+    title: "Ukur jarak",
+    instruction: "Klik minimal dua titik pada peta. Setiap titik berikutnya menambah segmen jarak.",
+  },
+  volume: {
+    title: "Estimasi volume",
+    instruction: "Klik bangunan 3D. Volume dihitung dari tapak dan tinggi, atau kotak batas model.",
+  },
+  height: {
+    title: "Ukur tinggi",
+    instruction: "Klik bangunan 3D untuk membaca tinggi yang tersimpan pada model atau metadata aset.",
+  },
+  coordinate: {
+    title: "Baca koordinat",
+    instruction: "Klik satu titik pada peta untuk membaca longitude dan latitude.",
+  },
+};
+
+function ToolButton({
+  icon,
+  label,
+  description,
+  onClick,
+  disabled = false,
+  active = false,
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="group relative min-h-24 rounded-xl border border-border bg-surface p-3 text-left transition-all hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-violet-500 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:border-border disabled:hover:shadow-none"
+      aria-pressed={active || undefined}
+      className={`group relative min-h-24 rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-violet-500 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:border-border disabled:hover:shadow-none ${
+        active
+          ? "border-violet-500 bg-violet-50 shadow-sm shadow-violet-500/10 dark:bg-violet-500/10"
+          : "border-border bg-surface hover:border-violet-300"
+      }`}
     >
       {disabled && (
         <span className="absolute right-2 top-2 rounded-full bg-surface-secondary px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-text-muted">
           Segera
         </span>
       )}
-      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50 text-violet-700 transition-colors group-hover:bg-violet-600 group-hover:text-white dark:bg-violet-500/15 dark:text-violet-300">
+      <span className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors group-hover:bg-violet-600 group-hover:text-white ${
+        active
+          ? "bg-violet-600 text-white"
+          : "bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300"
+      }`}>
         {createElement(icon, { size: 19, weight: "duotone" })}
       </span>
       <span className="mt-2 block text-[11px] font-extrabold uppercase tracking-wide text-text-primary">{label}</span>
@@ -122,6 +159,11 @@ export default function Model3dControlPanel({
   onTopView,
   onNorthView,
   onFocusModels,
+  analysisTool = null,
+  analysisResult = null,
+  analysisPointCount = 0,
+  onAnalysisToolChange,
+  onClearAnalysis,
 }) {
   const [activeTab, setActiveTab] = useState("data3d");
   const [searchTerm, setSearchTerm] = useState("");
@@ -176,7 +218,7 @@ export default function Model3dControlPanel({
       aria-label="Panel kontrol peta"
     >
       <header className="flex items-start gap-3 border-b border-border bg-gradient-to-r from-violet-600/12 via-sky-500/7 to-transparent px-4 py-3.5">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-sky-500 text-white shadow-lg shadow-violet-500/20">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-sky-500 text-white">
           <CubeIcon size={21} weight="duotone" />
         </span>
         <div className="min-w-0 flex-1">
@@ -343,16 +385,98 @@ export default function Model3dControlPanel({
         )}
 
         {activeTab === "analisis" && (
-          <section id="panel-3d-analisis" role="tabpanel">
-            <div className="mb-3 rounded-xl border border-violet-200 bg-violet-50 p-3 text-[10px] font-semibold leading-relaxed text-violet-800 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-200">
-              Alat ukur 3D disiapkan sebagai tahap analisis berikutnya. Hasil nantinya bersifat indikatif, bukan ukuran legal.
+          <section id="panel-3d-analisis" role="tabpanel" className="space-y-3">
+            <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 text-[10px] leading-relaxed text-violet-800 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-200">
+              <p className="font-extrabold">
+                {analysisTool
+                  ? ANALYSIS_TOOL_COPY[analysisTool]?.title
+                  : "Pilih jenis pengukuran"}
+              </p>
+              <p className="mt-1 font-medium">
+                {analysisTool
+                  ? ANALYSIS_TOOL_COPY[analysisTool]?.instruction
+                  : "Aktifkan alat, lalu klik titik atau bangunan pada peta 3D."}
+              </p>
+              {analysisTool === "distance" && analysisPointCount > 0 && (
+                <p className="mt-2 font-bold text-violet-600 dark:text-violet-300">
+                  {analysisPointCount} titik pengukuran dipilih
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <ToolButton icon={RulerIcon} label="Jarak" description="Ukur jarak antartitik 3D." disabled />
-              <ToolButton icon={CubeIcon} label="Volume" description="Estimasi volume bangunan." disabled />
-              <ToolButton icon={BuildingsIcon} label="Tinggi" description="Ukur tinggi relatif objek." disabled />
-              <ToolButton icon={MapPinIcon} label="Koordinat" description="Baca posisi titik pada model." disabled />
+              <ToolButton
+                icon={RulerIcon}
+                label="Jarak"
+                description="Jarak kumulatif antartitik."
+                active={analysisTool === "distance"}
+                onClick={() => onAnalysisToolChange?.("distance")}
+              />
+              <ToolButton
+                icon={CubeIcon}
+                label="Volume"
+                description="Estimasi volume bangunan."
+                active={analysisTool === "volume"}
+                onClick={() => onAnalysisToolChange?.("volume")}
+              />
+              <ToolButton
+                icon={BuildingsIcon}
+                label="Tinggi"
+                description="Tinggi dari metadata 3D."
+                active={analysisTool === "height"}
+                onClick={() => onAnalysisToolChange?.("height")}
+              />
+              <ToolButton
+                icon={MapPinIcon}
+                label="Koordinat"
+                description="Longitude dan latitude titik."
+                active={analysisTool === "coordinate"}
+                onClick={() => onAnalysisToolChange?.("coordinate")}
+              />
             </div>
+
+            {analysisResult && (
+              <div
+                role="status"
+                aria-live="polite"
+                className={`rounded-xl border p-3 ${
+                  analysisResult.status === "error"
+                    ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  <CheckCircleIcon size={18} weight="fill" className="mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-extrabold uppercase tracking-wide opacity-75">
+                      {analysisResult.label}
+                    </p>
+                    <p className="mt-0.5 break-words text-base font-black">
+                      {analysisResult.value}
+                    </p>
+                    {analysisResult.detail && (
+                      <p className="mt-1 text-[9px] font-medium leading-relaxed opacity-80">
+                        {analysisResult.detail}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(analysisTool || analysisResult) && (
+              <button
+                type="button"
+                onClick={onClearAnalysis}
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-[9px] font-extrabold text-text-secondary transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-500 dark:hover:bg-red-500/10"
+              >
+                <TrashIcon size={14} weight="bold" />
+                Hapus hasil dan nonaktifkan alat
+              </button>
+            )}
+
+            <p className="text-[8px] leading-relaxed text-text-muted">
+              Hasil simulasi bersifat indikatif dan bukan pengganti pengukuran survei atau dokumen legal.
+            </p>
           </section>
         )}
       </div>

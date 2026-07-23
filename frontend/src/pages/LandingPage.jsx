@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   MagnifyingGlassIcon,
@@ -292,7 +292,7 @@ function AssetDetailModal({ item, onClose, onApply }) {
                 onApply(item);
                 onClose();
               }}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-surface text-sm font-semibold rounded-xl transition-colors"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold rounded-xl transition-colors"
             >
               <PaperPlaneTiltIcon size={18} weight="fill" />
               Masuk untuk Ajukan Sewa
@@ -416,6 +416,7 @@ function AssetCard({ item, onClick }) {
 // ============================================================
 export default function LandingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setUser, setToken } = useAuthStore();
   const startSession = useSessionStore((s) => s.startSession);
   const [chatbotOpen, setChatbotOpen] = useState(false);
@@ -443,7 +444,9 @@ export default function LandingPage() {
   const [showMapPolygons, setShowMapPolygons] = useState(false);
 
   // Login panel state
-  const [showLoginPanel, setShowLoginPanel] = useState(false);
+  const [showLoginPanel, setShowLoginPanel] = useState(
+    location.state?.openLoginPanel === true,
+  );
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
@@ -740,23 +743,23 @@ export default function LandingPage() {
       />
 
       {/* ==================== HERO ==================== */}
-      <section className="relative overflow-hidden bg-linear-to-br from-slate-950 via-emerald-950 to-teal-900">
-        <div className="absolute inset-0 opacity-10">
+      <section className="relative overflow-hidden bg-linear-to-br from-emerald-100 via-white to-white dark:from-slate-950 dark:via-emerald-950 dark:to-teal-900">
+        <div className="absolute inset-0 opacity-0 dark:opacity-10">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnY0em0wLTZ2LTRoMnY0aC0yem0tNiA2aC0ydi00aDJ2NHptMC02di00aDJ2NGgtMnoiLz48L2c+PC9nPjwvc3ZnPg==')]" />
         </div>
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-[1.08fr_0.92fr] lg:px-8 lg:py-24">
           <div>
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 backdrop-blur-sm">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-3 py-1.5 text-xs font-semibold text-emerald-800 backdrop-blur-sm dark:border-emerald-300/20 dark:bg-emerald-300/10 dark:text-emerald-100">
               <BuildingsIcon size={15} weight="fill" />
               Portal Informasi Aset Tanah Kota Pasuruan
             </div>
-            <h2 className="max-w-3xl text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl lg:text-6xl">
+            <h2 className="max-w-3xl text-3xl font-black leading-tight tracking-tight text-slate-950 dark:text-white sm:text-4xl lg:text-6xl">
               Kenali aset kota,
-              <span className="block text-emerald-300">
+              <span className="block text-emerald-600 dark:text-emerald-300">
                 lokasi, dan pemanfaatannya.
               </span>
             </h2>
-            <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-300 md:text-lg">
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-600 dark:text-slate-300 md:text-lg">
               Bhumi Satya menyajikan inventaris aset tanah secara terpadu—mulai
               dari persebaran lokasi, karakteristik bidang, legalitas, hingga
               informasi pemanfaatan yang dapat diakses masyarakat.
@@ -765,7 +768,7 @@ export default function LandingPage() {
               <button
                 type="button"
                 onClick={() => navigate("/peta-publik")}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-emerald-950 shadow-lg shadow-emerald-950/30 transition hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:ring-offset-2 focus:ring-offset-emerald-950"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-white dark:bg-emerald-400 dark:text-emerald-950 dark:shadow-emerald-950/30 dark:hover:bg-emerald-300 dark:focus:ring-emerald-200 dark:focus:ring-offset-emerald-950"
               >
                 <MapTrifoldIcon size={19} weight="fill" />
                 Jelajahi Peta Aset
@@ -773,38 +776,38 @@ export default function LandingPage() {
               <button
                 type="button"
                 onClick={() => scrollTo(asetRef)}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-emerald-950"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition hover:border-emerald-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-white dark:border-white/20 dark:bg-white/10 dark:text-white dark:shadow-none dark:hover:border-white/20 dark:hover:bg-white/15 dark:focus:ring-white/60 dark:focus:ring-offset-emerald-950"
               >
                 <BuildingsIcon size={19} weight="duotone" />
                 Lihat Katalog Aset
               </button>
             </div>
-            <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-slate-300">
+            <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-slate-600 dark:text-slate-300">
               <span className="inline-flex items-center gap-2">
-                <MapPinIcon size={15} weight="fill" className="text-sky-300" />
+                <MapPinIcon size={15} weight="fill" className="text-sky-600 dark:text-sky-300" />
                 Persebaran dan batas bidang
               </span>
               <span className="inline-flex items-center gap-2">
-                <ShieldCheckIcon size={15} weight="fill" className="text-emerald-300" />
+                <ShieldCheckIcon size={15} weight="fill" className="text-emerald-600 dark:text-emerald-300" />
                 Informasi legalitas
               </span>
               <span className="inline-flex items-center gap-2">
-                <StackIcon size={15} weight="fill" className="text-amber-300" />
+                <StackIcon size={15} weight="fill" className="text-amber-600 dark:text-amber-300" />
                 Data pemanfaatan aset
               </span>
             </div>
           </div>
-          <aside className="rounded-3xl border border-white/15 bg-white/10 p-5 shadow-2xl shadow-slate-950/30 backdrop-blur-xl sm:p-6">
+          <aside className="rounded-3xl border border-emerald-100 bg-white/75 p-5 shadow-2xl shadow-emerald-950/10 backdrop-blur-xl dark:border-white/15 dark:bg-white/10 dark:shadow-slate-950/30 sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-300">
                   Cakupan Data Publik
                 </p>
-                <h3 className="mt-2 text-xl font-bold text-white">
+                <h3 className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
                   Ringkasan inventaris aset
                 </h3>
               </div>
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-300/15 text-emerald-200">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-300/15 dark:text-emerald-200">
                 <BuildingsIcon size={23} weight="duotone" />
               </div>
             </div>
@@ -817,20 +820,20 @@ export default function LandingPage() {
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="rounded-2xl border border-white/10 bg-slate-950/25 p-4"
+                  className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-950/25"
                 >
-                  <stat.icon size={18} weight="duotone" className="text-emerald-300" />
-                  <p className="mt-3 text-2xl font-black text-white">
+                  <stat.icon size={18} weight="duotone" className="text-emerald-600 dark:text-emerald-300" />
+                  <p className="mt-3 text-2xl font-black text-slate-900 dark:text-white">
                     {stat.value || "—"}
                   </p>
-                  <p className="mt-1 text-xs text-slate-400">{stat.label}</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
                 </div>
               ))}
             </div>
             <button
               type="button"
               onClick={() => scrollTo(petaRef)}
-              className="mt-4 flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+              className="mt-4 flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-white hover:text-emerald-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:text-slate-100"
             >
               Lihat persebaran aset
               <ArrowRightIcon size={16} weight="bold" />
@@ -1067,7 +1070,6 @@ export default function LandingPage() {
               showKecamatan
               showSudahSertifikat
               showBelumSertifikat
-              showLoginIdentity={false}
             />
             <div className="pointer-events-none absolute bottom-4 left-4 z-20">
               <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-slate-950/75 px-3 py-2.5 text-white shadow-xl backdrop-blur-xl">
@@ -1512,7 +1514,7 @@ export default function LandingPage() {
                   <button
                     type="submit"
                     disabled={loginLoading || otpCode.length !== 6}
-                    className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-surface text-sm font-bold rounded-xl transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full h-12 bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold rounded-xl transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loginLoading ? (
                       <>
@@ -1668,7 +1670,7 @@ export default function LandingPage() {
                   <button
                     type="submit"
                     disabled={resetLoading}
-                    className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-surface text-sm font-bold rounded-xl transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full h-12 bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold rounded-xl transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {resetLoading ? (
                       <>
@@ -1762,7 +1764,7 @@ export default function LandingPage() {
                   <button
                     type="submit"
                     disabled={loginLoading}
-                    className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-surface text-sm font-bold rounded-xl transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full h-12 bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold rounded-xl transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loginLoading ? (
                       <>

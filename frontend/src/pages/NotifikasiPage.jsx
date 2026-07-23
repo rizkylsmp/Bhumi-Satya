@@ -275,7 +275,7 @@ export default function NotifikasiPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-linear-to-br from-accent to-accent/80 rounded-xl flex items-center justify-center shadow-lg shadow-accent/25">
+          <div className="w-12 h-12 bg-linear-to-br from-accent to-accent/80 rounded-xl flex items-center justify-center">
             <BellRingingIcon
               size={24}
               weight="duotone"
@@ -463,7 +463,7 @@ export default function NotifikasiPage() {
                             {notif.title}
                           </h4>
                           {notif.isNew && (
-                            <span className="bg-linear-to-r from-orange-500 to-orange-400 text-surface text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide shadow-sm">
+                            <span className="bg-linear-to-r from-orange-600 to-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide shadow-sm">
                               Baru
                             </span>
                           )}
