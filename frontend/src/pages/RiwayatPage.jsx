@@ -541,7 +541,7 @@ export default function RiwayatPage() {
             </button>
 
             {showFilterDropdown && (
-              <div className="absolute right-0 mt-2 w-72 bg-surface rounded-xl border border-border shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="absolute right-0 mt-2 w-72 bg-surface rounded-xl border border-border z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="bg-surface-secondary px-4 py-3 border-b border-border flex items-center justify-between">
                   <span className="font-semibold text-sm text-text-primary flex items-center gap-2">
                     <FunnelIcon size={14} />
@@ -1000,7 +1000,7 @@ export default function RiwayatPage() {
                         onClick={() => handlePageChange(pageNum)}
                         className={`min-w-9 h-9 rounded-lg text-sm font-medium transition-all ${
                           pagination.page === pageNum
-                            ? "bg-accent text-surface shadow-sm"
+                            ? "bg-accent text-surface"
                             : "border border-border text-text-secondary hover:bg-surface-secondary"
                         }`}
                       >

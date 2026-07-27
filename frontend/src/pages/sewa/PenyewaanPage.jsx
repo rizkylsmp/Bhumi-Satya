@@ -634,7 +634,7 @@ export default function PenyewaanPage() {
                         {openDownloadMenu === item.id_sewa && (
                           <div
                             onClick={(event) => event.stopPropagation()}
-                            className="absolute right-0 bottom-full z-40 mb-1 w-36 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-xl"
+                            className="absolute right-0 bottom-full z-40 mb-1 w-36 overflow-hidden rounded-xl border border-border bg-surface py-1"
                           >
                             <button
                               type="button"

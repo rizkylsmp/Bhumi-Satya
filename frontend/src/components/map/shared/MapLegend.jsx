@@ -25,7 +25,7 @@ export default function MapLegend({
   ];
 
   return (
-    <div className="bg-surface/95 backdrop-blur-sm rounded-xl border border-border shadow-xl overflow-hidden transition-all w-44">
+    <div className="bg-surface/95 backdrop-blur-sm rounded-xl border border-border overflow-hidden transition-all w-44">
       {/* Header */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}

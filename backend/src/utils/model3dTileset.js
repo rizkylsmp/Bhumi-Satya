@@ -2,6 +2,26 @@ const EARTH_RADIUS_M = 6378137;
 const WGS84_E2 = 6.69437999014e-3;
 
 const toRadians = (degrees) => Number(degrees) * Math.PI / 180;
+const toDegrees = (radians) => Number(radians) * 180 / Math.PI;
+
+export const resolveModelOffsetLocation = (model) => {
+  const latitude = Number(model.location_lat);
+  const longitude = Number(model.location_long);
+  const eastOffset = Number(model.offset_x_m) || 0;
+  const northOffset = Number(model.offset_y_m) || 0;
+  const verticalOffset = Number(model.offset_z_m) || 0;
+
+  return {
+    longitude: longitude + toDegrees(
+      eastOffset / (
+        EARTH_RADIUS_M
+        * Math.max(0.1, Math.cos(toRadians(latitude)))
+      ),
+    ),
+    latitude: latitude + toDegrees(northOffset / EARTH_RADIUS_M),
+    altitude: (Number(model.altitude_m) || 0) + verticalOffset,
+  };
+};
 
 const multiplyMatrix4 = (left, right) => {
   const output = new Array(16).fill(0);
@@ -41,9 +61,10 @@ const rotationZ = (angle) => {
 };
 
 export const createEcefModelTransform = (model) => {
-  const longitude = toRadians(model.location_long);
-  const latitude = toRadians(model.location_lat);
-  const altitude = Number(model.altitude_m) || 0;
+  const offsetLocation = resolveModelOffsetLocation(model);
+  const longitude = toRadians(offsetLocation.longitude);
+  const latitude = toRadians(offsetLocation.latitude);
+  const altitude = offsetLocation.altitude;
   const sinLongitude = Math.sin(longitude);
   const cosLongitude = Math.cos(longitude);
   const sinLatitude = Math.sin(latitude);
@@ -104,9 +125,12 @@ const distanceMeters = (longitudeA, latitudeA, longitudeB, latitudeB) => {
 };
 
 const getModelBounds = (model) => {
-  const longitude = Number(model.location_long);
-  const latitude = Number(model.location_lat);
-  const altitude = Number(model.altitude_m) || Number(model.aset?.building_base_elevation_m) || 0;
+  const offsetLocation = resolveModelOffsetLocation(model);
+  const longitude = offsetLocation.longitude;
+  const latitude = offsetLocation.latitude;
+  const altitude = offsetLocation.altitude
+    || Number(model.aset?.building_base_elevation_m)
+    || 0;
   const footprint = footprintCoordinates(model.aset?.building_footprint);
   const footprintRadius = footprint.reduce((maximum, coordinate) => Math.max(
     maximum,

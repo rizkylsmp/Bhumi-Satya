@@ -543,7 +543,7 @@ export default function UserManagementPage() {
                       </button>
 
                       {showRoleFilter && (
-                        <div className="absolute left-0 top-full z-30 mt-2 w-48 overflow-hidden rounded-xl border border-border bg-surface py-1 text-text-primary shadow-xl normal-case tracking-normal">
+                        <div className="absolute left-0 top-full z-30 mt-2 w-48 overflow-hidden rounded-xl border border-border bg-surface py-1 text-text-primary normal-case tracking-normal">
                           <button
                             type="button"
                             onClick={() => {

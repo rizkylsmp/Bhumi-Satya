@@ -268,7 +268,7 @@ export default function MasyarakatAuthPage() {
                 }}
                 className={`h-10 px-5 rounded-lg text-sm font-semibold transition-colors ${
                   mode === item.key
-                    ? "bg-surface text-text-primary shadow-sm"
+                    ? "bg-surface text-text-primary"
                     : "text-text-muted hover:text-text-primary"
                 }`}
               >

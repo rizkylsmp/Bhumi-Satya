@@ -82,9 +82,18 @@ export const buildAssetBuildingFeature = (asset) => {
   };
 };
 
-export const buildAssetBuildingFeatureCollection = (assets = []) => ({
+export const buildAssetBuildingFeatureCollection = (
+  assets = [],
+  { fallbackOnly = false } = {},
+) => ({
   type: "FeatureCollection",
-  features: assets.map(buildAssetBuildingFeature).filter(Boolean),
+  features: assets
+    .filter(
+      (asset) =>
+        !fallbackOnly || !asset?.active_model_3d?.public_url,
+    )
+    .map(buildAssetBuildingFeature)
+    .filter(Boolean),
 });
 
 const getRingCentroid = (geometry) => {

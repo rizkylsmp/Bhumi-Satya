@@ -13,6 +13,9 @@ test("normalizes editable model 3D metadata", () => {
     location_long: "112.907",
     altitude_m: "",
     scale_x: "1.25",
+    offset_x_m: "12.5",
+    offset_y_m: "-4",
+    offset_z_m: "2",
   }), {
     display_name: "Gedung Utama",
     description: "Model hasil survei 2026",
@@ -20,6 +23,9 @@ test("normalizes editable model 3D metadata", () => {
     location_long: 112.907,
     altitude_m: null,
     scale_x: 1.25,
+    offset_x_m: 12.5,
+    offset_y_m: -4,
+    offset_z_m: 2,
   });
 });
 
@@ -31,5 +37,9 @@ test("rejects invalid model 3D coordinates and scale", () => {
   assert.throws(
     () => normalizeModel3dMetadata({ scale_z: 0 }),
     /Skala Z/,
+  );
+  assert.throws(
+    () => normalizeModel3dMetadata({ offset_x_m: 100001 }),
+    /Offset X/,
   );
 });

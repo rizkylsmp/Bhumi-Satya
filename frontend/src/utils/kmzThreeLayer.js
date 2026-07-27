@@ -3,6 +3,7 @@ import { ColladaLoader } from "three/examples/jsm/loaders/ColladaLoader.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { strFromU8, unzipSync } from "fflate";
 import maplibregl from "maplibre-gl";
+import { resolveModelOffsetLocation } from "./model3dTransform";
 
 export const DETAILED_MODEL_LAYER_ID = "asset-kmz-models-3d";
 
@@ -126,9 +127,7 @@ export const loadKmzScene = async (model, signal) => {
 };
 
 const createTransformMatrix = (model) => {
-  const longitude = Number(model.location_long);
-  const latitude = Number(model.location_lat);
-  const altitude = Number(model.altitude_m) || 0;
+  const { longitude, latitude, altitude } = resolveModelOffsetLocation(model);
   const coordinate = maplibregl.MercatorCoordinate.fromLngLat(
     [longitude, latitude],
     altitude,

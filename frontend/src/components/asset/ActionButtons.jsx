@@ -86,7 +86,7 @@ export default function ActionButtons({
           {showMenu &&
             createPortal(
               <div
-                className="fixed z-[9999] w-40 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-2xl"
+                className="fixed z-[9999] w-40 overflow-hidden rounded-xl border border-border bg-surface py-1"
                 style={{ top: menuPosition.top, left: menuPosition.left }}
                 ref={menuRef}
               >
@@ -126,7 +126,7 @@ export default function ActionButtons({
       {showEdit && onEdit && highlightEdit ? (
         <button
           onClick={() => onEdit(assetId)}
-          className="group relative flex items-center gap-1.5 px-3 py-1.5 bg-accent text-surface rounded-lg text-xs font-semibold hover:opacity-90 shadow-sm shadow-accent/20 transition-all"
+          className="group relative flex items-center gap-1.5 px-3 py-1.5 bg-accent text-surface rounded-lg text-xs font-semibold hover:opacity-90 transition-all"
           title="Ubah Data"
         >
           <PencilSimpleIcon size={14} weight="bold" />

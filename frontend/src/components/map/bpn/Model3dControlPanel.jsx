@@ -58,9 +58,9 @@ function ToolButton({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={active || undefined}
-      className={`group relative min-h-24 rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-violet-500 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:border-border disabled:hover:shadow-none ${
+      className={`group relative min-h-24 rounded-xl border p-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-border ${
         active
-          ? "border-violet-500 bg-violet-50 shadow-sm shadow-violet-500/10 dark:bg-violet-500/10"
+          ? "border-violet-500 bg-violet-50 dark:bg-violet-500/10"
           : "border-border bg-surface hover:border-violet-300"
       }`}
     >
@@ -214,7 +214,7 @@ export default function Model3dControlPanel({
     <aside
       className={embedded
         ? "flex h-full w-full flex-col overflow-hidden bg-surface"
-        : "mt-1.5 flex max-h-[calc(100vh-5rem)] w-[min(20rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-white/80 bg-surface/95 shadow-xl shadow-slate-950/15 backdrop-blur-xl dark:border-slate-700 dark:shadow-black/40"}
+        : "mt-1.5 flex max-h-[calc(100vh-5rem)] w-[min(20rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-white/80 bg-surface/95 backdrop-blur-xl dark:border-slate-700"}
       aria-label="Panel kontrol peta"
     >
       <header className="flex items-start gap-3 border-b border-border bg-gradient-to-r from-violet-600/12 via-sky-500/7 to-transparent px-4 py-3.5">
@@ -330,7 +330,7 @@ export default function Model3dControlPanel({
                   const showRooms = roomTableId === location.id;
                   const crossSectionActive = crossSectionId === location.id;
                   return (
-                    <article key={location.id} className={`rounded-xl border bg-surface p-3 shadow-sm transition ${isSelected ? "border-cyan-300" : "border-border opacity-70"}`}>
+                    <article key={location.id} className={`rounded-xl border bg-surface p-3 transition ${isSelected ? "border-cyan-300" : "border-border opacity-70"}`}>
                       <div className="flex items-start gap-2.5">
                         <Switch
                           size="sm"

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { createElement, useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../stores/authStore";
 import { authService, uploadService } from "../services/api";
@@ -422,7 +422,7 @@ export default function ProfilPage() {
       </div>
 
       {/* Tabs + Content */}
-      <div className="bg-surface rounded-2xl border border-border overflow-hidden shadow-sm">
+      <div className="bg-surface rounded-2xl border border-border overflow-hidden">
         {/* Tab bar */}
         <div className="border-b border-border bg-surface-secondary/30 px-2 sm:px-4">
           <div className="flex gap-1">
@@ -432,7 +432,7 @@ export default function ProfilPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`relative px-3 sm:px-5 py-3 sm:py-3.5 text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-t-lg ${
                   activeTab === tab.id
-                    ? "text-accent bg-surface shadow-sm border border-border border-b-surface -mb-px z-10"
+                    ? "text-accent bg-surface border border-border border-b-surface -mb-px z-10"
                     : "text-text-muted hover:text-text-secondary"
                 }`}
               >
@@ -545,14 +545,14 @@ export default function ProfilPage() {
                       icon: GlobeIcon,
                       type: "text",
                     },
-                  ].map(({ label, field, icon: Icon, type }) => (
+                  ].map(({ label, field, icon, type }) => (
                     <div key={field} className="space-y-1.5">
                       <label className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary">
-                        <Icon
-                          size={13}
-                          weight="duotone"
-                          className="text-text-muted"
-                        />
+                        {createElement(icon, {
+                          size: 13,
+                          weight: "duotone",
+                          className: "text-text-muted",
+                        })}
                         {label}
                       </label>
                       <input

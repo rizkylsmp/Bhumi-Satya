@@ -43,6 +43,9 @@ export const getModel3dTileset = async (req, res) => {
         "scale_x",
         "scale_y",
         "scale_z",
+        "offset_x_m",
+        "offset_y_m",
+        "offset_z_m",
       ],
       where: modelWhere,
       include: [{
@@ -70,7 +73,9 @@ export const getModel3dTileset = async (req, res) => {
     if (!tileset) {
       return res.status(404).json({ success: false, error: "Belum ada GLB aktif untuk tileset 3D" });
     }
-    res.setHeader("Cache-Control", "private, max-age=30");
+    // Transformasi posisi model dapat diubah dari preview Kelola 3D.
+    // Jangan gunakan tileset lama setelah metadata X/Y/Z disimpan.
+    res.setHeader("Cache-Control", "private, no-store");
     return res.json(tileset);
   } catch (error) {
     console.error("Error generating model 3D tileset:", error);
@@ -391,6 +396,9 @@ export const getMarkers = async (req, res) => {
             "scale_x",
             "scale_y",
             "scale_z",
+            "offset_x_m",
+            "offset_y_m",
+            "offset_z_m",
             "manifest",
           ],
           where: { is_active: true, archived_at: null, status: "ready" },

@@ -8,6 +8,8 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Seluruh menu navigasi, dropdown, tab, pagination, dan kontrol peta kini
+  tampil datar tanpa efek glow atau shadow dekoratif.
 - Tombol pembuka panel peta kini selalu menggunakan label `Kontrol Peta`,
   tidak lagi berubah menjadi `Data 2D` atau `Data 3D`.
 - Tombol login pada peta publik kini kembali ke rute login sekaligus langsung

@@ -44,6 +44,9 @@ export const normalizeModel3dMetadata = (metadata) => {
     ["scale_x", "Skala X", 0.000001, 10000],
     ["scale_y", "Skala Y", 0.000001, 10000],
     ["scale_z", "Skala Z", 0.000001, 10000],
+    ["offset_x_m", "Offset X", -100000, 100000],
+    ["offset_y_m", "Offset Y", -100000, 100000],
+    ["offset_z_m", "Offset Z", -10000, 100000],
   ];
 
   textFields.forEach(([key, label, maxLength]) => {

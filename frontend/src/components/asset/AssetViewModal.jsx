@@ -501,7 +501,7 @@ export default function AssetViewModal({
                     Unduh
                   </button>
                   {showDownloadMenu && (
-                    <div className="absolute right-0 top-full z-[9999] mt-2 w-44 overflow-hidden rounded-xl border border-border bg-surface py-1 text-text-primary shadow-2xl">
+                    <div className="absolute right-0 top-full z-[9999] mt-2 w-44 overflow-hidden rounded-xl border border-border bg-surface py-1 text-text-primary">
                       {onDownloadPdf && (
                         <button
                           type="button"
@@ -574,7 +574,7 @@ export default function AssetViewModal({
                 onClick={() => setActiveDetailTab(item.id)}
                 className={`rounded-lg px-3 py-2 text-[10px] font-bold transition focus-visible:ring-2 focus-visible:ring-accent ${
                   activeDetailTab === item.id
-                    ? "bg-accent text-surface shadow-sm"
+                    ? "bg-accent text-surface"
                     : "text-text-secondary hover:bg-accent/10 hover:text-accent"
                 }`}
               >

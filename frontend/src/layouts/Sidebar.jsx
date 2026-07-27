@@ -272,7 +272,7 @@ export default function Sidebar({
                 }}
                 className={`group w-full text-left px-3 py-2.5 text-sm flex items-center gap-3 rounded-xl transition-all duration-200 ${
                   isActive || parentActive
-                    ? "bg-linear-to-r from-accent to-accent/90 text-surface shadow-lg shadow-accent/20"
+                    ? "bg-linear-to-r from-accent to-accent/90 text-surface"
                     : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
                 } ${collapsed ? "justify-center !px-2 !gap-0" : ""}`}
                 style={{ animationDelay: `${index * 50}ms` }}
@@ -333,7 +333,7 @@ export default function Sidebar({
               {/* Collapsed mode: hover flyout for parent with children */}
               {collapsed && hasChildren && (
                 <div className="invisible opacity-0 group-hover/menu:visible group-hover/menu:opacity-100 transition-all duration-200 absolute left-full top-0 ml-2 z-50">
-                  <div className="bg-surface rounded-xl shadow-xl border border-border py-2 px-1 min-w-48">
+                  <div className="bg-surface rounded-xl border border-border py-2 px-1 min-w-48">
                     {/* Flyout header */}
                     <div className="px-3 pb-1.5 mb-1 border-b border-border">
                       <span className="text-xs font-bold text-text-primary">
@@ -350,7 +350,7 @@ export default function Sidebar({
                             onClick={() => handleMenuClick(child.path)}
                             className={`w-full text-left px-3 py-2 flex items-center gap-2.5 rounded-lg text-sm transition-all duration-200 ${
                               isChildActive
-                                ? "bg-linear-to-r from-accent to-accent/90 text-surface shadow-md shadow-accent/20 font-semibold"
+                                ? "bg-linear-to-r from-accent to-accent/90 text-surface font-semibold"
                                 : "text-text-muted hover:bg-surface-secondary hover:text-text-primary"
                             }`}
                           >
@@ -393,7 +393,7 @@ export default function Sidebar({
                           onClick={() => handleMenuClick(child.path)}
                           className={`group w-full text-left px-3 py-2 flex items-center gap-2.5 rounded-lg transition-all duration-200 ${
                             isChildActive
-                              ? "bg-linear-to-r from-accent to-accent/90 text-surface shadow-md shadow-accent/20 font-semibold"
+                              ? "bg-linear-to-r from-accent to-accent/90 text-surface font-semibold"
                               : "text-text-muted hover:bg-surface-secondary hover:text-text-primary"
                           }`}
                         >

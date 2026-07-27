@@ -69,7 +69,7 @@ const Building3dFields = ({
           onClick={() => setActive3dSubtab("model")}
           className={`flex-1 rounded-lg px-4 py-2 text-xs font-bold transition sm:flex-none ${
             active3dSubtab === "model"
-              ? "bg-accent text-surface shadow-sm"
+              ? "bg-accent text-surface"
               : "text-text-muted hover:bg-surface-secondary hover:text-text-primary"
           }`}
         >
@@ -85,7 +85,7 @@ const Building3dFields = ({
           onClick={() => setActive3dSubtab("lod")}
           className={`flex-1 rounded-lg px-4 py-2 text-xs font-bold transition sm:flex-none ${
             active3dSubtab === "lod"
-              ? "bg-accent text-surface shadow-sm"
+              ? "bg-accent text-surface"
               : "text-text-muted hover:bg-surface-secondary hover:text-text-primary"
           }`}
         >

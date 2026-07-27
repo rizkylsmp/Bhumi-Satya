@@ -29,6 +29,10 @@ import {
   geometryAreaSquareMeters,
   lineDistanceMeters,
 } from "../../../utils/mapAnalysis";
+import {
+  getModelFocusZoom,
+  resolveModelOffsetLocation,
+} from "../../../utils/model3dTransform";
 import "./mapLibreStyles.css";
 
 const CERTIFIED_STATUS = "Telah Bersertifikat";
@@ -110,7 +114,7 @@ function LayerSwitch({
     <div
       className={`flex h-9 w-full items-center gap-1.5 rounded-lg border px-2 text-left transition-all ${
         checked
-          ? "border-accent/25 bg-accent/5 shadow-sm dark:border-accent/40 dark:bg-accent/10"
+          ? "border-accent/25 bg-accent/5 dark:border-accent/40 dark:bg-accent/10"
           : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-slate-600 dark:hover:bg-slate-800"
       }`}
     >
@@ -408,6 +412,7 @@ const MapDisplayBPN = ({
   highlightAssetId = null,
   highlightRequestKey = null,
   focus3dRequestKey = null,
+  forceDirectModelPreview = false,
   initialAsset3dMode = false,
   showAsset3dToolbar = true,
   asset3dPanelContainer = null,
@@ -435,6 +440,7 @@ const MapDisplayBPN = ({
   const popupRef = useRef(null);
   const lastHandledHighlightRef = useRef(null);
   const lastHandledFocus3dRef = useRef(null);
+  const lastAutoFocused3dLoadRef = useRef(null);
   const lastClearSelectionKeyRef = useRef(clearSelectionKey);
   const hoveredBidangId = useRef(null);
   const hoveredAsset3dId = useRef(null);
@@ -521,14 +527,25 @@ const MapDisplayBPN = ({
       const model = asset?.active_model_3d;
       const summary = getAsset3dSummary(asset);
       const assetId = asset?.id_aset || asset?.id;
+      const rawLatitude = Number(
+        model?.location_lat ?? asset?.koordinat_lat ?? asset?.latitude ?? asset?.lat,
+      );
+      const rawLongitude = Number(
+        model?.location_long ?? asset?.koordinat_long ?? asset?.longitude ?? asset?.lng,
+      );
+      const offsetLocation = resolveModelOffsetLocation({
+        ...model,
+        location_lat: rawLatitude,
+        location_long: rawLongitude,
+      });
       return {
         id: String(assetId),
         assetId,
         modelId: model?.id_model_3d || null,
         name: asset?.nama_aset || asset?.nama || asset?.kode_aset || `Aset ${assetId}`,
         location: asset?.lokasi || asset?.desa_kelurahan || "Lokasi belum dilengkapi",
-        latitude: Number(model?.location_lat ?? asset?.koordinat_lat ?? asset?.latitude ?? asset?.lat),
-        longitude: Number(model?.location_long ?? asset?.koordinat_long ?? asset?.longitude ?? asset?.lng),
+        latitude: offsetLocation.latitude,
+        longitude: offsetLocation.longitude,
         lod: summary.lod || model?.model_type || "LOD1",
         modelType: model?.model_type || (model?.public_url ? "Model detail" : "Bangunan LOD1"),
         conversionStatus: model?.conversion_status || "ready",
@@ -550,7 +567,10 @@ const MapDisplayBPN = ({
     [roleAssets, visible3dAssetIdSet],
   );
   const assetBuildingGeoJson = useMemo(
-    () => buildAssetBuildingFeatureCollection(visible3dAssets),
+    () => buildAssetBuildingFeatureCollection(
+      visible3dAssets,
+      { fallbackOnly: true },
+    ),
     [visible3dAssets],
   );
   const detailedModels3d = useMemo(
@@ -590,19 +610,23 @@ const MapDisplayBPN = ({
     [visible3dAssets],
   );
   const tiledAssetIds = useMemo(
-    () => visible3dAssets
+    () => forceDirectModelPreview
+      ? []
+      : visible3dAssets
       .filter((asset) => asset?.active_model_3d?.conversion_status === "ready"
         && asset.active_model_3d.converted_public_url)
       .map((asset) => asset.id_aset || asset.id)
       .filter(Boolean)
       .slice(0, 1000),
-    [visible3dAssets],
+    [forceDirectModelPreview, visible3dAssets],
   );
   const fallbackDetailedModels3d = useMemo(
-    () => detailedModels3d.filter((model) => tileset3dStatus.state === "error"
-      || model.conversion_status !== "ready"
-      || !model.converted_public_url),
-    [detailedModels3d, tileset3dStatus.state],
+    () => forceDirectModelPreview
+      ? detailedModels3d
+      : detailedModels3d.filter((model) => tileset3dStatus.state === "error"
+        || model.conversion_status !== "ready"
+        || !model.converted_public_url),
+    [detailedModels3d, forceDirectModelPreview, tileset3dStatus.state],
   );
   // Full asset list for highlight/flyTo lookups (falls back to filtered list)
   const allAssetsResolved = useMemo(
@@ -953,21 +977,26 @@ const MapDisplayBPN = ({
     return currentAssets
       .map((asset) => {
         const model = asset?.active_model_3d;
-        const longitude = Number(
+        const rawLongitude = Number(
           model?.location_long ??
             asset?.koordinat_long ??
             asset?.longitude ??
             asset?.lng,
         );
-        const latitude = Number(
+        const rawLatitude = Number(
           model?.location_lat ??
             asset?.koordinat_lat ??
             asset?.latitude ??
             asset?.lat,
         );
-        if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
+        if (!Number.isFinite(rawLongitude) || !Number.isFinite(rawLatitude)) {
           return null;
         }
+        const { longitude, latitude } = resolveModelOffsetLocation({
+          ...model,
+          location_long: rawLongitude,
+          location_lat: rawLatitude,
+        });
         const radius = Math.max(
           0,
           Number(model?.converted_bounds?.radius) || 0,
@@ -2500,16 +2529,20 @@ const MapDisplayBPN = ({
             fallbackPoints.reduce((sum, [lat]) => sum + lat, 0) / fallbackPoints.length,
           ]
         : null;
-    const longitude = Number(location?.longitude ?? model?.location_long ?? fallbackCoords?.[0]);
-    const latitude = Number(location?.latitude ?? model?.location_lat ?? fallbackCoords?.[1]);
+    const modelLocation = model
+      ? resolveModelOffsetLocation(model)
+      : null;
+    const longitude = Number(
+      location?.longitude ?? modelLocation?.longitude ?? fallbackCoords?.[0],
+    );
+    const latitude = Number(
+      location?.latitude ?? modelLocation?.latitude ?? fallbackCoords?.[1],
+    );
     if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return false;
-    const modelRadius = Number(model?.converted_bounds?.radius);
-    const targetZoom = Number.isFinite(modelRadius)
-      ? modelRadius > 150 ? 15.5 : modelRadius > 60 ? 16.5 : 18
-      : 18;
+    const targetZoom = getModelFocusZoom(model);
     map.current.flyTo({
       center: [longitude, latitude],
-      zoom: Math.max(map.current.getZoom(), targetZoom),
+      zoom: targetZoom,
       pitch: 60,
       bearing: 25,
       duration: 1200,
@@ -2538,6 +2571,40 @@ const MapDisplayBPN = ({
     map.current.once("load", focusModel);
     return () => map.current?.off("load", focusModel);
   }, [focus3dRequestKey, focusDetailedModel, isMapReady]);
+
+  useEffect(() => {
+    if (
+      !forceDirectModelPreview
+      || detailedModelStatus.state !== "ready"
+      || detailedModelStatus.loaded < 1
+      || fallbackDetailedModels3d.length === 0
+    ) {
+      return undefined;
+    }
+
+    const loadKey = fallbackDetailedModels3d
+      .map((model) => [
+        model.id_model_3d,
+        model.offset_x_m,
+        model.offset_y_m,
+        model.offset_z_m,
+      ].join(":"))
+      .join("|");
+    if (lastAutoFocused3dLoadRef.current === loadKey) return undefined;
+
+    const timeoutId = setTimeout(() => {
+      if (focusDetailedModel()) {
+        lastAutoFocused3dLoadRef.current = loadKey;
+      }
+    }, 150);
+    return () => clearTimeout(timeoutId);
+  }, [
+    detailedModelStatus.loaded,
+    detailedModelStatus.state,
+    fallbackDetailedModels3d,
+    focusDetailedModel,
+    forceDirectModelPreview,
+  ]);
 
   const asset3dControlPanel = (
     <Model3dControlPanel
@@ -2590,9 +2657,9 @@ const MapDisplayBPN = ({
                 disableAsset3dMode();
               }
             }}
-            className={`relative flex h-10 w-10 items-center justify-center rounded-lg border shadow-lg backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
+            className={`relative flex h-10 w-10 items-center justify-center rounded-lg border backdrop-blur-sm transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
               isAsset3dMode
-                ? "border-violet-600 bg-gradient-to-br from-violet-600 to-sky-500 text-white shadow-violet-500/20"
+                ? "border-violet-600 bg-gradient-to-br from-violet-600 to-sky-500 text-white"
                 : "border-white/80 bg-white/95 text-slate-700 hover:bg-white dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200 dark:hover:bg-slate-800"
             }`}
             title={isAsset3dMode ? "Kembali ke mode 2D" : "Aktifkan mode 3D"}
@@ -2611,7 +2678,7 @@ const MapDisplayBPN = ({
           onClick={() => {
             setIsBasemapMenuOpen((value) => !value);
           }}
-          className={`relative flex h-10 w-10 items-center justify-center rounded-lg border shadow-lg backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:shadow-xl ${
+          className={`relative flex h-10 w-10 items-center justify-center rounded-lg border backdrop-blur-sm transition-colors ${
             isBasemapMenuOpen
               ? "border-accent bg-accent/10 text-accent dark:border-sky-400 dark:bg-sky-500 dark:text-white"
               : "border-white/80 bg-white/95 text-slate-700 hover:bg-white dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200 dark:hover:bg-slate-800"
@@ -2634,10 +2701,10 @@ const MapDisplayBPN = ({
         && asset3dControlPanel}
 
       {isBasemapMenuOpen && (
-        <div className="mt-1.5 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-white/80 bg-white/95 shadow-xl backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-black/40">
+        <div className="mt-1.5 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-white/80 bg-white/95 backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95">
           <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/90 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/95">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-white shadow-sm shadow-accent/25 dark:bg-sky-500 dark:shadow-sky-500/25">
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-white dark:bg-sky-500">
                 <StackIcon size={14} weight="fill" />
               </span>
               <div>

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   createEcefModelTransform,
   createModel3dTileset,
+  resolveModelOffsetLocation,
 } from "./model3dTileset.js";
 
 const makeModel = (id, longitude, latitude) => ({
@@ -29,6 +30,24 @@ test("createEcefModelTransform returns a column-major geospatial transform", () 
   assert.ok(Math.abs(transform[13]) < 0.001);
   assert.ok(Math.abs(transform[14]) < 0.001);
   assert.equal(transform[15], 1);
+});
+
+test("model offsets move the anchor east, north, and vertically", () => {
+  const model = {
+    ...makeModel(1, 0, 0),
+    offset_x_m: 10,
+    offset_y_m: 20,
+    offset_z_m: 30,
+  };
+  const location = resolveModelOffsetLocation(model);
+  const transform = createEcefModelTransform(model);
+
+  assert.ok(location.longitude > 0);
+  assert.ok(location.latitude > 0);
+  assert.equal(location.altitude, 40);
+  assert.ok(Math.abs(transform[12] - 6378177) < 0.01);
+  assert.ok(Math.abs(transform[13] - 10) < 0.01);
+  assert.ok(Math.abs(transform[14] - 20) < 0.2);
 });
 
 test("createModel3dTileset builds a 3D Tiles 1.1 hierarchy with GLB contents", () => {

@@ -899,7 +899,7 @@ export default function PusatDataPage() {
                     onClick={() => setPage(pageNum)}
                     className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium transition-all ${
                       page === pageNum
-                        ? "bg-accent text-surface shadow-md"
+                        ? "bg-accent text-surface"
                         : "text-text-muted hover:bg-surface-secondary"
                     }`}
                   >

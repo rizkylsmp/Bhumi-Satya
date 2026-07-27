@@ -207,7 +207,7 @@ export default function Header({
           className="flex items-center gap-3 cursor-pointer group"
           onClick={() => navigate("/dashboard")}
         >
-          <BrandMark className="h-10 w-10 text-xs shadow-lg shadow-accent/20 transition-all group-hover:shadow-accent/30" />
+          <BrandMark className="h-10 w-10 text-xs transition-all" />
           <div>
             <h1 className="font-bold text-text-primary text-lg leading-tight group-hover:text-accent transition-colors">
               Bhumi Satya
@@ -282,7 +282,7 @@ export default function Header({
             </button>
 
             {showNotifDropdown && (
-              <div className="absolute -right-18 sm:right-0 mt-2 w-72 sm:w-80 bg-surface rounded-xl border border-border shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="absolute -right-18 sm:right-0 mt-2 w-72 sm:w-80 bg-surface rounded-xl border border-border z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="bg-linear-to-r from-accent to-accent/90 text-surface px-4 py-3 flex items-center justify-between">
                   <span className="font-semibold text-sm">Notifikasi</span>
                   {unreadCount > 0 && (
@@ -382,7 +382,7 @@ export default function Header({
               }}
               className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-xl hover:bg-surface-tertiary transition-all duration-200 group"
             >
-              <div className="w-9 h-9 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20 ring-2 ring-white dark:ring-gray-800">
+              <div className="w-9 h-9 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center ring-2 ring-white dark:ring-gray-800">
                 <span className="text-surface font-bold text-sm">
                   {user?.nama_lengkap?.charAt(0).toUpperCase() || "U"}
                 </span>
@@ -403,10 +403,10 @@ export default function Header({
             </button>
 
             {showProfileDropdown && (
-              <div className="absolute right-0 mt-2 w-64 bg-surface rounded-xl border border-border shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="absolute right-0 mt-2 w-64 bg-surface rounded-xl border border-border z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="px-4 py-4 bg-linear-to-br from-surface-secondary to-surface border-b border-border">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
                       <span className="text-surface font-bold text-lg">
                         {user?.nama_lengkap?.charAt(0).toUpperCase() || "U"}
                       </span>

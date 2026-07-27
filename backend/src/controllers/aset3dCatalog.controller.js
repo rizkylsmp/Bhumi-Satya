@@ -226,10 +226,10 @@ export const create = async (req, res) => {
     }
 
     let sequence = 1;
-    let kode3d = createKode3dCandidate(asset.kode_aset, sequence);
+    let kode3d = createKode3dCandidate(asset.kode_aset, sequence, asset.id_aset);
     while (await Aset3dCatalog.findByPk(kode3d, { attributes: ["kode_3d"] })) {
       sequence += 1;
-      kode3d = createKode3dCandidate(asset.kode_aset, sequence);
+      kode3d = createKode3dCandidate(asset.kode_aset, sequence, asset.id_aset);
     }
 
     const catalog = await Aset3dCatalog.create({

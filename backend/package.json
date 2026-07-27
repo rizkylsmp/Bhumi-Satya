@@ -27,6 +27,7 @@
     "model3d:visual:smoke": "node scripts/manage-model3d-visual-smoke.js",
     "seed": "node seed.js",
     "db:migrate": "sequelize-cli db:migrate",
+    "vercel-build": "npm run db:migrate",
     "db:migrate:one": "node scripts/apply-named-migration.js",
     "db:seed": "sequelize-cli db:seed:all"
   },

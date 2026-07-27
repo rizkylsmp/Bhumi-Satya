@@ -6,10 +6,12 @@ import {
   permissionMiddleware,
   PERMISSIONS,
 } from "../middleware/auth.middleware.js";
+import { ensureAset3dCatalogSchemaMiddleware } from "../services/aset3dSchema.service.js";
 
 const router = express.Router();
 
 router.use(authMiddleware);
+router.use(ensureAset3dCatalogSchemaMiddleware);
 router.get("/", canViewAset, Aset3dCatalogController.list);
 router.get("/candidates", canViewAset, Aset3dCatalogController.candidates);
 router.get("/:kode3d", canViewAset, Aset3dCatalogController.getByCode);

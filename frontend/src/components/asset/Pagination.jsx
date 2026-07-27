@@ -100,7 +100,7 @@ export default function Pagination({
               />
             </button>
             {showPerPage && (
-              <div className="absolute bottom-full left-0 mb-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden z-50 min-w-[100px]">
+              <div className="absolute bottom-full left-0 mb-1 bg-surface border border-border rounded-lg overflow-hidden z-50 min-w-[100px]">
                 {PER_PAGE_OPTIONS.map((opt) => (
                   <button
                     key={opt}
@@ -144,7 +144,7 @@ export default function Pagination({
               disabled={page === "..."}
               className={`min-w-9 h-9 px-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                 page === currentPage
-                  ? "bg-accent text-surface shadow-sm"
+                  ? "bg-accent text-surface"
                   : page === "..."
                     ? "cursor-default text-text-muted"
                     : "border border-border text-text-secondary hover:bg-surface-tertiary hover:text-text-primary"

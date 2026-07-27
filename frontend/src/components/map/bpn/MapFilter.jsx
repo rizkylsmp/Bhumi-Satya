@@ -163,13 +163,13 @@ export default function MapFilter({
 
         {/* Search Results Dropdown */}
         {searchLoading ? (
-          <div className="mt-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-[11px] text-text-muted shadow-lg">
+          <div className="mt-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-[11px] text-text-muted">
             Mencari aset...
           </div>
         ) : null}
 
         {displayedSearchResults.length > 0 && !searchLoading && (
-          <div className="mt-1.5 max-h-64 overflow-y-auto rounded-xl border border-border bg-surface shadow-lg">
+          <div className="mt-1.5 max-h-64 overflow-y-auto rounded-xl border border-border bg-surface">
             {displayedSearchResults.map((asset) => {
               const hasMap = hasMapGeometry(asset);
               const hasBidang = hasMapPolygon(asset);
@@ -237,7 +237,7 @@ export default function MapFilter({
         {searchTerm.length >= 2 &&
           displayedSearchResults.length === 0 &&
           !searchLoading && (
-            <div className="mt-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-[11px] text-text-muted shadow-lg">
+            <div className="mt-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-[11px] text-text-muted">
               Tidak ditemukan aset yang cocok.
             </div>
           )}

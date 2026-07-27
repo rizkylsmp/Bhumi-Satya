@@ -264,7 +264,7 @@ export default function AssetFormPage() {
           </div>
         </header>
 
-        <nav aria-label="Navigasi bagian form" className="sticky top-0 z-20 overflow-x-auto rounded-xl border border-border bg-surface/95 p-2 shadow-sm backdrop-blur">
+        <nav aria-label="Navigasi bagian form" className="sticky top-0 z-20 overflow-x-auto rounded-xl border border-border bg-surface/95 p-2 backdrop-blur">
           <div
             role="tablist"
             aria-label="Bagian form aset"
@@ -286,7 +286,7 @@ export default function AssetFormPage() {
                   onClick={() => setActiveFormSection(section.id)}
                   className={`inline-flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-bold transition focus-visible:ring-2 focus-visible:ring-accent ${
                     active
-                      ? "bg-accent text-surface shadow-sm"
+                      ? "bg-accent text-surface"
                       : "text-text-secondary hover:bg-accent/10 hover:text-accent"
                   }`}
                 >

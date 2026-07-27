@@ -15,5 +15,5 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "buildCommand": "npx sequelize-cli db:migrate --env production && echo 'Migrations complete'"
+  "buildCommand": "npm run db:migrate"
 }

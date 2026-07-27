@@ -14,6 +14,10 @@ describe("asset3dCatalog", () => {
     assert.equal(createKode3dCandidate("AST-001", 2), "3D-AST-001-2");
   });
 
+  it("membuat kode default ringkas dari primary key aset", () => {
+    assert.equal(createKode3dCandidate("KODE-ASET-YANG-SANGAT-PANJANG", 1, 123), "3D-000123");
+  });
+
   it("menolak kode aset kosong", () => {
     assert.throws(() => createKode3dBase(""), /Kode aset diperlukan/);
   });

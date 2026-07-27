@@ -589,7 +589,7 @@ export default function MapPage({ publicMode = false }) {
         {!showFilterPanel && (
           <button
             onClick={() => setShowFilterPanel(true)}
-            className="group absolute left-4 top-4 z-10 flex items-center gap-2.5 rounded-xl border border-white/80 bg-surface/95 px-3.5 py-2.5 shadow-lg backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 dark:border-slate-700"
+            className="group absolute left-4 top-4 z-10 flex items-center gap-2.5 rounded-xl border border-white/80 bg-surface/95 px-3.5 py-2.5 backdrop-blur-xl transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 dark:border-slate-700"
             aria-label="Buka Kontrol Peta"
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10 text-accent transition-colors group-hover:bg-accent group-hover:text-surface">
@@ -622,7 +622,7 @@ export default function MapPage({ publicMode = false }) {
           showFilterPanel ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-full w-[min(22rem,calc(100vw-1rem))] flex-col border-r border-border bg-surface shadow-2xl">
+        <div className="flex h-full w-[min(22rem,calc(100vw-1rem))] flex-col border-r border-border bg-surface">
           <div
             className={sidePanelMode === "3d" ? "hidden" : "contents"}
             aria-hidden={sidePanelMode === "3d"}
@@ -630,7 +630,7 @@ export default function MapPage({ publicMode = false }) {
             {/* Panel Header */}
             <div className="flex items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-accent/10 via-accent/5 to-transparent px-4 py-3.5">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-surface shadow-md shadow-accent/20">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-surface">
                   <FunnelIcon size={18} weight="fill" />
                 </span>
                 <div className="min-w-0">
