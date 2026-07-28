@@ -285,7 +285,7 @@ export default function Kelola3dDetailPage() {
   const [asset3dMetadata, setAsset3dMetadata] = useState(() =>
     asset3dMetadataFromAsset(null),
   );
-  const [activeAsset3dTab, setActiveAsset3dTab] = useState("model");
+  const [importLod, setImportLod] = useState("LOD1");
   const [uploading, setUploading] = useState(false);
   const [savingFootprint, setSavingFootprint] = useState(false);
   const [savingAsset3dMetadata, setSavingAsset3dMetadata] = useState(false);
@@ -502,6 +502,7 @@ export default function Kelola3dDetailPage() {
 
   useEffect(() => {
     setAsset3dMetadata(asset3dMetadataFromAsset(selectedAsset));
+    setImportLod(selectedAsset?.model_3d_lod || "LOD1");
   }, [selectedAsset]);
 
   useEffect(() => {
@@ -528,6 +529,10 @@ export default function Kelola3dDetailPage() {
 
   const handleUpload = async (file) => {
     if (!file || !selectedAssetId || !canUpdate) return;
+    if (!importLod) {
+      toast.error("Pilih Level of Detail sebelum mengimpor model");
+      return;
+    }
     if (!/\.(kmz|glb|zip)$/i.test(file.name)) {
       toast.error("File model harus berformat KMZ, GLB, atau ZIP 3D Tiles");
       return;
@@ -557,7 +562,15 @@ export default function Kelola3dDetailPage() {
           uploadResponse.data?.message || "Model 3D berhasil diunggah",
         );
       }
+      await asetService.update(selectedAssetId, {
+        model_3d_lod: importLod,
+      });
+      setAsset3dMetadata((current) => ({
+        ...current,
+        model_3d_lod: importLod,
+      }));
       await fetchModels(selectedAssetId, uploadedModel?.id_model_3d);
+      await fetchCatalog();
       setFlyToRequest({
         assetId: selectedAssetId,
         token: `${selectedAssetId}-${uploadedModel?.id_model_3d || "model"}-${Date.now()}`,
@@ -721,7 +734,7 @@ export default function Kelola3dDetailPage() {
       title: "Arsipkan Model 3D",
       message: `Model "${modelName}" akan dihapus dari katalog aktif. Riwayat dan audit tetap tersimpan.`,
       confirmText: "Arsipkan",
-      variant: "danger",
+      type: "danger",
     });
     if (!confirmed) return;
 
@@ -750,7 +763,7 @@ export default function Kelola3dDetailPage() {
       title: "Pulihkan Model 3D?",
       message: `Model "${modelName}" akan dikembalikan ke daftar versi aktif. File, metadata, dan daftar ruang tetap dipertahankan.`,
       confirmText: "Pulihkan",
-      variant: "info",
+      type: "info",
     });
     if (!confirmed) return;
 
@@ -779,7 +792,7 @@ export default function Kelola3dDetailPage() {
       title: "Hapus Permanen Model 3D?",
       message: `Model "${modelName}" akan dihapus permanen beserta file sumber, GLB, dan LOD terkait. Tindakan ini tidak dapat dibatalkan.`,
       confirmText: "Hapus Permanen",
-      variant: "danger",
+      type: "danger",
     });
     if (!confirmed) return;
 
@@ -809,7 +822,7 @@ export default function Kelola3dDetailPage() {
           ? `${catalog.kode_3d} akan dihapus dari Kelola 3D dan ${activeModels.length} versi model akan diarsipkan. Data aset di Pusat Data tetap tersimpan.`
           : `${catalog.kode_3d} akan dihapus dari Kelola 3D. Data aset di Pusat Data tetap tersimpan.`,
       confirmText: "Hapus Aset 3D",
-      variant: "danger",
+      type: "danger",
     });
     if (!confirmed) return;
 
@@ -885,6 +898,33 @@ export default function Kelola3dDetailPage() {
       ),
     [metadata, selectedModel],
   );
+  const hasUnsavedMetadataChanges = useMemo(
+    () =>
+      Boolean(
+        selectedModel &&
+          JSON.stringify(metadata) !==
+            JSON.stringify(metadataFromModel(selectedModel)),
+      ),
+    [metadata, selectedModel],
+  );
+  const handleSelectModel = async (modelId) => {
+    if (String(modelId) === String(selectedModel?.id_model_3d)) return;
+    if (hasUnsavedMetadataChanges) {
+      const approved = await confirm({
+        title: "Ganti Versi Model?",
+        message:
+          "Perubahan Detail Model belum disimpan. Jika versi diganti sekarang, perubahan tersebut akan dibatalkan.",
+        confirmText: "Ganti Versi",
+        type: "warning",
+      });
+      if (!approved) return;
+    }
+    setSelectedModelId(modelId);
+    setPreviewRevision((value) => value + 1);
+  };
+  const discardMetadataChanges = () => {
+    setMetadata(metadataFromModel(selectedModel));
+  };
   const previewAsset = useMemo(
     () =>
       selectedAsset
@@ -1225,52 +1265,7 @@ export default function Kelola3dDetailPage() {
                   }
                 />
                 <div className="p-4">
-                  <div
-                    role="tablist"
-                    aria-label="Bagian data bangunan 3D"
-                    className="inline-flex w-full gap-1 rounded-xl border border-border bg-surface-secondary p-1 sm:w-auto"
-                  >
-                    <button
-                      type="button"
-                      id="kelola3d-tab-model"
-                      role="tab"
-                      aria-controls="kelola3d-panel-model"
-                      aria-selected={activeAsset3dTab === "model"}
-                      tabIndex={activeAsset3dTab === "model" ? 0 : -1}
-                      onClick={() => setActiveAsset3dTab("model")}
-                      className={`flex-1 rounded-lg px-4 py-2 text-[9px] font-black transition sm:flex-none ${
-                        activeAsset3dTab === "model"
-                          ? "bg-accent text-surface shadow-sm"
-                          : "text-text-muted hover:bg-surface hover:text-text-primary"
-                      }`}
-                    >
-                      Data Model
-                    </button>
-                    <button
-                      type="button"
-                      id="kelola3d-tab-lod"
-                      role="tab"
-                      aria-controls="kelola3d-panel-lod"
-                      aria-selected={activeAsset3dTab === "lod"}
-                      tabIndex={activeAsset3dTab === "lod" ? 0 : -1}
-                      onClick={() => setActiveAsset3dTab("lod")}
-                      className={`flex-1 rounded-lg px-4 py-2 text-[9px] font-black transition sm:flex-none ${
-                        activeAsset3dTab === "lod"
-                          ? "bg-accent text-surface shadow-sm"
-                          : "text-text-muted hover:bg-surface hover:text-text-primary"
-                      }`}
-                    >
-                      LOD & Metadata
-                    </button>
-                  </div>
-
-                  <div
-                    id="kelola3d-panel-model"
-                    role="tabpanel"
-                    aria-labelledby="kelola3d-tab-model"
-                    hidden={activeAsset3dTab !== "model"}
-                    className="mt-3 space-y-3"
-                  >
+                  <div className="space-y-3">
                     <input
                       ref={footprintInputRef}
                       type="file"
@@ -1320,9 +1315,32 @@ export default function Kelola3dDetailPage() {
                               : "KMZ, GLB, atau ZIP 3D Tiles · maks. 100 MB"}
                           </p>
                         </div>
+                        <label className="w-full sm:w-44">
+                          <span className="sr-only">
+                            Level of Detail model yang akan diimpor
+                          </span>
+                          <select
+                            value={importLod}
+                            disabled={!selectedAsset || !canUpdate || uploading}
+                            onChange={(event) => setImportLod(event.target.value)}
+                            className="h-9 w-full rounded-lg border border-border bg-surface-secondary px-2.5 text-[9px] font-extrabold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-60"
+                            aria-label="Pilih Level of Detail untuk model"
+                          >
+                            <option value="LOD1">LOD 1 · Block Model</option>
+                            <option value="LOD2">LOD 2 · Roof Detail</option>
+                            <option value="LOD2.5">LOD 2.5 · Facade Detail</option>
+                            <option value="LOD3">LOD 3 · Detailed Facade</option>
+                            <option value="LOD4">LOD 4 · Architectural Detail</option>
+                            <option value="GAUSSIAN_SPLATTING">
+                              Gaussian Splatting
+                            </option>
+                          </select>
+                        </label>
                         <button
                           type="button"
-                          disabled={!selectedAsset || !canUpdate || uploading}
+                          disabled={
+                            !selectedAsset || !canUpdate || uploading || !importLod
+                          }
                           onClick={() => fileInputRef.current?.click()}
                           className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-3 text-[9px] font-extrabold text-white transition hover:bg-violet-700 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         >
@@ -1412,10 +1430,9 @@ export default function Kelola3dDetailPage() {
                             >
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setSelectedModelId(model.id_model_3d);
-                                  setPreviewRevision((value) => value + 1);
-                                }}
+                                onClick={() =>
+                                  handleSelectModel(model.id_model_3d)
+                                }
                                 className="flex w-full items-center gap-2.5 text-left focus-visible:rounded-lg focus-visible:ring-2 focus-visible:ring-violet-500"
                               >
                                 <span
@@ -1627,19 +1644,17 @@ export default function Kelola3dDetailPage() {
 
                   <div
                     id="kelola3d-panel-lod"
-                    role="tabpanel"
-                    aria-labelledby="kelola3d-tab-lod"
-                    hidden={activeAsset3dTab !== "lod"}
-                    className="mt-4 space-y-4"
+                    hidden
+                    aria-hidden="true"
                   >
                     <div className="rounded-xl border border-border bg-surface-secondary/60 p-3">
                       <p className="text-[10px] font-black text-text-primary">
                         LOD dan metadata bangunan
                       </p>
                       <p className="mt-1 text-[9px] leading-relaxed text-text-muted">
-                        Kolom ini menggunakan data yang sama dengan tab 3D pada
-                        Pusat Data. Perubahan akan langsung memperbarui
-                        visualisasi bangunan aset.
+                        Setelah model diimpor, pilih tingkat detail yang sesuai,
+                        lengkapi sumber serta kualitasnya, lalu simpan sebelum
+                        model diverifikasi dan dipublikasikan ke peta.
                       </p>
                     </div>
 
@@ -1757,9 +1772,17 @@ export default function Kelola3dDetailPage() {
                           className="h-10 w-full rounded-xl border border-border bg-surface px-3 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-70"
                         >
                           <option value="">Pilih LOD</option>
-                          <option value="LOD0">LOD0 - Tapak</option>
                           <option value="LOD1">LOD1 - Blok</option>
                           <option value="LOD2">LOD2 - Bentuk Atap</option>
+                          <option value="LOD2.5">
+                            LOD2.5 - Detail Fasad
+                          </option>
+                          <option value="LOD3">
+                            LOD3 - Fasad Terperinci
+                          </option>
+                          <option value="LOD4">
+                            LOD4 - Detail Arsitektural
+                          </option>
                         </select>
                       </label>
 
@@ -1887,56 +1910,165 @@ export default function Kelola3dDetailPage() {
                       <p className="mt-2 text-[10px] font-bold text-text-secondary">
                         Belum ada model yang dipilih
                       </p>
+                      <p className="mx-auto mt-1 max-w-sm text-[9px] leading-relaxed text-text-muted">
+                        Pilih versi model pada Data Model, atau impor file baru
+                        untuk mulai mengatur identitas, sumber, dan transformasi.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => switchSection("data-model-3d")}
+                        className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-extrabold text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent"
+                      >
+                        Buka Data Model
+                        <CaretRightIcon size={12} weight="bold" />
+                      </button>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       <div
                         className={`grid gap-2 sm:grid-cols-2 ${
                           activePageSection === "verifikasi-model-3d"
-                            ? "[&>*:not(.model-verification-panel)]:hidden"
+                            ? "[&>*:not(.keep-on-verification)]:hidden"
                             : ""
                         }`}
                       >
-                        <label className="block sm:col-span-2">
-                          <span className="mb-1 block text-[8px] font-extrabold uppercase tracking-wide text-text-muted">
-                            Nama model
-                          </span>
-                          <input
-                            type="text"
-                            maxLength={150}
-                            value={metadata.display_name}
-                            disabled={!canUpdate}
-                            onChange={(event) =>
-                              setMetadata((current) => ({
-                                ...current,
-                                display_name: event.target.value,
-                              }))
-                            }
-                            placeholder={selectedModel.original_name}
-                            className="h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-70"
-                          />
-                        </label>
-                        <label className="block sm:col-span-2">
-                          <span className="mb-1 block text-[8px] font-extrabold uppercase tracking-wide text-text-muted">
-                            Deskripsi
-                          </span>
-                          <textarea
-                            rows={2}
-                            maxLength={1000}
-                            value={metadata.description}
-                            disabled={!canUpdate}
-                            onChange={(event) =>
-                              setMetadata((current) => ({
-                                ...current,
-                                description: event.target.value,
-                              }))
-                            }
-                            placeholder="Keterangan sumber, survei, atau fungsi model"
-                            className="w-full resize-none rounded-lg border border-border bg-surface px-2.5 py-2 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-70"
-                          />
-                        </label>
+                        <div className="keep-on-verification rounded-xl border border-border bg-surface-secondary/60 p-3 sm:col-span-2">
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
+                              <CubeIcon size={19} weight="duotone" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
+                                Model yang sedang dikelola
+                              </p>
+                              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                <span className="text-[11px] font-black text-text-primary">
+                                  Versi {selectedModel.version}
+                                </span>
+                                {selectedModel.is_active && (
+                                  <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[7px] font-black uppercase text-white">
+                                    Aktif
+                                  </span>
+                                )}
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[8px] font-bold ${statusConfig(selectedModel).className}`}
+                                >
+                                  {statusConfig(selectedModel).label}
+                                </span>
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[8px] font-bold ${reviewStatusConfig(selectedModel.review_status).className}`}
+                                >
+                                  {
+                                    reviewStatusConfig(
+                                      selectedModel.review_status,
+                                    ).label
+                                  }
+                                </span>
+                              </div>
+                              <p className="mt-1 truncate text-[9px] text-text-muted">
+                                {selectedModel.manifest?.display_name ||
+                                  selectedModel.original_name ||
+                                  "Model tanpa nama"}{" "}
+                                · {selectedModel.model_type || "Model 3D"} ·
+                                diperbarui{" "}
+                                {formatDateTime(selectedModel.updated_at)}
+                              </p>
+                            </div>
+                            <label className="block w-full lg:w-52">
+                              <span className="mb-1 block text-[8px] font-extrabold uppercase tracking-wide text-text-muted">
+                                Pilih versi
+                              </span>
+                              <select
+                                value={selectedModel.id_model_3d}
+                                onChange={(event) =>
+                                  handleSelectModel(event.target.value)
+                                }
+                                className="h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-[9px] font-extrabold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
+                              >
+                                {activeModels.map((model) => (
+                                  <option
+                                    key={model.id_model_3d}
+                                    value={model.id_model_3d}
+                                  >
+                                    v{model.version}
+                                    {model.is_active ? " · Aktif" : ""}
+                                    {" · "}
+                                    {model.manifest?.display_name ||
+                                      model.original_name}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                          {hasUnsavedMetadataChanges && (
+                            <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[8px] font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+                              <WarningCircleIcon
+                                size={12}
+                                weight="fill"
+                                className="shrink-0"
+                              />
+                              Perubahan belum disimpan dan sudah ditampilkan
+                              pada preview.
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="rounded-xl border border-border bg-surface-secondary/40 p-3 sm:col-span-2">
+                          <div className="mb-3">
+                            <p className="text-[10px] font-black text-text-primary">
+                              Informasi Dasar
+                            </p>
+                            <p className="mt-0.5 text-[9px] text-text-muted">
+                              Gunakan nama dan deskripsi yang mudah dikenali
+                              pada daftar versi.
+                            </p>
+                          </div>
+                          <div className="grid gap-3">
+                            <label className="block">
+                              <span className="mb-1.5 block text-[9px] font-extrabold text-text-secondary">
+                                Nama model
+                              </span>
+                              <input
+                                type="text"
+                                maxLength={150}
+                                value={metadata.display_name}
+                                disabled={!canUpdate}
+                                onChange={(event) =>
+                                  setMetadata((current) => ({
+                                    ...current,
+                                    display_name: event.target.value,
+                                  }))
+                                }
+                                placeholder={selectedModel.original_name}
+                                className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-70"
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="mb-1.5 block text-[9px] font-extrabold text-text-secondary">
+                                Deskripsi
+                              </span>
+                              <textarea
+                                rows={3}
+                                maxLength={1000}
+                                value={metadata.description}
+                                disabled={!canUpdate}
+                                onChange={(event) =>
+                                  setMetadata((current) => ({
+                                    ...current,
+                                    description: event.target.value,
+                                  }))
+                                }
+                                placeholder="Keterangan sumber, survei, fungsi, atau cakupan model"
+                                className="w-full resize-y rounded-lg border border-border bg-surface px-3 py-2.5 text-[10px] font-semibold leading-relaxed text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-70"
+                              />
+                              <span className="mt-1 block text-right text-[7px] text-text-muted">
+                                {metadata.description.length}/1000
+                              </span>
+                            </label>
+                          </div>
+                        </div>
                         <div
-                          className={`model-verification-panel overflow-hidden rounded-xl border border-border bg-surface-secondary/60 sm:col-span-2 ${
+                          className={`keep-on-verification model-verification-panel overflow-hidden rounded-xl border border-border bg-surface-secondary/60 sm:col-span-2 ${
                             activePageSection === "detail-model-3d"
                               ? "hidden"
                               : ""
@@ -2527,26 +2659,71 @@ export default function Kelola3dDetailPage() {
                           </div>
                         </div>
                       </div>
-                      {canUpdate && (
-                        <button
-                          type="button"
-                          disabled={savingMetadata}
-                          onClick={saveMetadata}
-                          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-[10px] font-extrabold text-surface shadow-sm transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {savingMetadata ? (
-                            <ArrowsClockwiseIcon
-                              size={15}
-                              className="animate-spin"
-                            />
-                          ) : (
-                            <FloppyDiskIcon size={15} weight="bold" />
-                          )}
-                          {savingMetadata
-                            ? "Menyimpan metadata…"
-                            : "Simpan Perubahan"}
-                        </button>
-                      )}
+                      {canUpdate &&
+                        activePageSection === "detail-model-3d" && (
+                          <div className="sticky bottom-3 z-10 flex flex-col gap-3 rounded-xl border border-border bg-surface/95 p-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-2">
+                              {hasUnsavedMetadataChanges ? (
+                                <WarningCircleIcon
+                                  size={15}
+                                  weight="fill"
+                                  className="shrink-0 text-amber-500"
+                                />
+                              ) : (
+                                <CheckCircleIcon
+                                  size={15}
+                                  weight="fill"
+                                  className="shrink-0 text-emerald-500"
+                                />
+                              )}
+                              <div>
+                                <p className="text-[9px] font-black text-text-primary">
+                                  {hasUnsavedMetadataChanges
+                                    ? "Ada perubahan belum disimpan"
+                                    : "Semua perubahan sudah tersimpan"}
+                                </p>
+                                <p className="mt-0.5 text-[8px] text-text-muted">
+                                  {hasUnsavedMetadataChanges
+                                    ? "Simpan untuk menerapkan Detail Model secara permanen."
+                                    : `Terakhir diperbarui ${formatDateTime(selectedModel.updated_at)}`}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {hasUnsavedMetadataChanges && (
+                                <button
+                                  type="button"
+                                  disabled={savingMetadata}
+                                  onClick={discardMetadataChanges}
+                                  className="inline-flex h-9 flex-1 items-center justify-center rounded-lg border border-border bg-surface px-3 text-[9px] font-extrabold text-text-secondary transition hover:border-accent/40 hover:text-accent focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 sm:flex-none"
+                                >
+                                  Batalkan
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                disabled={
+                                  savingMetadata ||
+                                  !hasUnsavedMetadataChanges
+                                }
+                                onClick={saveMetadata}
+                                className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-accent px-4 text-[9px] font-extrabold text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+                              >
+                                {savingMetadata ? (
+                                  <ArrowsClockwiseIcon
+                                    size={13}
+                                    className="animate-spin"
+                                  />
+                                ) : (
+                                  <FloppyDiskIcon size={13} weight="bold" />
+                                )}
+                                {savingMetadata
+                                  ? "Menyimpan…"
+                                  : "Simpan Perubahan"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
                     </div>
                   )}
                 </div>

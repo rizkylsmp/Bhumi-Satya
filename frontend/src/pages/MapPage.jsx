@@ -124,11 +124,28 @@ function MapData2dControls({
   data3dFilter,
   setData3dFilter,
   layerOnly = false,
+  searchControlOnly = false,
 }) {
   const [openSection, setOpenSection] = useState("layer");
   const toggleSection = (id) => {
     setOpenSection((current) => (current === id ? null : id));
   };
+
+  if (searchControlOnly) {
+    return (
+      <AssetMapFilter
+        searchOnly
+        selectedSewaLayers={selectedSewaLayers}
+        onSewaLayerToggle={handleSewaLayerToggle}
+        onSearch={handleSearch}
+        onSelectAsset={handleSelectSearchAsset}
+        assets={assets}
+        searchResults={searchFilter.trim().length >= 2 ? mapSearchResults : null}
+        searchLoading={isMapSearchLoading}
+        showStatistics={false}
+      />
+    );
+  }
 
   if (layerOnly) {
     return (
@@ -188,6 +205,7 @@ function MapData2dControls({
       >
         <div className="rounded-lg border border-border bg-surface p-2.5">
           <AssetMapFilter
+            hideSearch
             selectedSewaLayers={selectedSewaLayers}
             onSewaLayerToggle={handleSewaLayerToggle}
             onSearch={handleSearch}
@@ -705,11 +723,15 @@ export default function MapPage({ publicMode = false }) {
           showBelumSertifikat={showBelumSertifikat}
         />
 
+        <div className="absolute left-4 top-4 z-50 w-[min(19rem,calc(100vw-2rem))] rounded-xl border border-border bg-surface/95 p-3 shadow-lg shadow-black/10 backdrop-blur-xl">
+          <MapData2dControls {...data2dControlProps} searchControlOnly />
+        </div>
+
         {/* Filter Toggle Button — top-left */}
         {!showFilterPanel && (
           <button
             onClick={() => setShowFilterPanel(true)}
-            className="group absolute left-4 top-4 z-30 flex h-10 items-center gap-2 rounded-lg border border-border bg-surface/95 px-3 text-text-primary shadow-lg shadow-black/10 backdrop-blur-xl transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            className="group absolute left-4 top-[7.5rem] z-30 flex h-10 items-center gap-2 rounded-lg border border-border bg-surface/95 px-3 text-text-primary shadow-lg shadow-black/10 backdrop-blur-xl transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             aria-label="Buka menu peta"
           >
             <StackIcon size={16} weight="fill" />
@@ -736,13 +758,13 @@ export default function MapPage({ publicMode = false }) {
 
       {/* Side Panel — slides in from left */}
       <div
-        className={`absolute left-4 top-4 z-40 transition duration-200 ease-out ${
+        className={`absolute left-4 top-[7.5rem] z-40 transition duration-200 ease-out ${
           showFilterPanel
             ? "translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-2 opacity-0"
         }`}
       >
-        <div className="flex max-h-[calc(100vh-2rem)] w-[min(19rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-surface/95 shadow-xl shadow-black/15 backdrop-blur-xl">
+        <div className="flex max-h-[calc(100vh-8.5rem)] w-[min(19rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-surface/95 shadow-xl shadow-black/15 backdrop-blur-xl">
           <div
             className={sidePanelMode === "3d" ? "hidden" : "contents"}
             aria-hidden={sidePanelMode === "3d"}

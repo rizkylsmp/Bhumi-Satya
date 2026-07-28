@@ -29,6 +29,10 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 - Data Model, Detail Model, dan Daftar Ruang pada detail Kelola 3D kini
   berganti sebagai komponen pada rute yang sama; seluruh komponen tetap
   terpasang agar data dan state form bertahan saat pengguna berpindah tab.
+- UX Detail Model 3D kini menampilkan pemilih versi, ringkasan status dan file,
+  informasi dasar yang lebih terstruktur, indikator perubahan menyeluruh,
+  konfirmasi sebelum mengganti versi, serta aksi simpan/batalkan yang tetap
+  mudah dijangkau.
 - Data Legal, Fisik, Administratif, dan Spasial kini memakai aksi `Kelola`
   yang langsung membuka bagian data terkait, tanpa tombol `Tambah Aset` atau
   aksi penghapusan data master dari halaman substansi.

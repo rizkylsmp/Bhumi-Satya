@@ -98,6 +98,8 @@ export default function MapFilter({
   searchLoading = false,
   isBPKAMode = false,
   showStatistics = true,
+  searchOnly = false,
+  hideSearch = false,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -128,9 +130,9 @@ export default function MapFilter({
   };
 
   return (
-    <div className="space-y-5">
+    <div className={searchOnly ? "" : "space-y-5"}>
       {/* Search Box */}
-      <div className="space-y-2">
+      {!hideSearch && <div className="space-y-2">
         <label className="text-xs font-semibold text-text-muted uppercase tracking-wide">
           Cari Aset
         </label>
@@ -241,10 +243,10 @@ export default function MapFilter({
               Tidak ditemukan aset yang cocok.
             </div>
           )}
-      </div>
+      </div>}
 
       {/* Filter Sewa — BPKA only */}
-      {isBPKAMode && selectedSewaLayers && onSewaLayerToggle && (
+      {!searchOnly && isBPKAMode && selectedSewaLayers && onSewaLayerToggle && (
         <div className="space-y-3">
           <label className="text-xs font-semibold text-text-muted uppercase tracking-wide flex items-center gap-2">
             <HandshakeIcon size={14} />
@@ -299,7 +301,7 @@ export default function MapFilter({
         </div>
       )}
 
-      {showStatistics && (
+      {!searchOnly && showStatistics && (
         <MapAssetStats assets={assets} isBPKAMode={isBPKAMode} />
       )}
     </div>
