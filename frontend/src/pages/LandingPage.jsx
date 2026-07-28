@@ -708,18 +708,18 @@ export default function LandingPage() {
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-3 py-1.5 text-xs font-semibold text-emerald-800 backdrop-blur-sm dark:border-emerald-300/20 dark:bg-emerald-300/10 dark:text-emerald-100">
               <BuildingsIcon size={15} weight="fill" />
-              Portal Informasi Aset Tanah Kota Pasuruan
+              Platform Digital Twin STPN
             </div>
             <h2 className="max-w-3xl text-3xl font-black leading-tight tracking-tight text-slate-950 dark:text-white sm:text-4xl lg:text-6xl">
-              Kenali aset kota,
+              Jelajahi aset wilayah
               <span className="block text-emerald-600 dark:text-emerald-300">
-                lokasi, dan pemanfaatannya.
+                dalam representasi digital.
               </span>
             </h2>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-600 dark:text-slate-300 md:text-lg">
-              Bhumi Satya menyajikan inventaris aset tanah secara terpadu—mulai
-              dari persebaran lokasi, karakteristik bidang, legalitas, hingga
-              informasi pemanfaatan yang dapat diakses masyarakat.
+              Bhumi Satya menyatukan peta 2D, model 3D, data spasial, legalitas,
+              dan pemanfaatan aset dalam Digital Twin yang mudah dijelajahi,
+              dipahami, dan diperbarui.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <button
@@ -728,7 +728,7 @@ export default function LandingPage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-white dark:bg-emerald-400 dark:text-emerald-950 dark:shadow-emerald-950/30 dark:hover:bg-emerald-300 dark:focus:ring-emerald-200 dark:focus:ring-offset-emerald-950"
               >
                 <MapTrifoldIcon size={19} weight="fill" />
-                Jelajahi Peta Aset
+                Jelajahi Digital Twin
               </button>
             </div>
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-slate-600 dark:text-slate-300">
@@ -738,7 +738,7 @@ export default function LandingPage() {
                   weight="fill"
                   className="text-sky-600 dark:text-sky-300"
                 />
-                Persebaran dan batas bidang
+                Peta aset terintegrasi
               </span>
               <span className="inline-flex items-center gap-2">
                 <ShieldCheckIcon
@@ -746,7 +746,7 @@ export default function LandingPage() {
                   weight="fill"
                   className="text-emerald-600 dark:text-emerald-300"
                 />
-                Informasi legalitas
+                Model dan konteks 3D
               </span>
               <span className="inline-flex items-center gap-2">
                 <StackIcon
@@ -754,7 +754,7 @@ export default function LandingPage() {
                   weight="fill"
                   className="text-amber-600 dark:text-amber-300"
                 />
-                Data pemanfaatan aset
+                Data aset terverifikasi
               </span>
             </div>
           </div>
@@ -762,10 +762,10 @@ export default function LandingPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-300">
-                  Cakupan Data Publik
+                  Cakupan Digital Twin
                 </p>
                 <h3 className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
-                  Ringkasan inventaris aset
+                  Ringkasan representasi aset
                 </h3>
               </div>
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-300/15 dark:text-emerald-200">
@@ -1235,7 +1235,7 @@ export default function LandingPage() {
             </span>
           </div>
           <span className="text-xs text-surface/50 dark:text-text-muted">
-            Sistem Manajemen Aset Tanah
+            Digital Twin STPN
           </span>
         </div>
       </footer>

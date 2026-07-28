@@ -55,6 +55,7 @@ export const getModel3dTileset = async (req, res) => {
       attributes: [
         "id_model_3d",
         "id_aset",
+        "lod",
         "version",
         "format",
         "model_type",
@@ -185,6 +186,7 @@ export const getPublicMarkers = async (req, res) => {
           as: "models3d",
           attributes: [
             "id_model_3d",
+            "lod",
             "version",
             "format",
             "model_type",
@@ -224,7 +226,8 @@ export const getPublicMarkers = async (req, res) => {
       const availableSewa = plain.sewas?.find(
         (sewa) => sewa.status === "Tersedia",
       );
-      const activeModel3d = plain.models3d?.[0] || null;
+      const activeModels3d = plain.models3d || [];
+      const activeModel3d = activeModels3d[0] || null;
 
       return {
         id: plain.id_aset,
@@ -274,6 +277,7 @@ export const getPublicMarkers = async (req, res) => {
           ? parseFloat(plain.model_3d_accuracy_m)
           : null,
         active_model_3d: activeModel3d,
+        active_models_3d: activeModels3d,
         sumber: plain.sumber || null,
         status_sewa: activeSewa
           ? "Tersewa"
@@ -434,6 +438,7 @@ export const getMarkers = async (req, res) => {
           as: "models3d",
           attributes: [
             "id_model_3d",
+            "lod",
             "version",
             "format",
             "model_type",
@@ -480,7 +485,8 @@ export const getMarkers = async (req, res) => {
         : availableSewa
           ? "Tersedia"
           : "Tidak Disewakan";
-      const activeModel3d = plain.models3d?.[0] || null;
+      const activeModels3d = plain.models3d || [];
+      const activeModel3d = activeModels3d[0] || null;
 
       return {
         id: plain.id_aset,
@@ -528,6 +534,7 @@ export const getMarkers = async (req, res) => {
           ? parseFloat(plain.model_3d_accuracy_m)
           : null,
         active_model_3d: activeModel3d,
+        active_models_3d: activeModels3d,
         sumber: plain.sumber || null,
         status_sewa: statusSewa,
         penyewa_aktif: activeSewa ? activeSewa.nama_penyewa : null,

@@ -41,6 +41,7 @@ const assetAttributes = [
 
 const modelAttributes = [
   "id_model_3d",
+  "lod",
   "version",
   "is_active",
   "status",
@@ -74,6 +75,7 @@ export const serializeCatalog = (record) => {
     asset: value.aset ? { ...value.aset, models3d: undefined } : null,
     model_count: models.length,
     active_model: activeModel,
+    active_models: models.filter((model) => model.is_active),
     model_status: activeModel?.review_status || activeModel?.conversion_status || "belum_ada",
     category: "Bangunan",
     model_format: activeModel?.format || activeModel?.model_type || null,

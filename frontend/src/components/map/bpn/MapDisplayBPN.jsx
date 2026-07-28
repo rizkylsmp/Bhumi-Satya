@@ -476,7 +476,7 @@ const MapDisplayBPN = ({
     typeof asset3dPanelOpen === "boolean"
       ? asset3dPanelOpen
       : isAsset3dPanelOpen;
-  const [visible3dAssetIds, setVisible3dAssetIds] = useState(null);
+  const [visible3dLocationIds, setVisible3dLocationIds] = useState(null);
   const [detailedModelStatus, setDetailedModelStatus] = useState({
     state: "idle",
     loaded: 0,
@@ -534,42 +534,63 @@ const MapDisplayBPN = ({
     return assets || [];
   }, [assets]);
   const model3dLocations = useMemo(
-    () => roleAssets.filter(hasUsableAsset3dData).map((asset) => {
-      const model = asset?.active_model_3d;
+    () => roleAssets.filter(hasUsableAsset3dData).flatMap((asset) => {
       const summary = getAsset3dSummary(asset);
       const assetId = asset?.id_aset || asset?.id;
-      const rawLatitude = Number(
-        model?.location_lat ?? asset?.koordinat_lat ?? asset?.latitude ?? asset?.lat,
-      );
-      const rawLongitude = Number(
-        model?.location_long ?? asset?.koordinat_long ?? asset?.longitude ?? asset?.lng,
-      );
-      const offsetLocation = resolveModelOffsetLocation({
-        ...model,
-        location_lat: rawLatitude,
-        location_long: rawLongitude,
+      const activeModels = Array.isArray(asset?.active_models_3d)
+        && asset.active_models_3d.length > 0
+        ? asset.active_models_3d
+        : asset?.active_model_3d
+          ? [asset.active_model_3d]
+          : [null];
+
+      return activeModels.map((model, modelIndex) => {
+        const rawLatitude = Number(
+          model?.location_lat ?? asset?.koordinat_lat ?? asset?.latitude ?? asset?.lat,
+        );
+        const rawLongitude = Number(
+          model?.location_long ?? asset?.koordinat_long ?? asset?.longitude ?? asset?.lng,
+        );
+        const offsetLocation = resolveModelOffsetLocation({
+          ...model,
+          location_lat: rawLatitude,
+          location_long: rawLongitude,
+        });
+        const modelId = model?.id_model_3d || null;
+        return {
+          id: modelId
+            ? `model-${modelId}`
+            : `asset-${assetId}-${modelIndex}`,
+          assetId,
+          modelId,
+          name: asset?.nama_aset || asset?.nama || asset?.kode_aset || `Aset ${assetId}`,
+          location: asset?.lokasi || asset?.desa_kelurahan || "Lokasi belum dilengkapi",
+          latitude: offsetLocation.latitude,
+          longitude: offsetLocation.longitude,
+          lod: model?.lod || summary.lod || "LOD1",
+          modelType: model?.model_type || (model?.public_url ? "Model detail" : "Bangunan LOD1"),
+          conversionStatus: model?.conversion_status || "ready",
+          rooms: Array.isArray(model?.manifest?.rooms) ? model.manifest.rooms : [],
+        };
       });
-      return {
-        id: String(assetId),
-        assetId,
-        modelId: model?.id_model_3d || null,
-        name: asset?.nama_aset || asset?.nama || asset?.kode_aset || `Aset ${assetId}`,
-        location: asset?.lokasi || asset?.desa_kelurahan || "Lokasi belum dilengkapi",
-        latitude: offsetLocation.latitude,
-        longitude: offsetLocation.longitude,
-        lod: summary.lod || model?.model_type || "LOD1",
-        modelType: model?.model_type || (model?.public_url ? "Model detail" : "Bangunan LOD1"),
-        conversionStatus: model?.conversion_status || "ready",
-        rooms: Array.isArray(model?.manifest?.rooms) ? model.manifest.rooms : [],
-      };
     }),
     [roleAssets],
   );
-  const visible3dAssetIdSet = useMemo(
-    () => visible3dAssetIds === null
+  const visible3dLocationIdSet = useMemo(
+    () => visible3dLocationIds === null
       ? null
-      : new Set(visible3dAssetIds.map(String)),
-    [visible3dAssetIds],
+      : new Set(visible3dLocationIds.map(String)),
+    [visible3dLocationIds],
+  );
+  const visible3dAssetIdSet = useMemo(
+    () => visible3dLocationIdSet === null
+      ? null
+      : new Set(
+          model3dLocations
+            .filter((location) => visible3dLocationIdSet.has(String(location.id)))
+            .map((location) => String(location.assetId)),
+        ),
+    [model3dLocations, visible3dLocationIdSet],
   );
   const visible3dAssets = useMemo(
     () => visible3dAssetIdSet === null
@@ -586,9 +607,13 @@ const MapDisplayBPN = ({
   );
   const detailedModels3d = useMemo(
     () => visible3dAssets
-      .map((asset) => {
-        const model = asset?.active_model_3d;
-        if (!model) return null;
+      .flatMap((asset) => {
+        const activeModels = Array.isArray(asset?.active_models_3d)
+          && asset.active_models_3d.length > 0
+          ? asset.active_models_3d
+          : asset?.active_model_3d
+            ? [asset.active_model_3d]
+            : [];
         const assetLongitude = Number(
           asset?.koordinat_long ?? asset?.lng ?? asset?.longitude,
         );
@@ -608,28 +633,34 @@ const MapDisplayBPN = ({
           : fallbackPoints.length > 0
             ? fallbackPoints.reduce((sum, point) => sum + point[1], 0) / fallbackPoints.length
             : null;
-        return {
+        return activeModels.map((model) => ({
           ...model,
           assetId: asset?.id_aset || asset?.id,
+          locationId: `model-${model.id_model_3d}`,
           location_lat: model.location_lat ?? fallbackLatitude,
           location_long: model.location_long ?? fallbackLongitude,
-        };
+        }));
       })
       .filter((model) => (model?.public_url || model?.converted_public_url)
+        && (
+          visible3dLocationIdSet === null
+          || visible3dLocationIdSet.has(String(model.locationId))
+        )
         && Number.isFinite(Number(model.location_lat))
         && Number.isFinite(Number(model.location_long))),
-    [visible3dAssets],
+    [visible3dAssets, visible3dLocationIdSet],
   );
   const tiledAssetIds = useMemo(
     () => forceDirectModelPreview
       ? []
-      : visible3dAssets
-      .filter((asset) => asset?.active_model_3d?.conversion_status === "ready"
-        && asset.active_model_3d.converted_public_url)
-      .map((asset) => asset.id_aset || asset.id)
+      : detailedModels3d
+      .filter((model) => model.conversion_status === "ready"
+        && model.converted_public_url)
+      .map((model) => model.assetId)
       .filter(Boolean)
+      .filter((assetId, index, values) => values.indexOf(assetId) === index)
       .slice(0, 1000),
-    [forceDirectModelPreview, visible3dAssets],
+    [detailedModels3d, forceDirectModelPreview],
   );
   const fallbackDetailedModels3d = useMemo(
     () => forceDirectModelPreview
@@ -2106,7 +2137,7 @@ const MapDisplayBPN = ({
 
     map.current.addControl(new maplibregl.NavigationControl(), "top-right");
     map.current.addControl(
-      new maplibregl.ScaleControl({ maxWidth: 120, unit: "metric" }),
+      new maplibregl.ScaleControl({ maxWidth: 140, unit: "metric" }),
       "bottom-left",
     );
 
@@ -2584,8 +2615,8 @@ const MapDisplayBPN = ({
       tilesetStatus={tileset3dStatus}
       fallbackStatus={detailedModelStatus}
       locations={model3dLocations}
-      visibleLocationIds={visible3dAssetIds}
-      onVisibleLocationIdsChange={setVisible3dAssetIds}
+      visibleLocationIds={visible3dLocationIds}
+      onVisibleLocationIdsChange={setVisible3dLocationIds}
       showMarkers={showMarkers}
       onShowMarkersChange={setShowMarkersResolved}
       showPolygons={showPolygons}

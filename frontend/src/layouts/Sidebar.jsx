@@ -96,7 +96,7 @@ export default function Sidebar({
     },
     canAccessMenu(userRole, "peta") && {
       icon: MapTrifoldIcon,
-      label: "Peta",
+      label: "Digital Twin",
       path: "/peta",
     },
     canAccessMenu(userRole, "aset") && {

@@ -380,7 +380,7 @@ export default function PublicSewaPage() {
             </span>
           </div>
           <span className="text-xs text-surface/50 dark:text-text-muted">
-            Sistem Manajemen Aset Tanah Kota Pasuruan
+            Digital Twin STPN
           </span>
         </div>
       </footer>

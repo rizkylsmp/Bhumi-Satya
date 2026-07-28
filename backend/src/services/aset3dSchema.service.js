@@ -2,6 +2,63 @@ import sequelize from "../config/database.js";
 
 const CREATE_CATALOG_SCHEMA_SQL = `
   ALTER TABLE "aset_model_3d"
+    ADD COLUMN IF NOT EXISTS "lod" VARCHAR(24);
+
+  UPDATE "aset_model_3d" AS model
+  SET "lod" = COALESCE(
+    NULLIF(UPPER(TRIM(asset."model_3d_lod")), ''),
+    'LOD1'
+  )
+  FROM "aset" AS asset
+  WHERE asset."id_aset" = model."id_aset"
+    AND model."lod" IS NULL;
+
+  UPDATE "aset_model_3d"
+  SET "lod" = 'LOD1'
+  WHERE "lod" IS NULL;
+
+  ALTER TABLE "aset_model_3d"
+    ALTER COLUMN "lod" SET DEFAULT 'LOD1',
+    ALTER COLUMN "lod" SET NOT NULL;
+
+  ALTER TABLE "aset_model_3d"
+    DROP CONSTRAINT IF EXISTS "aset_model_3d_asset_version_unique";
+
+  DO $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM pg_constraint
+      WHERE conname = 'aset_model_3d_asset_lod_version_unique'
+    ) THEN
+      ALTER TABLE "aset_model_3d"
+        ADD CONSTRAINT "aset_model_3d_asset_lod_version_unique"
+        UNIQUE ("id_aset", "lod", "version");
+    END IF;
+  END
+  $$;
+
+  WITH ranked_active AS (
+    SELECT
+      "id_model_3d",
+      ROW_NUMBER() OVER (
+        PARTITION BY "id_aset", "lod"
+        ORDER BY "version" DESC, "id_model_3d" DESC
+      ) AS active_rank
+    FROM "aset_model_3d"
+    WHERE "is_active" = TRUE AND "archived_at" IS NULL
+  )
+  UPDATE "aset_model_3d" AS model
+  SET "is_active" = FALSE
+  FROM ranked_active
+  WHERE model."id_model_3d" = ranked_active."id_model_3d"
+    AND ranked_active.active_rank > 1;
+
+  CREATE UNIQUE INDEX IF NOT EXISTS "aset_model_3d_asset_lod_active_unique"
+    ON "aset_model_3d" ("id_aset", "lod")
+    WHERE "is_active" = TRUE AND "archived_at" IS NULL;
+
+  ALTER TABLE "aset_model_3d"
     ADD COLUMN IF NOT EXISTS "offset_x_m" DECIMAL(12, 3) NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS "offset_y_m" DECIMAL(12, 3) NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS "offset_z_m" DECIMAL(12, 3) NOT NULL DEFAULT 0;

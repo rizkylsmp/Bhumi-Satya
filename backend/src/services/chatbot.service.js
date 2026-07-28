@@ -4,7 +4,7 @@
 const FAQ_RESPONSES = [
   {
     keywords: ["halo", "hai", "hello", "hi", "selamat"],
-    response: "Halo! Selamat datang di Bhumi Satya - Sistem Manajemen Aset Tanah Kota Pasuruan. Ada yang bisa saya bantu?",
+    response: "Halo! Selamat datang di Bhumi Satya - Digital Twin STPN. Ada yang bisa saya bantu?",
     kategori: "greeting",
   },
   {

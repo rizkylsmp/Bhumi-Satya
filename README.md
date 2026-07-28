@@ -1,8 +1,8 @@
-# Bhumi Satya - Sistem Informasi Manajemen Aset Tanah
+# Bhumi Satya - Digital Twin STPN
 
 ## 📋 Gambaran Umum
 
-**Bhumi Satya** adalah Sistem Informasi Manajemen Aset Tanah yang mengintegrasikan pengelolaan aset tanah dari berbagai instansi pemerintah BPN dan BPKA menjadi satu platform terpadu.
+**Bhumi Satya** adalah platform Digital Twin STPN yang mengintegrasikan data aset tanah, peta 2D, model 3D, legalitas, dan informasi pemanfaatan dalam satu representasi digital terpadu.
 
 ---
 

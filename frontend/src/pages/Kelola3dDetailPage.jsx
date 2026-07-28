@@ -502,8 +502,11 @@ export default function Kelola3dDetailPage() {
 
   useEffect(() => {
     setAsset3dMetadata(asset3dMetadataFromAsset(selectedAsset));
-    setImportLod(selectedAsset?.model_3d_lod || "LOD1");
   }, [selectedAsset]);
+
+  useEffect(() => {
+    setImportLod("LOD1");
+  }, [selectedAssetId]);
 
   useEffect(() => {
     const modelRooms = selectedModel?.manifest?.rooms;
@@ -547,6 +550,7 @@ export default function Kelola3dDetailPage() {
       const uploadResponse = await assetModel3dService.upload(
         selectedAssetId,
         file,
+        importLod,
       );
       const uploadedModel = uploadResponse.data?.data;
       if (uploadedModel?.id_model_3d) {
@@ -562,13 +566,6 @@ export default function Kelola3dDetailPage() {
           uploadResponse.data?.message || "Model 3D berhasil diunggah",
         );
       }
-      await asetService.update(selectedAssetId, {
-        model_3d_lod: importLod,
-      });
-      setAsset3dMetadata((current) => ({
-        ...current,
-        model_3d_lod: importLod,
-      }));
       await fetchModels(selectedAssetId, uploadedModel?.id_model_3d);
       await fetchCatalog();
       setFlyToRequest({
@@ -1300,7 +1297,7 @@ export default function Kelola3dDetailPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="text-[10px] font-black text-text-primary">
                               {selectedModel
-                                ? `Model v${selectedModel.version}`
+                                ? `${selectedModel.lod || "LOD1"} · v${selectedModel.version}`
                                 : "Belum ada model"}
                             </p>
                             {selectedModel?.is_active && (
@@ -1311,7 +1308,7 @@ export default function Kelola3dDetailPage() {
                           </div>
                           <p className="mt-0.5 truncate text-[8px] text-text-muted">
                             {selectedModel
-                              ? `${activeModels.length} versi · ${selectedModel.model_type || "Model 3D"} · ${asset3dSummary.lod || "LOD belum diisi"}`
+                              ? `${activeModels.length} file model · ${selectedModel.model_type || "Model 3D"}`
                               : "KMZ, GLB, atau ZIP 3D Tiles · maks. 100 MB"}
                           </p>
                         </div>
@@ -1443,7 +1440,7 @@ export default function Kelola3dDetailPage() {
                                 <span className="min-w-0 flex-1">
                                   <span className="flex items-center gap-2">
                                     <span className="truncate text-[10px] font-black text-text-primary">
-                                      v{model.version} ·{" "}
+                                      {model.lod || "LOD1"} · v{model.version} ·{" "}
                                       {model.manifest?.display_name ||
                                         model.original_name}
                                     </span>
@@ -1466,6 +1463,9 @@ export default function Kelola3dDetailPage() {
                                     </span>
                                     <span className="text-[8px] font-semibold uppercase text-text-muted">
                                       {model.model_type || "MODEL 3D"}
+                                    </span>
+                                    <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[8px] font-black text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
+                                      {model.lod || "LOD1"}
                                     </span>
                                   </span>
                                 </span>
@@ -1565,7 +1565,7 @@ export default function Kelola3dDetailPage() {
                               </span>
                               <div className="min-w-0 flex-1">
                                 <p className="truncate text-[10px] font-black text-text-primary">
-                                  v{model.version} ·{" "}
+                                  {model.lod || "LOD1"} · v{model.version} ·{" "}
                                   {model.manifest?.display_name ||
                                     model.original_name}
                                 </p>
@@ -1990,7 +1990,7 @@ export default function Kelola3dDetailPage() {
                                     key={model.id_model_3d}
                                     value={model.id_model_3d}
                                   >
-                                    v{model.version}
+                                    {model.lod || "LOD1"} · v{model.version}
                                     {model.is_active ? " · Aktif" : ""}
                                     {" · "}
                                     {model.manifest?.display_name ||
@@ -3081,9 +3081,9 @@ export default function Kelola3dDetailPage() {
                   <div className="mt-3 grid grid-cols-3 gap-2">
                     <div className="rounded-lg bg-surface-secondary px-2 py-2 text-center">
                       <p className="text-[9px] font-black text-text-primary">
-                        {selectedModel?.model_type ||
-                          selectedAsset?.model_3d_lod ||
-                          "—"}
+                        {selectedModel
+                          ? `${selectedModel.model_type || "Model 3D"} · ${selectedModel.lod || "LOD1"}`
+                          : "—"}
                       </p>
                       <p className="mt-0.5 text-[7px] font-bold uppercase text-text-muted">
                         Format/LOD

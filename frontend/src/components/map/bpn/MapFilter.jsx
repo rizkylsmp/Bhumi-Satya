@@ -133,15 +133,15 @@ export default function MapFilter({
     <div className={searchOnly ? "" : "space-y-5"}>
       {/* Search Box */}
       {!hideSearch && <div className="space-y-2">
-        <label className="text-xs font-semibold text-text-muted uppercase tracking-wide">
-          Cari Aset
-        </label>
-        <div className="relative">
-          <MagnifyingGlassIcon
-            size={18}
-            weight="bold"
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
-          />
+        {!searchOnly && (
+          <label className="text-xs font-semibold text-text-muted uppercase tracking-wide">
+            Cari Aset
+          </label>
+        )}
+        <div className="group relative">
+          <span className="pointer-events-none absolute left-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-accent/10 text-accent transition-colors group-focus-within:bg-accent group-focus-within:text-surface dark:bg-sky-500/15 dark:text-sky-300 dark:group-focus-within:bg-sky-500 dark:group-focus-within:text-white">
+            <MagnifyingGlassIcon size={15} weight="bold" />
+          </span>
           <input
             type="text"
             placeholder={
@@ -151,12 +151,17 @@ export default function MapFilter({
             }
             value={searchTerm}
             onChange={handleSearch}
-            className="w-full pl-10 pr-9 py-3 text-sm bg-surface border-2 border-border rounded-xl outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all text-text-primary placeholder:text-text-muted"
+            className={`w-full bg-surface pl-11 pr-9 text-sm text-text-primary outline-none transition-all placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 ${
+              searchOnly
+                ? "h-11 rounded-xl border border-border shadow-lg shadow-black/10 backdrop-blur-xl"
+                : "rounded-xl border-2 border-border py-3"
+            }`}
           />
           {searchTerm && (
             <button
               onClick={clearSearch}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+              className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-accent dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
+              aria-label="Hapus pencarian"
             >
               <XIcon size={16} weight="bold" />
             </button>

@@ -51,6 +51,7 @@ export function normalizeMapMarker(marker) {
     model_3d_recorded_at: marker.model_3d_recorded_at || null,
     model_3d_accuracy_m: marker.model_3d_accuracy_m ?? null,
     active_model_3d: marker.active_model_3d || null,
+    active_models_3d: marker.active_models_3d || [],
   };
 }
 

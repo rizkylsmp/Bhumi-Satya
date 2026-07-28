@@ -98,9 +98,10 @@ export const asetService = {
 
 export const assetModel3dService = {
   list: (assetId) => api.get(`/aset/${assetId}/models-3d`),
-  upload: (assetId, file) => {
+  upload: (assetId, file, lod) => {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("lod", lod);
     return api.post(`/aset/${assetId}/models-3d`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });

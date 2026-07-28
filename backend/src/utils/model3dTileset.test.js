@@ -9,6 +9,7 @@ import {
 const makeModel = (id, longitude, latitude) => ({
   id_model_3d: id,
   id_aset: 100 + id,
+  lod: id % 2 === 0 ? "LOD2" : "LOD1",
   version: 1,
   converted_public_url: `https://storage.example/model-${id}.glb`,
   location_long: longitude,
@@ -92,6 +93,7 @@ test("createModel3dTileset creates a low-medium-high replacement chain", () => {
   assert.equal(tileset.root.refine, "REPLACE");
   assert.equal(tileset.root.children[0].extras.lod, "medium");
   assert.equal(tileset.root.children[0].children[0].extras.lod, "high");
+  assert.equal(tileset.root.extras.modelLod, "LOD2");
   assert.equal(tileset.root.transform.length, 16);
   assert.equal(tileset.root.children[0].transform, undefined);
 });

@@ -122,25 +122,3 @@
 .maplibregl-canvas.maplibregl-interactive:active {
   cursor: grabbing;
 }
-
-/* Custom Scale Control styling */
-.maplibregl-ctrl-bottom-left .maplibregl-ctrl-scale {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 4px 12px;
-  font-size: 10px;
-  font-weight: 600;
-  font-family: inherit;
-  color: #6b7280;
-  line-height: 1;
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  margin-left: 16px;
-  margin-bottom: 16px;
-  border-bottom-width: 2px;
-  border-bottom-color: #9ca3af;
-}

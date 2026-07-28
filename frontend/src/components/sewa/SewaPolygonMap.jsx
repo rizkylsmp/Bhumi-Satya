@@ -142,7 +142,7 @@ export default function SewaPolygonMap({
     if (interactive && !compact) {
       map.addControl(new maplibregl.NavigationControl(), "top-right");
       map.addControl(
-        new maplibregl.ScaleControl({ maxWidth: 120, unit: "metric" }),
+        new maplibregl.ScaleControl({ maxWidth: 140, unit: "metric" }),
         "bottom-left",
       );
     }

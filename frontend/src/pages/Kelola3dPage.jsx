@@ -443,7 +443,20 @@ export default function Kelola3dPage() {
                     <td className="px-4 py-3"><p className="flex max-w-64 items-center gap-1 truncate text-[9px] text-text-secondary"><MapPinIcon size={10} /> {item.asset?.lokasi || item.asset?.desa_kelurahan || "—"}</p><p className="mt-1 max-w-64 truncate text-[8px] text-text-muted">{item.asset?.opd_pengguna || "OPD belum diisi"}</p></td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1.5">
-                        <span className="rounded-md bg-violet-50 px-2 py-1 text-[8px] font-black text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">{item.asset?.model_3d_lod || "LOD —"}</span>
+                        {[...new Set(
+                          (item.active_models || [])
+                            .map((model) => model.lod)
+                            .filter(Boolean),
+                        )].map((lod) => (
+                          <span key={lod} className="rounded-md bg-violet-50 px-2 py-1 text-[8px] font-black text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
+                            {lod} aktif
+                          </span>
+                        ))}
+                        {(item.active_models || []).length === 0 && (
+                          <span className="rounded-md bg-surface-secondary px-2 py-1 text-[8px] font-bold text-text-muted">
+                            Belum ada LOD aktif
+                          </span>
+                        )}
                         <span className="rounded-md bg-surface-secondary px-2 py-1 text-[8px] font-bold text-text-secondary">{item.asset?.building_height_m ? `${item.asset.building_height_m} m` : "Tinggi —"}</span>
                         <span className="rounded-md bg-surface-secondary px-2 py-1 text-[8px] font-bold text-text-secondary">{item.asset?.building_floors ? `${item.asset.building_floors} lantai` : "Lantai —"}</span>
                       </div>

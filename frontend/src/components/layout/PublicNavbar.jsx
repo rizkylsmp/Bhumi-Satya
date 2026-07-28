@@ -20,7 +20,7 @@ const PUBLIC_LINKS = [
     matches: ["/beranda", "/login"],
   },
   {
-    label: "Peta Aset",
+    label: "Digital Twin",
     icon: MapTrifoldIcon,
     path: "/peta-publik",
     matches: ["/peta-publik"],
@@ -64,7 +64,7 @@ export default function PublicNavbar() {
           <BrandMark className="h-9 w-9 text-xs" />
           <div className="hidden text-left sm:block">
             <h1 className="text-base font-bold leading-none tracking-tight text-text-primary">Bhumi Satya</h1>
-            <p className="hidden text-[10px] text-text-muted sm:block">Sistem Manajemen Aset Tanah</p>
+            <p className="hidden text-[10px] text-text-muted sm:block">Digital Twin STPN</p>
           </div>
         </button>
 

@@ -130,6 +130,60 @@ textarea:disabled,
   cursor: crosshair !important;
 }
 
+/* Shared cartographic scale for every MapLibre surface */
+.maplibregl-ctrl-bottom-left .maplibregl-ctrl-scale {
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  height: 28px;
+  align-items: flex-end;
+  justify-content: center;
+  margin: 0 0 16px 16px;
+  padding: 0 6px 5px;
+  border: 0;
+  border-right: 2px solid var(--color-accent);
+  border-bottom: 2px solid var(--color-accent);
+  border-left: 2px solid var(--color-accent);
+  border-radius: 0 0 5px 5px;
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  color: var(--color-text-primary);
+  box-shadow: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.maplibregl-ctrl-bottom-left .maplibregl-ctrl-scale::before {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: -2px;
+  padding: 3px 5px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  color: var(--color-text-secondary);
+  content: "SKALA";
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@media (max-width: 640px) {
+  .maplibregl-ctrl-bottom-left .maplibregl-ctrl-scale {
+    height: 25px;
+    margin: 0 0 10px 10px;
+    padding: 0 5px 4px;
+    font-size: 10px;
+  }
+}
+
 /* Ensure map fills container */
 .map-container {
   position: absolute !important;

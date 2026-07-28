@@ -180,6 +180,7 @@ const createLeaf = (entry) => {
   const metadata = {
     assetId: model.id_aset,
     modelId: model.id_model_3d,
+    modelLod: model.lod || "LOD1",
     version: model.version,
   };
   const modelFormat = String(model.format || model.model_type || "").toUpperCase();

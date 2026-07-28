@@ -5,8 +5,11 @@ import {
   permissionMiddleware,
   PERMISSIONS,
 } from "../middleware/auth.middleware.js";
+import { ensureAset3dCatalogSchemaMiddleware } from "../services/aset3dSchema.service.js";
 
 const router = express.Router();
+
+router.use(ensureAset3dCatalogSchemaMiddleware);
 
 // Public routes (no authentication required)
 router.get("/public-markers", PetaController.getPublicMarkers);

@@ -6,6 +6,7 @@ const AsetModel3d = sequelize.define(
   {
     id_model_3d: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     id_aset: { type: DataTypes.INTEGER, allowNull: false },
+    lod: { type: DataTypes.STRING(24), allowNull: false, defaultValue: "LOD1" },
     version: { type: DataTypes.INTEGER, allowNull: false },
     is_active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     status: { type: DataTypes.STRING(20), allowNull: false, defaultValue: "ready" },

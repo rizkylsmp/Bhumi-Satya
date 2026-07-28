@@ -76,8 +76,9 @@ export default function PengaturanPage() {
 
   // General settings
   const [generalSettings, setGeneralSettings] = useState({
-    namaAplikasi: "Bhumi Satya - Sistem Manajemen Aset Tanah",
-    deskripsiAplikasi: "Sistem informasi manajemen aset tanah terintegrasi",
+    namaAplikasi: "Bhumi Satya - Digital Twin STPN",
+    deskripsiAplikasi:
+      "Platform Digital Twin STPN yang terintegrasi",
     emailAdmin: "admin@bhumisatya.go.id",
     teleponAdmin: "0274-123456",
     alamatKantor: "Jl. Tata Bumi No. 5, Gamping, Sleman, Yogyakarta",

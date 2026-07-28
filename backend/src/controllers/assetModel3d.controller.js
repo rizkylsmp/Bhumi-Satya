@@ -43,6 +43,23 @@ class ModelUploadValidationError extends Error {
   }
 }
 
+const MODEL_LODS = new Set([
+  "LOD1",
+  "LOD2",
+  "LOD2.5",
+  "LOD3",
+  "LOD4",
+  "GAUSSIAN_SPLATTING",
+]);
+
+const normalizeModelLod = (value) => {
+  const lod = String(value || "").trim().toUpperCase();
+  if (!MODEL_LODS.has(lod)) {
+    throw new ModelUploadValidationError("Level of Detail model tidak valid");
+  }
+  return lod;
+};
+
 const collectCoordinatePairs = (value, pairs = []) => {
   if (!Array.isArray(value)) return pairs;
   if (
@@ -105,7 +122,7 @@ export const list = async (req, res) => {
     if (!asset) return res.status(404).json({ success: false, error: "Aset tidak ditemukan" });
     const models = await AsetModel3d.findAll({
       where: { id_aset: asset.id_aset },
-      order: [["version", "DESC"]],
+      order: [["lod", "ASC"], ["version", "DESC"]],
     });
     return res.json({ success: true, data: models.map(serializeModel) });
   } catch (error) {
@@ -183,6 +200,7 @@ export const upload = async (req, res) => {
       });
     }
     if (!req.file) return res.status(400).json({ success: false, error: "File KMZ, GLB, atau ZIP 3D Tiles diperlukan" });
+    const lod = normalizeModelLod(req.body?.lod);
 
     const originalName = req.file.originalname || "model.glb";
     const extension = originalName.split(".").pop()?.toLowerCase();
@@ -270,22 +288,28 @@ export const upload = async (req, res) => {
     }
     const checksum = crypto.createHash("sha256").update(req.file.buffer).digest("hex");
     const duplicate = await AsetModel3d.findOne({
-      where: { id_aset: asset.id_aset, checksum_sha256: checksum, archived_at: null },
+      where: {
+        id_aset: asset.id_aset,
+        lod,
+        checksum_sha256: checksum,
+        archived_at: null,
+      },
     });
     if (duplicate) {
       return res.status(409).json({
         success: false,
-        error: `File yang sama sudah tersimpan sebagai versi ${duplicate.version}`,
+        error: `File yang sama sudah tersimpan sebagai ${lod} versi ${duplicate.version}`,
         data: serializeModel(duplicate),
       });
     }
 
     const latestVersion = Number(await AsetModel3d.max("version", {
-      where: { id_aset: asset.id_aset },
+      where: { id_aset: asset.id_aset, lod },
     })) || 0;
     const version = latestVersion + 1;
     const safeName = originalName.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const uploadedStoragePath = `model-3d/aset-${asset.id_aset}/v${version}-${Date.now()}-${safeName}`;
+    const lodPath = lod.toLowerCase().replace(/[^a-z0-9.-]/g, "-");
+    const uploadedStoragePath = `model-3d/aset-${asset.id_aset}/${lodPath}/v${version}-${Date.now()}-${safeName}`;
     const mimeType = extension === "glb"
       ? "model/gltf-binary"
       : extension === "zip"
@@ -302,7 +326,7 @@ export const upload = async (req, res) => {
     let packageRootPublicUrl = null;
     const packageStoragePaths = [];
     if (packageFiles) {
-      const packagePrefix = `model-3d/aset-${asset.id_aset}/v${version}-tiles`;
+      const packagePrefix = `model-3d/aset-${asset.id_aset}/${lodPath}/v${version}-tiles`;
       const entries = [...packageFiles.entries()];
       for (let index = 0; index < entries.length; index += 12) {
         const batch = entries.slice(index, index + 12);
@@ -337,6 +361,7 @@ export const upload = async (req, res) => {
     const model = await sequelize.transaction(async (transaction) => {
       return AsetModel3d.create({
         id_aset: asset.id_aset,
+        lod,
         version,
         is_active: false,
         status: "ready",
@@ -385,7 +410,7 @@ export const upload = async (req, res) => {
       tabel: "aset_model_3d",
       id_referensi: model.id_model_3d,
       data_baru: serializeModel(model),
-      keterangan: `Mengunggah model 3D versi ${version} untuk aset ${asset.nama_aset}`,
+      keterangan: `Mengunggah model 3D ${lod} versi ${version} untuk aset ${asset.nama_aset}`,
       user_id: req.user.id_user,
       req,
     });
@@ -393,8 +418,8 @@ export const upload = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: packageFiles
-        ? `Paket 3D Tiles versi ${version} berhasil diunggah dan siap diverifikasi`
-        : `Model 3D versi ${version} berhasil diunggah`,
+        ? `Paket 3D Tiles ${lod} versi ${version} berhasil diunggah dan siap diverifikasi`
+        : `Model 3D ${lod} versi ${version} berhasil diunggah`,
       data: serializeModel(model),
     });
   } catch (error) {
@@ -503,7 +528,14 @@ export const activate = async (req, res) => {
     await sequelize.transaction(async (transaction) => {
       await AsetModel3d.update(
         { is_active: false, review_status: "verified", updated_at: new Date() },
-        { where: { id_aset: model.id_aset, is_active: true }, transaction },
+        {
+          where: {
+            id_aset: model.id_aset,
+            lod: model.lod,
+            is_active: true,
+          },
+          transaction,
+        },
       );
       await model.update({
         is_active: true,
@@ -516,13 +548,13 @@ export const activate = async (req, res) => {
       id_referensi: model.id_model_3d,
       data_lama: oldData,
       data_baru: serializeModel(model),
-      keterangan: `Mengaktifkan model 3D terverifikasi aset ${model.id_aset} versi ${model.version}`,
+      keterangan: `Mengaktifkan model 3D ${model.lod} terverifikasi aset ${model.id_aset} versi ${model.version}`,
       user_id: req.user.id_user,
       req,
     });
     return res.json({
       success: true,
-      message: "Model terverifikasi berhasil diaktifkan",
+      message: `Model ${model.lod} terverifikasi berhasil diaktifkan`,
       data: serializeModel(model),
     });
   } catch (error) {
@@ -743,7 +775,11 @@ export const archive = async (req, res) => {
 
       if (wasActive) {
         replacement = await AsetModel3d.findOne({
-          where: { id_aset: model.id_aset, archived_at: null },
+          where: {
+            id_aset: model.id_aset,
+            lod: model.lod,
+            archived_at: null,
+          },
           order: [["version", "DESC"]],
           transaction,
         });
@@ -797,6 +833,7 @@ export const restore = async (req, res) => {
       const activeModel = await AsetModel3d.findOne({
         where: {
           id_aset: model.id_aset,
+          lod: model.lod,
           is_active: true,
           archived_at: null,
         },

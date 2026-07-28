@@ -20,6 +20,13 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- File WebAssembly `assimpjs.wasm` kini disertakan secara eksplisit dalam
+  bundle backend Vercel agar impor dan konversi model 3D dapat berjalan pada
+  runtime serverless.
+- Identitas sistem diperbarui menjadi `Bhumi Satya — Digital Twin STPN` pada
+  metadata, navbar, header internal, footer, pengaturan,
+  chatbot, dokumentasi, dan halaman API; hero landing page kini menekankan
+  integrasi peta 2D, model 3D, serta data spasial.
 - Navbar publik kini memakai satu layout persisten dengan susunan menu, ukuran,
   posisi, status aktif, dan aksi login yang konsisten di seluruh halaman.
 - Rute beranda publik kini menggunakan `/beranda`; rute lama
@@ -106,8 +113,8 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- Platform Bhumi Satya sebagai sistem informasi manajemen aset tanah Kota
-  Pasuruan dengan frontend React/Vite dan backend Express/PostgreSQL.
+- Platform Bhumi Satya sebagai Digital Twin STPN dengan frontend
+  React/Vite dan backend Express/PostgreSQL.
 - Landing page publik yang memaparkan aset dan menyediakan satu alur login.
 - Peta publik dan peta internal berbagi komponen serta sumber data aset dari
   API/database.
@@ -135,7 +142,7 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 - Identitas produk, teks antarmuka, email, dan copyright menggunakan nama
   Bhumi Satya.
 - Logo utama disederhanakan menjadi monogram teks `BS`.
-- Istilah "Mode digital twins" diganti menjadi "Mode 3D".
+- Istilah "Mode Digital Twin" diganti menjadi "Mode 3D".
 - Navigasi setelah login membedakan pengguna `masyarakat` dari pengguna
   internal berdasarkan role.
 
