@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { backupService } from "../services/api";
 import { useAuthStore } from "../stores/authStore";
 import { hasPermission } from "../utils/permissions";
-import { useConfirm } from "../components/ui/ConfirmDialog";
+import { useConfirm } from "../components/ui/confirmContext";
 import {
   WarningCircleIcon,
   CalendarBlankIcon,
@@ -36,7 +36,6 @@ export default function BackupPage() {
   const canRestore = hasPermission(userRole, "backup", "restore");
   const confirm = useConfirm();
 
-  const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [autoBackup, setAutoBackup] = useState(true);
@@ -56,8 +55,7 @@ export default function BackupPage() {
   const [backupHistory, setBackupHistory] = useState([]);
 
   // Fetch backup list
-  const fetchBackupData = useCallback(async () => {
-    setLoading(true);
+  const loadBackups = useCallback(async () => {
     try {
       // Fetch backup list and stats in parallel
       const [listRes, statsRes] = await Promise.all([
@@ -100,8 +98,6 @@ export default function BackupPage() {
     } catch (error) {
       console.error("Error fetching backup data:", error);
       toast.error("Gagal memuat data backup");
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -115,8 +111,8 @@ export default function BackupPage() {
   };
 
   useEffect(() => {
-    fetchBackupData();
-  }, [fetchBackupData]);
+    loadBackups();
+  }, [loadBackups]);
 
   // ===== BACKUP NOW =====
   const handleBackupNow = async () => {
@@ -134,7 +130,7 @@ export default function BackupPage() {
             .map(([t, c]) => `${t}: ${c}`)
             .join(", ")}`,
         );
-        fetchBackupData();
+        loadBackups();
 
         // Auto-download the created backup file
         if (info.filename) {
@@ -297,7 +293,7 @@ export default function BackupPage() {
         // Reset file input
         const fileInput = document.getElementById("backup-file");
         if (fileInput) fileInput.value = "";
-        fetchBackupData();
+        loadBackups();
       } else {
         toast.error("Gagal melakukan restore", { id: "restore-progress" });
       }
@@ -351,7 +347,7 @@ export default function BackupPage() {
           id: "restore-progress",
           duration: 5000,
         });
-        fetchBackupData();
+        loadBackups();
       } else {
         toast.error("Gagal melakukan restore", { id: "restore-progress" });
       }
@@ -382,7 +378,7 @@ export default function BackupPage() {
         const response = await backupService.remove(filename);
         if (response.data.success) {
           toast.success("Backup berhasil dihapus");
-          fetchBackupData(); // Refresh from server
+          loadBackups();
         }
       } catch (error) {
         console.error("Error deleting backup:", error);
@@ -803,7 +799,7 @@ export default function BackupPage() {
           </div>
         ) : (
           <div className="divide-y divide-border max-h-105 overflow-y-auto">
-            {backupHistory.map((backup, idx) => (
+            {backupHistory.map((backup) => (
               <div
                 key={backup.id}
                 className="px-5 py-3.5 flex items-center gap-4 hover:bg-surface-secondary/50 transition-colors group"

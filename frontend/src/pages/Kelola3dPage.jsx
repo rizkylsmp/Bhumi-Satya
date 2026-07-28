@@ -9,14 +9,16 @@ import {
   CaretRightIcon,
   CheckCircleIcon,
   CubeIcon,
+  DownloadSimpleIcon,
   FunnelIcon,
   MagnifyingGlassIcon,
+  LinkSimpleIcon,
   MapPinIcon,
   PlusIcon,
   TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import { useConfirm } from "../components/ui/ConfirmDialog";
+import { useConfirm } from "../components/ui/confirmContext";
 import { aset3dCatalogService } from "../services/api";
 import { useAuthStore } from "../stores/authStore";
 import { hasPermission } from "../utils/permissions";
@@ -33,9 +35,31 @@ const formatDate = (value) => {
   }).format(new Date(value));
 };
 
+const formatCoordinate = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(6) : "—";
+};
+
+const modelStatusLabel = {
+  belum_ada: "Belum ada model",
+  draft: "Draf",
+  processing: "Diproses",
+  needs_review: "Perlu verifikasi",
+  verified: "Terverifikasi",
+  rejected: "Ditolak",
+  active: "Aktif",
+  expired: "Kedaluwarsa",
+  ready: "Siap",
+  pending: "Antrean",
+};
+
 const sortOptions = [
   { value: "created_at:DESC", label: "Terbaru ditambahkan" },
   { value: "created_at:ASC", label: "Terlama ditambahkan" },
+  { value: "updated_at:DESC", label: "Terakhir diperbarui" },
+  { value: "model_updated_at:DESC", label: "Model terbaru diperbarui" },
+  { value: "center_x:ASC", label: "Center X terkecil" },
+  { value: "center_y:ASC", label: "Center Y terkecil" },
   { value: "kode_3d:ASC", label: "Kode 3D A–Z" },
   { value: "kode_aset:ASC", label: "Kode aset A–Z" },
   { value: "nama_aset:ASC", label: "Nama aset A–Z" },
@@ -206,6 +230,10 @@ export default function Kelola3dPage() {
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [modelStatus, setModelStatus] = useState("all");
+  const [catalogStatus, setCatalogStatus] = useState("all");
+  const [reviewStatus, setReviewStatus] = useState("all");
+  const [format, setFormat] = useState("all");
+  const [centerStatus, setCenterStatus] = useState("all");
   const [sortValue, setSortValue] = useState("created_at:DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -232,6 +260,10 @@ export default function Kelola3dPage() {
         limit,
         search: search || undefined,
         model_status: modelStatus,
+        catalog_status: catalogStatus,
+        review_status: reviewStatus,
+        format,
+        center_status: centerStatus,
         sort,
         order,
       });
@@ -243,7 +275,7 @@ export default function Kelola3dPage() {
     } finally {
       setLoading(false);
     }
-  }, [limit, modelStatus, order, page, search, sort]);
+  }, [catalogStatus, centerStatus, format, limit, modelStatus, order, page, reviewStatus, search, sort]);
 
   useEffect(() => {
     fetchCatalog();
@@ -275,6 +307,30 @@ export default function Kelola3dPage() {
     }
   };
 
+  const exportCatalog = async () => {
+    try {
+      const response = await aset3dCatalogService.exportCsv({
+        search: search || undefined,
+        model_status: modelStatus,
+        catalog_status: catalogStatus,
+        review_status: reviewStatus,
+        format,
+        center_status: centerStatus,
+        sort,
+        order,
+      });
+      const url = URL.createObjectURL(response.data);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `katalog-3d-${new Date().toISOString().slice(0, 10)}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      toast.success("Katalog sesuai filter berhasil diekspor");
+    } catch (error) {
+      toast.error(errorMessage(error, "Gagal mengekspor katalog 3D"));
+    }
+  };
+
   const totalWithModels = items.filter((item) => item.model_count > 0).length;
   return (
     <div className="min-h-full bg-surface-secondary p-4 md:p-6">
@@ -295,7 +351,7 @@ export default function Kelola3dPage() {
             <button
               type="button"
               onClick={() => setDialogOpen(true)}
-              className="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-surface shadow-lg shadow-accent/20 transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 sm:self-auto"
+              className="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 sm:self-auto"
             >
               <PlusIcon size={16} weight="bold" />
               Cari & Tambah Aset
@@ -316,8 +372,8 @@ export default function Kelola3dPage() {
           ))}
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-          <div className="grid gap-3 border-b border-border p-4 lg:grid-cols-[minmax(16rem,1fr)_12rem_14rem_auto]">
+        <section className="overflow-hidden rounded-2xl border border-border bg-surface">
+          <div className="grid gap-3 border-b border-border p-4 lg:grid-cols-[minmax(16rem,1fr)_12rem_14rem_auto_auto]">
             <label className="relative block">
               <span className="sr-only">Cari katalog 3D</span>
               <MagnifyingGlassIcon size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -337,22 +393,53 @@ export default function Kelola3dPage() {
             <button type="button" onClick={fetchCatalog} className="flex h-10 items-center justify-center gap-2 rounded-xl border border-border px-3 text-[9px] font-black text-text-secondary transition hover:border-accent hover:text-accent focus-visible:ring-2 focus-visible:ring-accent">
               <ArrowsClockwiseIcon size={14} weight="bold" className={loading ? "animate-spin" : ""} /> Muat ulang
             </button>
+            <button type="button" onClick={exportCatalog} className="flex h-10 items-center justify-center gap-2 rounded-xl bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent">
+              <DownloadSimpleIcon size={14} weight="bold" /> Ekspor CSV
+            </button>
+          </div>
+          <div className="grid gap-3 border-b border-border bg-surface-secondary/40 px-4 py-3 sm:grid-cols-2 xl:grid-cols-4">
+            <select value={catalogStatus} onChange={(event) => { setCatalogStatus(event.target.value); setPage(1); }} className="h-9 rounded-lg border border-border bg-surface px-3 text-[9px] font-bold text-text-secondary outline-none focus:border-accent">
+              <option value="all">Semua status katalog</option>
+              <option value="active">Katalog aktif</option>
+              <option value="inactive">Katalog nonaktif</option>
+            </select>
+            <select value={reviewStatus} onChange={(event) => { setReviewStatus(event.target.value); setPage(1); }} className="h-9 rounded-lg border border-border bg-surface px-3 text-[9px] font-bold text-text-secondary outline-none focus:border-accent">
+              <option value="all">Semua status verifikasi</option>
+              <option value="draft">Draf</option>
+              <option value="processing">Diproses</option>
+              <option value="needs_review">Perlu verifikasi</option>
+              <option value="verified">Terverifikasi</option>
+              <option value="rejected">Ditolak</option>
+              <option value="active">Aktif</option>
+              <option value="expired">Kedaluwarsa</option>
+            </select>
+            <select value={format} onChange={(event) => { setFormat(event.target.value); setPage(1); }} className="h-9 rounded-lg border border-border bg-surface px-3 text-[9px] font-bold text-text-secondary outline-none focus:border-accent">
+              <option value="all">Semua format</option>
+              <option value="KMZ">KMZ</option>
+              <option value="GLB">GLB</option>
+              <option value="3DTILES">3D Tiles</option>
+            </select>
+            <select value={centerStatus} onChange={(event) => { setCenterStatus(event.target.value); setPage(1); }} className="h-9 rounded-lg border border-border bg-surface px-3 text-[9px] font-bold text-text-secondary outline-none focus:border-accent">
+              <option value="all">Semua kelengkapan koordinat</option>
+              <option value="with_center">Center tersedia</option>
+              <option value="without_center">Center belum tersedia</option>
+            </select>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1120px] border-collapse text-left">
+            <table className="w-full min-w-[1420px] border-collapse text-left">
               <thead className="bg-surface-secondary/80">
                 <tr className="text-[8px] font-black uppercase tracking-[0.12em] text-text-muted">
-                  <th className="px-4 py-3">Kode 3D</th><th className="px-4 py-3">Aset</th><th className="px-4 py-3">Lokasi / OPD</th><th className="px-4 py-3">Data Bangunan 3D</th><th className="px-4 py-3">Versi File Model</th><th className="px-4 py-3">Ditambahkan</th><th className="px-4 py-3 text-right">Aksi</th>
+                  <th className="px-4 py-3">Kode 3D</th><th className="px-4 py-3">Nama / Kategori</th><th className="px-4 py-3">Lokasi</th><th className="px-4 py-3">Data Bangunan</th><th className="px-4 py-3">Status Model</th><th className="px-4 py-3">Center X / Y</th><th className="px-4 py-3">URL Model</th><th className="px-4 py-3">Dibuat / Diperbarui</th><th className="sticky right-0 z-20 w-36 min-w-36 border-l border-border bg-surface-secondary px-4 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {loading ? [1, 2, 3, 4, 5].map((item) => <tr key={item}><td colSpan="7" className="px-4 py-3"><div className="h-14 animate-pulse rounded-lg bg-surface-secondary" /></td></tr>) : items.length === 0 ? (
-                  <tr><td colSpan="7" className="px-6 py-14 text-center"><CubeIcon size={32} className="mx-auto text-text-muted" /><p className="mt-3 text-xs font-black text-text-primary">Belum ada aset di Kelola 3D</p><p className="mt-1 text-[10px] text-text-muted">Gunakan tombol Cari & Tambah Aset untuk memulai.</p></td></tr>
+                {loading ? [1, 2, 3, 4, 5].map((item) => <tr key={item}><td colSpan="9" className="px-4 py-3"><div className="h-14 animate-pulse rounded-lg bg-surface-secondary" /></td></tr>) : items.length === 0 ? (
+                  <tr><td colSpan="9" className="px-6 py-14 text-center"><CubeIcon size={32} className="mx-auto text-text-muted" /><p className="mt-3 text-xs font-black text-text-primary">Belum ada aset di Kelola 3D</p><p className="mt-1 text-[10px] text-text-muted">Gunakan tombol Cari & Tambah Aset untuk memulai.</p></td></tr>
                 ) : items.map((item) => (
                   <tr key={item.kode_3d} className="group transition hover:bg-accent/[0.025]">
                     <td className="px-4 py-3"><span className="inline-flex rounded-lg bg-violet-50 px-2.5 py-1.5 font-mono text-[10px] font-black text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">{item.kode_3d}</span></td>
-                    <td className="px-4 py-3"><p className="text-[10px] font-black text-accent">{item.asset?.kode_aset || "—"}</p><p className="mt-0.5 max-w-64 truncate text-[10px] font-bold text-text-primary">{item.asset?.nama_aset || "Nama aset belum diisi"}</p></td>
+                    <td className="px-4 py-3"><p className="max-w-64 truncate text-[10px] font-bold text-text-primary">{item.asset?.nama_aset || "Nama aset belum diisi"}</p><p className="mt-1 text-[8px] font-bold uppercase text-text-muted">{item.asset?.kode_aset || "—"} · {item.category || "Bangunan"} · {item.model_format || "Tanpa model"}</p></td>
                     <td className="px-4 py-3"><p className="flex max-w-64 items-center gap-1 truncate text-[9px] text-text-secondary"><MapPinIcon size={10} /> {item.asset?.lokasi || item.asset?.desa_kelurahan || "—"}</p><p className="mt-1 max-w-64 truncate text-[8px] text-text-muted">{item.asset?.opd_pengguna || "OPD belum diisi"}</p></td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1.5">
@@ -361,9 +448,59 @@ export default function Kelola3dPage() {
                         <span className="rounded-md bg-surface-secondary px-2 py-1 text-[8px] font-bold text-text-secondary">{item.asset?.building_floors ? `${item.asset.building_floors} lantai` : "Lantai —"}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">{item.model_count > 0 ? <div><span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[8px] font-black text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"><CheckCircleIcon size={11} weight="fill" /> {item.model_count} versi · {item.active_model?.conversion_status || "siap"}</span><p className="mt-1 text-[8px] font-semibold uppercase text-text-muted">{item.active_model?.model_type || "Model 3D"} · v{item.active_model?.version || "—"}</p></div> : <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[8px] font-black text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"><CubeIcon size={11} /> Belum ada file model</span>}</td>
-                    <td className="px-4 py-3 text-[9px] font-semibold text-text-secondary">{formatDate(item.created_at)}</td>
-                    <td className="px-4 py-3"><div className="flex justify-end gap-1.5"><button type="button" onClick={() => navigate(`/kelola-3d/${encodeURIComponent(item.kode_3d)}`)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent"><span>Kelola</span><ArrowRightIcon size={12} weight="bold" /></button>{canUpdate && <button type="button" disabled={deletingCode === item.kode_3d} onClick={() => removeItem(item)} className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted transition hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-red-500/10" aria-label={`Hapus aset 3D ${item.kode_3d}`} title="Hapus aset 3D">{deletingCode === item.kode_3d ? <ArrowsClockwiseIcon size={14} className="animate-spin" /> : <TrashIcon size={14} weight="bold" />}</button>}</div></td>
+                    <td className="px-4 py-3">
+                      {item.model_count > 0 ? (
+                        <div>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[8px] font-black text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                            <CheckCircleIcon size={11} weight="fill" />
+                            {modelStatusLabel[item.model_status] || item.model_status}
+                          </span>
+                          <p className="mt-1 text-[8px] font-semibold uppercase text-text-muted">
+                            {item.model_count} versi · {item.active_model?.model_type || "Model 3D"} · v{item.active_model?.version || "—"}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[8px] font-black text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                          <CubeIcon size={11} /> Belum ada file model
+                        </span>
+                      )}
+                      <p className="mt-1 text-[8px] font-bold uppercase text-text-muted">
+                        Katalog {item.status === "active" ? "aktif" : "nonaktif"}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-mono text-[9px] font-semibold text-text-secondary">
+                        X {formatCoordinate(item.center_x)}
+                      </p>
+                      <p className="mt-1 font-mono text-[9px] font-semibold text-text-secondary">
+                        Y {formatCoordinate(item.center_y)}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      {item.model_url ? (
+                        <a
+                          href={item.model_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex max-w-48 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[8px] font-bold text-accent hover:border-accent"
+                          title={item.model_url}
+                        >
+                          <LinkSimpleIcon size={11} />
+                          <span className="truncate">Buka URL model</span>
+                        </a>
+                      ) : (
+                        <span className="text-[9px] text-text-muted">Belum tersedia</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-[9px] font-semibold text-text-secondary">
+                        Dibuat {formatDate(item.created_at)}
+                      </p>
+                      <p className="mt-1 text-[8px] text-text-muted">
+                        Diperbarui {formatDate(item.model_updated_at || item.updated_at)}
+                      </p>
+                    </td>
+                    <td className="sticky right-0 z-10 w-36 min-w-36 border-l border-border bg-surface px-4 py-3 group-hover:bg-surface-secondary"><div className="flex justify-end gap-1.5"><button type="button" onClick={() => navigate(`/kelola-3d/${encodeURIComponent(item.kode_3d)}`)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent"><span>Kelola</span><ArrowRightIcon size={12} weight="bold" /></button>{canUpdate && <button type="button" disabled={deletingCode === item.kode_3d} onClick={() => removeItem(item)} className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted transition hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-red-500/10" aria-label={`Hapus aset 3D ${item.kode_3d}`} title="Hapus aset 3D">{deletingCode === item.kode_3d ? <ArrowsClockwiseIcon size={14} className="animate-spin" /> : <TrashIcon size={14} weight="bold" />}</button>}</div></td>
                   </tr>
                 ))}
               </tbody>

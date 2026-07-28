@@ -3,6 +3,7 @@ import { createHashRouter, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 
 // Layouts
+import PublicLayout from "../layouts/PublicLayout";
 import RootLayout from "../layouts/RootLayout";
 import { useAuthStore } from "../stores/authStore";
 import { normalizeRole } from "../utils/permissions";
@@ -36,10 +37,10 @@ const lazyWithRetry = (componentImport) =>
 // Pages - Public (lazy loaded for better initial load)
 const LandingPage = lazyWithRetry(() => import("../pages/LandingPage"));
 const PublicMapPage = lazyWithRetry(() => import("../pages/PublicMapPage"));
+const PublicSewaPage = lazyWithRetry(() => import("../pages/PublicSewaPage"));
 
 // Lazy-loaded pages (code-split per route)
 const DashboardPage = lazyWithRetry(() => import("../pages/DashboardPage"));
-const EkasmatPage = lazyWithRetry(() => import("../pages/EkasmatPage"));
 const MapPage = lazyWithRetry(() => import("../pages/MapPage"));
 const Kelola3dPage = lazyWithRetry(() => import("../pages/Kelola3dPage"));
 const Kelola3dDetailPage = lazyWithRetry(() => import("../pages/Kelola3dDetailPage"));
@@ -115,42 +116,50 @@ function DashboardRoute() {
 const router = createHashRouter([
   // Public routes
   {
-    path: "/sewa-tersedia",
-    element: (
-      <LazyPage>
-        <LandingPage />
-      </LazyPage>
-    ),
-  },
-  {
-    path: "/login",
-    element: (
-      <LazyPage>
-        <LandingPage />
-      </LazyPage>
-    ),
-  },
-  {
-    path: "/peta-publik",
-    element: (
-      <LazyPage>
-        <PublicMapPage />
-      </LazyPage>
-    ),
+    element: <PublicLayout />,
+    children: [
+      {
+        path: "/beranda",
+        element: (
+          <LazyPage>
+            <LandingPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: "/sewa-tersedia",
+        element: <Navigate to="/beranda" replace />,
+      },
+      {
+        path: "/login",
+        element: (
+          <LazyPage>
+            <LandingPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: "/peta-publik",
+        element: (
+          <LazyPage>
+            <PublicMapPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: "/sewa-aset",
+        element: (
+          <LazyPage>
+            <PublicSewaPage />
+          </LazyPage>
+        ),
+      },
+    ],
   },
   {
     path: "/masyarakat/login",
     element: <MasyarakatAuthPage />,
   },
-  {
-    path: "/ekasmat",
-    element: (
-      <LazyPage>
-        <EkasmatPage />
-      </LazyPage>
-    ),
-  },
-
   // Protected routes with Root Layout
   {
     path: "/",
@@ -334,16 +343,6 @@ const router = createHashRouter([
           <RoleGuard menuId="peta">
             <LazyPage>
               <MapPage />
-            </LazyPage>
-          </RoleGuard>
-        ),
-      },
-      {
-        path: "admin/ekasmat",
-        element: (
-          <RoleGuard menuId="ekasmat">
-            <LazyPage>
-              <EkasmatPage />
             </LazyPage>
           </RoleGuard>
         ),

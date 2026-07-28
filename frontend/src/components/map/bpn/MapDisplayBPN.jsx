@@ -4,6 +4,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
   BuildingsIcon,
+  CaretDownIcon,
   ImageIcon,
   MapPinIcon,
   MapTrifoldIcon,
@@ -14,7 +15,6 @@ import {
 import BPNLayerControl from "./BPNLayerControl";
 import Model3dControlPanel from "./Model3dControlPanel";
 import Switch from "../../ui/Switch";
-import { petaService } from "../../../services/api";
 import {
   buildAssetBuildingFeature,
   buildAssetBuildingFeatureCollection,
@@ -33,6 +33,8 @@ import {
   getModelFocusZoom,
   resolveModelOffsetLocation,
 } from "../../../utils/model3dTransform";
+import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "../mapDefaults";
+import CesiumAssetMap from "../CesiumAssetMap";
 import "./mapLibreStyles.css";
 
 const CERTIFIED_STATUS = "Telah Bersertifikat";
@@ -409,10 +411,13 @@ const MapDisplayBPN = ({
   assets = [],
   allAssets = null,
   mode = "bpn",
+  initialCenter = DEFAULT_MAP_CENTER,
+  initialZoom = DEFAULT_MAP_ZOOM,
   highlightAssetId = null,
   highlightRequestKey = null,
   focus3dRequestKey = null,
   forceDirectModelPreview = false,
+  onDetailedModelStatusChange = null,
   initialAsset3dMode = false,
   showAsset3dToolbar = true,
   asset3dPanelContainer = null,
@@ -437,6 +442,7 @@ const MapDisplayBPN = ({
 }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
+  const cesiumMapRef = useRef(null);
   const popupRef = useRef(null);
   const lastHandledHighlightRef = useRef(null);
   const lastHandledFocus3dRef = useRef(null);
@@ -462,6 +468,7 @@ const MapDisplayBPN = ({
   const [activeBasemap, setActiveBasemap] = useState(MAPLIBRE_BASEMAP_ID);
   const [basemapError, setBasemapError] = useState("");
   const [isBasemapMenuOpen, setIsBasemapMenuOpen] = useState(false);
+  const [openMapSetting, setOpenMapSetting] = useState("basemap");
   const [isMapReady, setIsMapReady] = useState(false);
   const [isAsset3dMode, setIsAsset3dMode] = useState(Boolean(initialAsset3dMode));
   const [isAsset3dPanelOpen, setIsAsset3dPanelOpen] = useState(Boolean(initialAsset3dMode));
@@ -485,6 +492,10 @@ const MapDisplayBPN = ({
   const [analysisPoints, setAnalysisPoints] = useState([]);
   const [analysisGeometry, setAnalysisGeometry] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
+
+  useEffect(() => {
+    onDetailedModelStatusChange?.(detailedModelStatus);
+  }, [detailedModelStatus, onDetailedModelStatusChange]);
   // Resolve: use external props when showControls=false, internal state otherwise
   const activeLayer = showControls
     ? activeLayerInternal
@@ -622,7 +633,9 @@ const MapDisplayBPN = ({
   );
   const fallbackDetailedModels3d = useMemo(
     () => forceDirectModelPreview
-      ? detailedModels3d
+      ? detailedModels3d.filter(
+          (model) => String(model?.format || model?.model_type || "").toUpperCase() !== "3DTILES",
+        )
       : detailedModels3d.filter((model) => tileset3dStatus.state === "error"
         || model.conversion_status !== "ready"
         || !model.converted_public_url),
@@ -871,7 +884,7 @@ const MapDisplayBPN = ({
     popupRef.current = popup;
   };
 
-  const setSourceFeatureState = (source, id, state) => {
+  const setSourceFeatureState = useCallback((source, id, state) => {
     if (!map.current || id === null || id === undefined) return;
     if (!map.current.getSource(source)) return;
 
@@ -880,9 +893,9 @@ const MapDisplayBPN = ({
     } catch (error) {
       console.warn(`Could not set ${source} feature state:`, error);
     }
-  };
+  }, []);
 
-  const clearSelectedBidangState = () => {
+  const clearSelectedBidangState = useCallback(() => {
     if (!map.current) {
       selectedBidangId.current = null;
       return;
@@ -902,7 +915,7 @@ const MapDisplayBPN = ({
     if (selectedSource) {
       selectedSource.setData(EMPTY_FEATURE_COLLECTION);
     }
-  };
+  }, [setSourceFeatureState]);
 
   const setSelectedBidangOverlay = (feature) => {
     const selectedSource = map.current?.getSource(SELECTED_BIDANG_SOURCE_ID);
@@ -1025,7 +1038,11 @@ const MapDisplayBPN = ({
     setAnalysisResult(result);
   };
 
-  const handleAnalysisClick = (event, renderedFeatures = []) => {
+  const handleAnalysisClick = (
+    event,
+    renderedFeatures = [],
+    directAsset = null,
+  ) => {
     const tool = analysisStateRef.current.tool;
     if (!tool) return false;
 
@@ -1068,7 +1085,7 @@ const MapDisplayBPN = ({
       return true;
     }
 
-    const asset = findAnalysisAsset(event, renderedFeatures);
+    const asset = directAsset || findAnalysisAsset(event, renderedFeatures);
     if (!asset) {
       setAnalysisVisualization({
         points: [clickedPoint],
@@ -2078,11 +2095,13 @@ const MapDisplayBPN = ({
     map.current = new maplibregl.Map({
       container: mapContainer.current,
       style: MAPLIBRE_STYLE_URL,
-      center: [112.9063, -7.6453],
-      zoom: 14.5,
+      center: initialCenter,
+      zoom: initialZoom,
       pitch: 0,
       bearing: 0,
-      antialias: true,
+      canvasContextAttributes: {
+        antialias: true,
+      },
     });
 
     map.current.addControl(new maplibregl.NavigationControl(), "top-right");
@@ -2159,6 +2178,8 @@ const MapDisplayBPN = ({
         map.current = null;
       }
     };
+  // Map listeners are intentionally bound once and read current state from refs.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -2309,6 +2330,9 @@ const MapDisplayBPN = ({
         kecVis,
       );
 
+  // Layer synchronization is driven by the data/visibility values below.
+  // Helper identities are intentionally excluded to avoid full map reprocessing.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeLayer,
     isBPKAMode,
@@ -2343,86 +2367,18 @@ const MapDisplayBPN = ({
   }, [isAsset3dMode, isMapReady]);
 
   useEffect(() => {
-    if (!map.current || !isMapReady || !map.current.isStyleLoaded()) return undefined;
-    const mapInstance = map.current;
-    let cancelled = false;
-    if (mapInstance.getLayer(DETAILED_MODEL_LAYER_ID)) {
-      mapInstance.removeLayer(DETAILED_MODEL_LAYER_ID);
+    if (!map.current || !isMapReady || !map.current.isStyleLoaded()) return;
+    if (map.current.getLayer(DETAILED_MODEL_LAYER_ID)) {
+      map.current.removeLayer(DETAILED_MODEL_LAYER_ID);
     }
-    if (!isAsset3dMode || fallbackDetailedModels3d.length === 0) return undefined;
-
-    import("../../../utils/kmzThreeLayer").then(({ createKmzModelLayer }) => {
-      if (cancelled || !mapInstance.isStyleLoaded()) return;
-      mapInstance.addLayer(createKmzModelLayer({
-        models: fallbackDetailedModels3d,
-        onStatus: setDetailedModelStatus,
-      }));
-    }).catch((error) => {
-      if (!cancelled) {
-        console.error("Could not initialize detailed 3D viewer:", error);
-        setDetailedModelStatus({
-          state: "error",
-          loaded: 0,
-          total: fallbackDetailedModels3d.length,
-          failed: fallbackDetailedModels3d.length,
-        });
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      if (mapInstance.getLayer(DETAILED_MODEL_LAYER_ID)) {
-        mapInstance.removeLayer(DETAILED_MODEL_LAYER_ID);
-      }
-    };
-  }, [fallbackDetailedModels3d, isAsset3dMode, isMapReady]);
-
-  useEffect(() => {
-    if (!map.current || !isMapReady || !isAsset3dMode || tiledAssetIds.length === 0) {
-      return undefined;
-    }
-    const mapInstance = map.current;
-    let cancelled = false;
-    let overlayHandle = null;
-    setTileset3dStatus({ state: "loading", loaded: 0, failed: 0 });
-
-    Promise.all([
-      petaService.getModel3dTileset(tiledAssetIds),
-      import("../../../utils/model3dTilesLayer"),
-    ]).then(([response, { createModel3dTilesOverlay }]) => {
-      if (cancelled) return;
-      overlayHandle = createModel3dTilesOverlay({
-        tileset: response.data,
-        onStatus: setTileset3dStatus,
-      });
-      mapInstance.addControl(overlayHandle.overlay);
-    }).catch((error) => {
-      if (cancelled) return;
-      console.error("Error loading model 3D tileset:", error);
-      setTileset3dStatus({
-        state: "error",
-        loaded: 0,
-        failed: tiledAssetIds.length,
-        message: error.message,
-      });
-    });
-
-    return () => {
-      cancelled = true;
-      if (overlayHandle) {
-        try {
-          mapInstance.removeControl(overlayHandle.overlay);
-        } catch (error) {
-          console.warn("Failed removing 3D Tiles overlay:", error.message);
-        }
-        overlayHandle.dispose();
-      }
-    };
-  }, [isAsset3dMode, isMapReady, tiledAssetIds]);
+    setTileset3dStatus({ state: "idle", loaded: 0, failed: 0 });
+  }, [isAsset3dMode, isMapReady]);
 
   // Sertifikat filter
   useEffect(() => {
     applyCertificateLayerFilter();
+    // The filter helper reads the current map ref and is triggered by these flags.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSudahSertifikat, showBelumSertifikat, isBPKAMode]);
 
   useEffect(() => {
@@ -2467,6 +2423,9 @@ const MapDisplayBPN = ({
 
     const timeoutId = setTimeout(openHighlightedPopup, 250);
     return () => clearTimeout(timeoutId);
+  // Highlight handling is keyed by the public request inputs below.
+  // Popup helpers read current map refs and must not retrigger the request.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     allAssetsResolved,
     highlightAssetId,
@@ -2509,6 +2468,9 @@ const MapDisplayBPN = ({
   };
 
   const focusDetailedModel = useCallback((location = null) => {
+    if (isAsset3dMode && cesiumMapRef.current) {
+      return cesiumMapRef.current.focus(location);
+    }
     if (!map.current) return false;
     const model = detailedModels3d[0];
     const fallbackAsset = roleAssets[0];
@@ -2549,7 +2511,7 @@ const MapDisplayBPN = ({
       essential: true,
     });
     return true;
-  }, [detailedModels3d, roleAssets]);
+  }, [detailedModels3d, isAsset3dMode, roleAssets]);
 
   useEffect(() => {
     if (focus3dRequestKey == null || !map.current || !isMapReady) return;
@@ -2628,9 +2590,10 @@ const MapDisplayBPN = ({
       onShowMarkersChange={setShowMarkersResolved}
       showPolygons={showPolygons}
       onShowPolygonsChange={setShowPolygonsResolved}
-      onPerspective={() => set3dCamera({ pitch: 60, bearing: 25 })}
-      onTopView={() => set3dCamera({ pitch: 0, bearing: 0 })}
-      onNorthView={() => set3dCamera({ bearing: 0 })}
+      onPerspective={() =>
+        cesiumMapRef.current?.setView("perspective")}
+      onTopView={() => cesiumMapRef.current?.setView("top")}
+      onNorthView={() => cesiumMapRef.current?.setView("north")}
       onFocusModels={focusDetailedModel}
       analysisTool={analysisTool}
       analysisResult={analysisResult}
@@ -2701,82 +2664,92 @@ const MapDisplayBPN = ({
         && asset3dControlPanel}
 
       {isBasemapMenuOpen && (
-        <div className="mt-1.5 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-white/80 bg-white/95 backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95">
-          <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/90 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/95">
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-white dark:bg-sky-500">
-                <StackIcon size={14} weight="fill" />
-              </span>
-              <div>
-                <p className="text-[11px] font-extrabold text-slate-900 dark:text-white">
-                  Pengaturan Peta
-                </p>
-                <p className="text-[8px] text-slate-500 dark:text-slate-400">
-                  {BASEMAP_OPTIONS.find((item) => item.id === activeBasemap)?.label}
-                </p>
-              </div>
-            </div>
+        <div className="mt-1.5 w-[min(19rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-surface/95 shadow-xl shadow-black/15 backdrop-blur-xl">
+          <div className="flex h-11 items-center justify-between border-b border-border bg-surface px-3">
+            <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-text-primary">
+              <StackIcon size={14} weight="fill" />
+              Pengaturan Peta
+            </span>
             <button
               type="button"
               onClick={() => setIsBasemapMenuOpen(false)}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-200 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-text-muted transition hover:bg-surface-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-accent"
               aria-label="Tutup pengaturan peta"
             >
               <XIcon size={13} weight="bold" />
             </button>
           </div>
-          <div className="max-h-[calc(100vh-7rem)] space-y-3 overflow-y-auto p-3 dark:[color-scheme:dark]">
-            <>
-            <section aria-labelledby="basemap-heading">
-              <p
-                id="basemap-heading"
-                className="mb-1.5 text-[9px] font-extrabold uppercase tracking-[0.1em] text-slate-500 dark:text-slate-400"
+          <div className="max-h-[calc(100vh-7rem)] overflow-y-auto dark:[color-scheme:dark]">
+            <section className="border-b border-border">
+              <button
+                type="button"
+                onClick={() => setOpenMapSetting((value) => value === "basemap" ? null : "basemap")}
+                aria-expanded={openMapSetting === "basemap"}
+                className={`flex min-h-11 w-full items-center justify-between px-3.5 py-2.5 text-[10px] font-extrabold uppercase tracking-[0.12em] transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${
+                  openMapSetting === "basemap"
+                    ? "bg-accent text-surface"
+                    : "bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
+                }`}
               >
-                Peta Dasar
-              </p>
-              <div
-                className="grid grid-cols-2 gap-1.5"
-                role="radiogroup"
-                aria-label="Peta dasar"
-              >
-                {BASEMAP_OPTIONS.map((option) => {
-                  const isActive = activeBasemap === option.id;
-                  const OptionIcon =
-                    option.id === "foto_udara" ? ImageIcon : MapTrifoldIcon;
+                <span>Basemap Layer</span>
+                <CaretDownIcon size={13} weight="bold" className={`transition-transform ${openMapSetting === "basemap" ? "rotate-180" : ""}`} />
+              </button>
+              {openMapSetting === "basemap" && <div className="border-t border-border bg-surface-secondary/80 p-3">
+                {isAsset3dMode ? (
+                <div className="flex h-10 items-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-2.5 text-violet-800 dark:border-violet-500/40 dark:bg-violet-500/10 dark:text-violet-200">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-violet-600 text-white">
+                    <BuildingsIcon size={13} weight="fill" />
+                  </span>
+                  <span className="min-w-0 flex-1 text-[9px] font-bold">
+                    Cesium + OpenStreetMap
+                  </span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </div>
+              ) : (
+                <div
+                  className="grid grid-cols-2 gap-1.5"
+                  role="radiogroup"
+                  aria-label="Peta dasar"
+                >
+                  {BASEMAP_OPTIONS.map((option) => {
+                    const isActive = activeBasemap === option.id;
+                    const OptionIcon =
+                      option.id === "foto_udara" ? ImageIcon : MapTrifoldIcon;
 
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={isActive}
-                      onClick={() => applyBasemap(option.id)}
-                      className={`flex h-9 items-center gap-1.5 rounded-lg border px-2 text-left transition-all hover:border-slate-300 ${
-                        isActive
-                          ? "border-accent bg-accent/5 ring-2 ring-accent/10 dark:border-sky-500 dark:bg-sky-500/10 dark:ring-sky-500/15"
-                          : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600 dark:hover:bg-slate-800"
-                      }`}
-                      title={option.label}
-                    >
-                      <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={isActive}
+                        onClick={() => applyBasemap(option.id)}
+                        className={`flex h-9 items-center gap-1.5 rounded-lg border px-2 text-left transition-all hover:border-slate-300 ${
                           isActive
-                            ? "bg-accent/10 text-accent dark:bg-sky-500 dark:text-white"
-                            : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                            ? "border-accent bg-accent/5 ring-2 ring-accent/10 dark:border-sky-500 dark:bg-sky-500/10 dark:ring-sky-500/15"
+                            : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600 dark:hover:bg-slate-800"
                         }`}
+                        title={option.label}
                       >
-                        <OptionIcon size={13} weight="fill" />
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-[9px] font-bold text-slate-800 dark:text-slate-100">
-                        {option.label}
-                      </span>
-                      {isActive && (
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent dark:bg-sky-400" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                        <span
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${
+                            isActive
+                              ? "bg-accent/10 text-accent dark:bg-sky-500 dark:text-white"
+                              : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                          }`}
+                        >
+                          <OptionIcon size={13} weight="fill" />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-[9px] font-bold text-slate-800 dark:text-slate-100">
+                          {option.label}
+                        </span>
+                        {isActive && (
+                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent dark:bg-sky-400" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                )}
               {basemapError && (
                 <div
                   className="mt-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-2 text-[10px] font-medium text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300"
@@ -2785,19 +2758,26 @@ const MapDisplayBPN = ({
                   {basemapError}
                 </div>
               )}
+              </div>}
             </section>
 
             <section
-              className="border-t border-slate-200 pt-3 dark:border-slate-700"
-              aria-labelledby="display-heading"
+              className="border-b border-border"
             >
-              <p
-                id="display-heading"
-                className="mb-1.5 text-[9px] font-extrabold uppercase tracking-[0.1em] text-slate-500 dark:text-slate-400"
+              <button
+                type="button"
+                onClick={() => setOpenMapSetting((value) => value === "layers" ? null : "layers")}
+                aria-expanded={openMapSetting === "layers"}
+                className={`flex min-h-11 w-full items-center justify-between px-3.5 py-2.5 text-[10px] font-extrabold uppercase tracking-[0.12em] transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${
+                  openMapSetting === "layers"
+                    ? "bg-accent text-surface"
+                    : "bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
+                }`}
               >
-                Layer Aktif
-              </p>
-              <div className="grid grid-cols-2 gap-1.5">
+                <span>Layer Controls</span>
+                <CaretDownIcon size={13} weight="bold" className={`transition-transform ${openMapSetting === "layers" ? "rotate-180" : ""}`} />
+              </button>
+              {openMapSetting === "layers" && <div className="grid grid-cols-2 gap-1.5 border-t border-border bg-surface-secondary/80 p-3">
                 <LayerSwitch
                   checked={showMarkers}
                   onChange={setShowMarkersResolved}
@@ -2814,10 +2794,8 @@ const MapDisplayBPN = ({
                   tone="violet"
                   iconClass="bg-violet-50 text-violet-600 dark:bg-violet-500 dark:text-white"
                 />
-              </div>
+              </div>}
             </section>
-            </>
-
           </div>
         </div>
       )}
@@ -2826,7 +2804,36 @@ const MapDisplayBPN = ({
 
   return (
     <div className="relative h-full w-full bg-gray-100 dark:bg-slate-950">
-      <div ref={mapContainer} className="w-full h-full" />
+      <div
+        ref={mapContainer}
+        className={`h-full w-full ${isAsset3dMode ? "invisible absolute inset-0" : ""}`}
+      />
+      {isAsset3dMode && (
+        <div className="absolute inset-0">
+          <CesiumAssetMap
+            ref={cesiumMapRef}
+            assets={visible3dAssets}
+            buildingGeoJson={assetBuildingGeoJson}
+            polygonGeoJson={bidangTanahGeoJson}
+            pointGeoJson={visibleDotGeoJson}
+            detailedModels={detailedModels3d}
+            showMarkers={effectiveShowMarkers}
+            showPolygons={effectiveShowPolygons}
+            onFeatureClick={onFeatureClick}
+            onOtherLayerClick={onOtherLayerClick}
+            onStatusChange={setDetailedModelStatus}
+            analysisTool={analysisTool}
+            analysisPoints={analysisPoints}
+            onAnalysisClick={({ longitude, latitude, asset }) => {
+              handleAnalysisClick(
+                { lngLat: { lng: longitude, lat: latitude } },
+                [],
+                asset,
+              );
+            }}
+          />
+        </div>
+      )}
       {basemapSwitcher}
       {isAsset3dMode
         && resolvedAsset3dPanelOpen

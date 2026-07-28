@@ -29,7 +29,7 @@ import { useNavigate } from "react-router-dom";
 import { assetModel3dService } from "../../services/api";
 import { downloadBuildingFootprintGeojson } from "../../utils/geojsonExport";
 import { getAsset3dSummary, HEIGHT_QUALITY_CONFIG } from "../../utils/asset3dGeojson";
-import { useConfirm } from "../ui/ConfirmDialog";
+import { useConfirm } from "../ui/confirmContext";
 
 // Helper functions - moved outside component to prevent re-creation on every render
 const formatCurrency = (num) => {
@@ -182,7 +182,6 @@ const InfoItem = ({ label, value, icon: Icon, highlight = false }) => (
   </div>
 );
 
-// eslint-disable-next-line no-unused-vars -- Icon is rendered as a JSX component below
 const Section = ({ title, icon: Icon, children, columns = 2, hidden = false }) => {
   const columnClass =
     columns === 3
@@ -217,6 +216,7 @@ export default function AssetViewModal({
   asset,
   onEdit,
   canEdit = true,
+  publicMode = false,
   onDownloadPdf,
   onDownloadGeojson,
 }) {
@@ -266,7 +266,7 @@ export default function AssetViewModal({
   }, []);
 
   useEffect(() => {
-    if (!isOpen || !asset?.id_aset) {
+    if (!isOpen || !asset?.id_aset || publicMode) {
       return;
     }
     let cancelled = false;
@@ -283,7 +283,7 @@ export default function AssetViewModal({
     return () => {
       cancelled = true;
     };
-  }, [asset?.id_aset, isOpen]);
+  }, [asset?.id_aset, isOpen, publicMode]);
 
   const hasQueuedModels = model3dCatalog.assetId === asset?.id_aset
     && model3dCatalog.versions.some((model) => ["pending", "processing"].includes(model.conversion_status));
@@ -390,7 +390,8 @@ export default function AssetViewModal({
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(objectUrl);
-      toast.success(`${variant === "glb" ? "GLB" : "KMZ sumber"} mulai diunduh`);
+      const sourceLabel = String(model.format || "model").toUpperCase();
+      toast.success(`${variant === "glb" ? "GLB" : `${sourceLabel} sumber`} mulai diunduh`);
     } catch (error) {
       console.error("Error downloading 3D model:", error);
       toast.error("Gagal mengunduh file model 3D");
@@ -944,7 +945,10 @@ export default function AssetViewModal({
                                 </span>
                                 {model.converted_size_bytes && (
                                   <span className="text-[10px] text-text-muted">
-                                    GLB {(Number(model.converted_size_bytes) / 1024).toLocaleString("id-ID", { maximumFractionDigits: 1 })} KB
+                                    {String(model.format).toUpperCase() === "3DTILES"
+                                      ? "Tileset"
+                                      : "GLB"}{" "}
+                                    {(Number(model.converted_size_bytes) / 1024).toLocaleString("id-ID", { maximumFractionDigits: 1 })} KB
                                   </span>
                                 )}
                               </div>
@@ -1018,9 +1022,13 @@ export default function AssetViewModal({
                                 disabled={downloadingModel === `${model.id_model_3d}-source`}
                                 className="inline-flex w-fit rounded-lg border border-border px-2.5 py-1.5 text-[10px] font-bold text-text-secondary hover:bg-surface-secondary focus-visible:ring-2 focus-visible:ring-violet-500 disabled:cursor-wait disabled:opacity-60"
                               >
-                                {downloadingModel === `${model.id_model_3d}-source` ? "Mengunduh…" : "Unduh KMZ"}
+                                {downloadingModel === `${model.id_model_3d}-source`
+                                  ? "Mengunduh…"
+                                  : `Unduh ${String(model.format || "sumber").toUpperCase()}`}
                               </button>
-                              {model.conversion_status === "ready" && model.converted_size_bytes && (
+                              {String(model.format).toUpperCase() !== "3DTILES"
+                                && model.conversion_status === "ready"
+                                && model.converted_size_bytes && (
                                 <button
                                   type="button"
                                   onClick={() => handleDownloadModel3d(model, "glb")}

@@ -10,7 +10,7 @@ import { useAuthStore } from "../../stores/authStore";
 import { hasPermission } from "../../utils/permissions";
 import { downloadAssetPdf } from "../../utils/pdfExport";
 import { downloadAssetGeojson } from "../../utils/geojsonExport";
-import { useConfirm } from "../../components/ui/ConfirmDialog";
+import { useConfirm } from "../../components/ui/confirmContext";
 import useColumnResize from "../../hooks/useColumnResize";
 import {
   DatabaseIcon,

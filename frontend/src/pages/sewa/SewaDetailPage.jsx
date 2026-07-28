@@ -27,7 +27,7 @@ import {
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import { sewaService } from "../../services/api";
-import { useConfirm } from "../../components/ui/ConfirmDialog";
+import { useConfirm } from "../../components/ui/confirmContext";
 import SewaFormModal from "../../components/sewa/SewaFormModal";
 import PengembalianFormModal from "../../components/sewa/PengembalianFormModal";
 import SewaPolygonMap from "../../components/sewa/SewaPolygonMap";

@@ -404,7 +404,6 @@ try {
     "permintaan_sewa",
     "riwayat",
     "notifikasi",
-    "ekasmat_responses",
   ];
   const tableCounts = {};
 

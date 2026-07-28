@@ -107,6 +107,8 @@ export const assetModel3dService = {
   },
   activate: (assetId, modelId) =>
     api.put(`/aset/${assetId}/models-3d/${modelId}/activate`),
+  review: (assetId, modelId, reviewData) =>
+    api.put(`/aset/${assetId}/models-3d/${modelId}/review`, reviewData),
   convert: (assetId, modelId) =>
     api.post(`/aset/${assetId}/models-3d/${modelId}/convert`),
   update: (assetId, modelId, metadata) =>
@@ -124,10 +126,33 @@ export const assetModel3dService = {
     api.put(`/aset/${assetId}/models-3d/${modelId}/restore`),
   removeArchived: (assetId, modelId) =>
     api.delete(`/aset/${assetId}/models-3d/${modelId}/permanent`),
+  listObjects: (assetId, modelId, params) =>
+    api.get(`/aset/${assetId}/models-3d/${modelId}/objects`, { params }),
+  createObject: (assetId, modelId, data) =>
+    api.post(`/aset/${assetId}/models-3d/${modelId}/objects`, data),
+  updateObject: (assetId, modelId, objectId, data) =>
+    api.put(`/aset/${assetId}/models-3d/${modelId}/objects/${objectId}`, data),
+  removeObject: (assetId, modelId, objectId) =>
+    api.delete(`/aset/${assetId}/models-3d/${modelId}/objects/${objectId}`),
+  downloadObjectTemplate: (assetId, modelId) =>
+    api.get(`/aset/${assetId}/models-3d/${modelId}/objects/template`, {
+      responseType: "blob",
+    }),
+  importObjects: (assetId, modelId, file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post(`/aset/${assetId}/models-3d/${modelId}/objects/import`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
 
 export const aset3dCatalogService = {
   list: (params) => api.get("/aset-3d", { params }),
+  exportCsv: (params) => api.get("/aset-3d/export", {
+    params,
+    responseType: "blob",
+  }),
   candidates: (params) => api.get("/aset-3d/candidates", { params }),
   getByCode: (kode3d) => api.get(`/aset-3d/${encodeURIComponent(kode3d)}`),
   create: (assetId) => api.post("/aset-3d", { id_aset: assetId }),
@@ -141,6 +166,7 @@ export const petaService = {
     params: assetIds?.length ? { asset_ids: assetIds.join(",") } : undefined,
   }),
   getPublicMarkers: () => api.get("/peta/public-markers"),
+  getPublicDetail: (id) => api.get(`/peta/public-detail/${id}`),
 };
 
 export const riwayatService = {
@@ -230,13 +256,6 @@ export const permintaanService = {
   update: (id, data) => api.put(`/permintaan/${id}`, data),
   updateStatus: (id, data) => api.put(`/permintaan/${id}/status`, data),
   delete: (id) => api.delete(`/permintaan/${id}`),
-};
-
-export const ekasmatService = {
-  getAll: () => api.get("/ekasmat"),
-  submit: (data) => api.post("/ekasmat/submit", data),
-  update: (id, data) => api.put(`/ekasmat/${id}`, data),
-  delete: (id) => api.delete(`/ekasmat/${id}`),
 };
 
 export const chatbotService = {

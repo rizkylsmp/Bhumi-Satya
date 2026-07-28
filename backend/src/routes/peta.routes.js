@@ -10,6 +10,7 @@ const router = express.Router();
 
 // Public routes (no authentication required)
 router.get("/public-markers", PetaController.getPublicMarkers);
+router.get("/public-detail/:id", PetaController.getDetail);
 
 // All routes below require authentication
 router.use(authMiddleware);

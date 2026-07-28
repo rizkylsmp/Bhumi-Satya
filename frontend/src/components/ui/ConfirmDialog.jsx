@@ -1,7 +1,6 @@
-import { useState, createContext, useContext, useCallback } from "react";
+import { useCallback, useState } from "react";
 import { TrashIcon, InfoIcon, WarningIcon } from "@phosphor-icons/react";
-
-const ConfirmContext = createContext(null);
+import { ConfirmContext } from "./confirmContext";
 
 export function ConfirmProvider({ children }) {
   const [state, setState] = useState({
@@ -67,7 +66,7 @@ export function ConfirmProvider({ children }) {
   const styles = getTypeStyles();
 
   return (
-    <ConfirmContext.Provider value={{ confirm }}>
+    <ConfirmContext.Provider value={confirm}>
       {children}
 
       {/* Modal */}
@@ -118,12 +117,4 @@ export function ConfirmProvider({ children }) {
       )}
     </ConfirmContext.Provider>
   );
-}
-
-export function useConfirm() {
-  const context = useContext(ConfirmContext);
-  if (!context) {
-    throw new Error("useConfirm must be used within a ConfirmProvider");
-  }
-  return context.confirm;
 }

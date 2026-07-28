@@ -31,6 +31,44 @@ import {
   InfoIcon,
 } from "@phosphor-icons/react";
 
+const INPUT_CLASS =
+  "w-full border border-border bg-surface text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all placeholder:text-text-muted";
+
+function Toggle({ enabled, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
+        enabled ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"
+      }`}
+    >
+      <div
+        className={`absolute top-0.5 w-5 h-5 bg-surface rounded-full shadow-md transition-transform ${
+          enabled ? "translate-x-5.5" : "translate-x-0.5"
+        }`}
+      />
+    </button>
+  );
+}
+
+function FormField({ label, icon: Icon, children, description }) {
+  return (
+    <div>
+      <label className="flex items-center gap-2 text-xs font-semibold text-text-secondary mb-1.5">
+        {Icon && (
+          <Icon size={14} weight="duotone" className="text-text-muted" />
+        )}
+        {label}
+      </label>
+      {children}
+      {description && (
+        <p className="text-[10px] text-text-muted mt-1">{description}</p>
+      )}
+    </div>
+  );
+}
+
 export default function PengaturanPage() {
   const [activeTab, setActiveTab] = useState("umum");
   const { user } = useAuthStore();
@@ -94,43 +132,6 @@ export default function PengaturanPage() {
   const handleSaveSettings = () => {
     toast.success("Pengaturan berhasil disimpan!");
   };
-
-  // Reusable toggle switch
-  const Toggle = ({ enabled, onToggle }) => (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-        enabled ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"
-      }`}
-    >
-      <div
-        className={`absolute top-0.5 w-5 h-5 bg-surface rounded-full shadow-md transition-transform ${
-          enabled ? "translate-x-5.5" : "translate-x-0.5"
-        }`}
-      />
-    </button>
-  );
-
-  // Reusable form field wrapper
-  const FormField = ({ label, icon: Icon, children, description }) => (
-    <div>
-      <label className="flex items-center gap-2 text-xs font-semibold text-text-secondary mb-1.5">
-        {Icon && (
-          <Icon size={14} weight="duotone" className="text-text-muted" />
-        )}
-        {label}
-      </label>
-      {children}
-      {description && (
-        <p className="text-[10px] text-text-muted mt-1">{description}</p>
-      )}
-    </div>
-  );
-
-  // Reusable input classes
-  const inputCls =
-    "w-full border border-border bg-surface text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all placeholder:text-text-muted";
 
   return (
     <div className="p-4 lg:p-6 space-y-6">
@@ -249,7 +250,7 @@ export default function PengaturanPage() {
                         onChange={(e) =>
                           handleGeneralChange("namaAplikasi", e.target.value)
                         }
-                        className={inputCls}
+                        className={INPUT_CLASS}
                       />
                     </FormField>
                     <FormField label="Deskripsi Aplikasi">
@@ -262,7 +263,7 @@ export default function PengaturanPage() {
                           )
                         }
                         rows={2}
-                        className={`${inputCls} resize-none`}
+                        className={`${INPUT_CLASS} resize-none`}
                       />
                     </FormField>
                   </div>
@@ -293,7 +294,7 @@ export default function PengaturanPage() {
                           onChange={(e) =>
                             handleGeneralChange("emailAdmin", e.target.value)
                           }
-                          className={inputCls}
+                          className={INPUT_CLASS}
                         />
                       </FormField>
                       <FormField label="Telepon Kantor" icon={PhoneIcon}>
@@ -303,7 +304,7 @@ export default function PengaturanPage() {
                           onChange={(e) =>
                             handleGeneralChange("teleponAdmin", e.target.value)
                           }
-                          className={inputCls}
+                          className={INPUT_CLASS}
                         />
                       </FormField>
                     </div>
@@ -314,7 +315,7 @@ export default function PengaturanPage() {
                           handleGeneralChange("alamatKantor", e.target.value)
                         }
                         rows={2}
-                        className={`${inputCls} resize-none`}
+                        className={`${INPUT_CLASS} resize-none`}
                       />
                     </FormField>
                   </div>
@@ -344,7 +345,7 @@ export default function PengaturanPage() {
                           onChange={(e) =>
                             handleGeneralChange("timezone", e.target.value)
                           }
-                          className={inputCls}
+                          className={INPUT_CLASS}
                         >
                           <option value="Asia/Jakarta">
                             Asia/Jakarta (WIB)
@@ -363,7 +364,7 @@ export default function PengaturanPage() {
                           onChange={(e) =>
                             handleGeneralChange("bahasa", e.target.value)
                           }
-                          className={inputCls}
+                          className={INPUT_CLASS}
                         >
                           <option value="id">Bahasa Indonesia</option>
                           <option value="en">English</option>
@@ -716,7 +717,7 @@ export default function PengaturanPage() {
                               e.target.value,
                             )
                           }
-                          className={inputCls}
+                          className={INPUT_CLASS}
                         >
                           <option value="10">10 item</option>
                           <option value="25">25 item</option>
@@ -730,7 +731,7 @@ export default function PengaturanPage() {
                           onChange={(e) =>
                             handleDisplayChange("formatTanggal", e.target.value)
                           }
-                          className={inputCls}
+                          className={INPUT_CLASS}
                         >
                           <option value="DD/MM/YYYY">DD/MM/YYYY</option>
                           <option value="MM/DD/YYYY">MM/DD/YYYY</option>

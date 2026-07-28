@@ -45,17 +45,26 @@ const modelAttributes = [
   "is_active",
   "status",
   "conversion_status",
+  "review_status",
+  "format",
   "model_type",
+  "public_url",
+  "converted_public_url",
+  "location_lat",
+  "location_long",
   "uploaded_at",
+  "updated_at",
   "archived_at",
 ];
 
-const serializeCatalog = (record) => {
+export const serializeCatalog = (record) => {
   const value = record.toJSON ? record.toJSON() : record;
   const models = (value.aset?.models3d || []).filter(
     (model) => !model.archived_at && model.status !== "archived",
   );
   const activeModel = models.find((model) => model.is_active) || models[0] || null;
+  const centerX = activeModel?.location_long ?? value.aset?.koordinat_long ?? null;
+  const centerY = activeModel?.location_lat ?? value.aset?.koordinat_lat ?? null;
   return {
     kode_3d: value.kode_3d,
     status: value.status,
@@ -65,6 +74,13 @@ const serializeCatalog = (record) => {
     asset: value.aset ? { ...value.aset, models3d: undefined } : null,
     model_count: models.length,
     active_model: activeModel,
+    model_status: activeModel?.review_status || activeModel?.conversion_status || "belum_ada",
+    category: "Bangunan",
+    model_format: activeModel?.format || activeModel?.model_type || null,
+    center_x: centerX,
+    center_y: centerY,
+    model_url: activeModel?.converted_public_url || activeModel?.public_url || null,
+    model_updated_at: activeModel?.updated_at || value.updated_at,
   };
 };
 
@@ -89,36 +105,102 @@ const catalogOrder = (sort, order) => {
     return [[{ model: Aset, as: "aset" }, sort, direction]];
   }
   if (sort === "kode_3d") return [["kode_3d", direction]];
+  if (sort === "status") return [["status", direction]];
+  if (sort === "model_updated_at") {
+    return [[Sequelize.literal(`COALESCE((
+      SELECT MAX(sort_model."updated_at")
+      FROM "aset_model_3d" sort_model
+      WHERE sort_model."id_aset" = "Aset3dCatalog"."id_aset"
+        AND sort_model."archived_at" IS NULL
+    ), "Aset3dCatalog"."updated_at")`), direction]];
+  }
+  if (sort === "center_x" || sort === "center_y") {
+    const modelColumn = sort === "center_x" ? "location_long" : "location_lat";
+    const assetColumn = sort === "center_x" ? "koordinat_long" : "koordinat_lat";
+    return [[Sequelize.literal(`COALESCE((
+      SELECT center_sort."${modelColumn}"
+      FROM "aset_model_3d" center_sort
+      WHERE center_sort."id_aset" = "Aset3dCatalog"."id_aset"
+        AND center_sort."archived_at" IS NULL
+      ORDER BY center_sort."is_active" DESC, center_sort."version" DESC
+      LIMIT 1
+    ), "aset"."${assetColumn}")`), direction]];
+  }
+  if (sort === "updated_at") return [["updated_at", direction]];
   return [["created_at", direction]];
+};
+
+const buildCatalogWhere = (query) => {
+  const where = {};
+  const search = String(query.search || "").trim();
+  const modelStatus = String(query.model_status || "all");
+  const catalogStatus = String(query.catalog_status || "all");
+  const reviewStatus = String(query.review_status || "all");
+  const format = String(query.format || "all").toUpperCase();
+  const centerStatus = String(query.center_status || "all");
+  const conditions = [];
+
+  if (search) {
+    where[Op.or] = [
+      { kode_3d: { [Op.iLike]: `%${search}%` } },
+      { "$aset.kode_aset$": { [Op.iLike]: `%${search}%` } },
+      { "$aset.nama_aset$": { [Op.iLike]: `%${search}%` } },
+      { "$aset.lokasi$": { [Op.iLike]: `%${search}%` } },
+    ];
+  }
+  if (["active", "inactive"].includes(catalogStatus)) where.status = catalogStatus;
+  if (["with_model", "without_model"].includes(modelStatus)) {
+    const exists = modelStatus === "with_model" ? "EXISTS" : "NOT EXISTS";
+    conditions.push(Sequelize.literal(`${exists} (
+      SELECT 1 FROM "aset_model_3d" model_filter
+      WHERE model_filter."id_aset" = "Aset3dCatalog"."id_aset"
+        AND model_filter."archived_at" IS NULL
+        AND model_filter."status" <> 'archived'
+    )`));
+  }
+  const validReviewStatuses = [
+    "draft", "processing", "needs_review", "verified", "rejected", "active", "expired",
+  ];
+  if (validReviewStatuses.includes(reviewStatus)) {
+    conditions.push(Sequelize.literal(`EXISTS (
+      SELECT 1 FROM "aset_model_3d" review_filter
+      WHERE review_filter."id_aset" = "Aset3dCatalog"."id_aset"
+        AND review_filter."archived_at" IS NULL
+        AND review_filter."review_status" = ${sequelize.escape(reviewStatus)}
+    )`));
+  }
+  if (["KMZ", "GLB", "3DTILES"].includes(format)) {
+    conditions.push(Sequelize.literal(`EXISTS (
+      SELECT 1 FROM "aset_model_3d" format_filter
+      WHERE format_filter."id_aset" = "Aset3dCatalog"."id_aset"
+        AND format_filter."archived_at" IS NULL
+        AND UPPER(format_filter."format") = ${sequelize.escape(format)}
+    )`));
+  }
+  if (["with_center", "without_center"].includes(centerStatus)) {
+    const hasCenter = `(
+      ("aset"."koordinat_long" IS NOT NULL AND "aset"."koordinat_lat" IS NOT NULL)
+      OR EXISTS (
+        SELECT 1 FROM "aset_model_3d" center_filter
+        WHERE center_filter."id_aset" = "Aset3dCatalog"."id_aset"
+          AND center_filter."archived_at" IS NULL
+          AND center_filter."location_long" IS NOT NULL
+          AND center_filter."location_lat" IS NOT NULL
+      )
+    )`;
+    conditions.push(Sequelize.literal(
+      centerStatus === "with_center" ? hasCenter : `NOT ${hasCenter}`,
+    ));
+  }
+  if (conditions.length > 0) where[Op.and] = conditions;
+  return where;
 };
 
 export const list = async (req, res) => {
   try {
     const page = toPositiveInteger(req.query.page, 1, 100000);
     const limit = toPositiveInteger(req.query.limit, 10, 100);
-    const where = {};
-    const search = String(req.query.search || "").trim();
-    const modelStatus = String(req.query.model_status || "all");
-
-    if (search) {
-      where[Op.or] = [
-        { kode_3d: { [Op.iLike]: `%${search}%` } },
-        { "$aset.kode_aset$": { [Op.iLike]: `%${search}%` } },
-        { "$aset.nama_aset$": { [Op.iLike]: `%${search}%` } },
-        { "$aset.lokasi$": { [Op.iLike]: `%${search}%` } },
-      ];
-    }
-    if (["with_model", "without_model"].includes(modelStatus)) {
-      const exists = modelStatus === "with_model" ? "EXISTS" : "NOT EXISTS";
-      where[Op.and] = [
-        Sequelize.literal(`${exists} (
-          SELECT 1 FROM "aset_model_3d" model_filter
-          WHERE model_filter."id_aset" = "Aset3dCatalog"."id_aset"
-            AND model_filter."archived_at" IS NULL
-            AND model_filter."status" <> 'archived'
-        )`),
-      ];
-    }
+    const where = buildCatalogWhere(req.query);
 
     const { count, rows } = await Aset3dCatalog.findAndCountAll({
       where,
@@ -142,6 +224,49 @@ export const list = async (req, res) => {
     });
   } catch (error) {
     console.error("Error listing 3D catalog:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const csvCell = (value) => {
+  const text = value === null || value === undefined ? "" : String(value);
+  return /[",\r\n]/.test(text) ? `"${text.replaceAll("\"", "\"\"")}"` : text;
+};
+
+export const exportCsv = async (req, res) => {
+  try {
+    const rows = await Aset3dCatalog.findAll({
+      where: buildCatalogWhere(req.query),
+      include: [catalogInclude],
+      order: catalogOrder(req.query.sort, req.query.order),
+    });
+    const headers = [
+      "kode_3d", "kode_aset", "nama_aset", "kategori", "status_katalog", "status_model",
+      "format", "center_x", "center_y", "url_model", "dibuat", "diperbarui",
+    ];
+    const body = rows.map(serializeCatalog).map((item) => [
+      item.kode_3d,
+      item.asset?.kode_aset,
+      item.asset?.nama_aset,
+      item.category,
+      item.status,
+      item.model_status,
+      item.model_format,
+      item.center_x,
+      item.center_y,
+      item.model_url,
+      item.created_at?.toISOString?.() || item.created_at,
+      item.model_updated_at?.toISOString?.() || item.model_updated_at,
+    ].map(csvCell).join(","));
+    const csv = `\uFEFF${[headers.join(","), ...body].join("\r\n")}`;
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="katalog-3d-${new Date().toISOString().slice(0, 10)}.csv"`,
+    );
+    return res.send(csv);
+  } catch (error) {
+    console.error("Error exporting 3D catalog:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
 };

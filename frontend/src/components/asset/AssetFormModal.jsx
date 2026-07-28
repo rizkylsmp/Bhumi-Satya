@@ -26,7 +26,6 @@ import {
 } from "@phosphor-icons/react";
 
 // Section Header component - moved outside to prevent re-creation on every render
-// eslint-disable-next-line no-unused-vars -- Icon is used as a React component in JSX below
 const SectionHeader = ({ icon: Icon, title }) => (
   <div className="flex items-center gap-3 pb-3 mb-4 border-b border-border">
     <div className="w-9 h-9 bg-accent/10 rounded-lg flex items-center justify-center">

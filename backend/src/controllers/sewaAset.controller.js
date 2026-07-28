@@ -148,18 +148,7 @@ export const getPublicAvailable = async (req, res) => {
           ],
         },
       ],
-      attributes: [
-        "id_sewa",
-        "nama_aset",
-        "lokasi_aset",
-        "no_lot",
-        "foto_sewa",
-        "catatan",
-        "polygon_sewa",
-        "status",
-        "tanggal_berakhir",
-        "created_at",
-      ],
+      attributes: publicAvailableAttributes,
       order: [["created_at", "DESC"]],
     });
 

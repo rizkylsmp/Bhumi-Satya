@@ -19,7 +19,6 @@ import {
   ImageIcon,
   FunnelIcon,
   MapTrifoldIcon,
-  HandshakeIcon,
   PaperPlaneTiltIcon,
   CheckCircleIcon,
   CircleNotchIcon,
@@ -43,7 +42,6 @@ import AssetMapDisplay from "../components/map/AssetMapDisplay";
 import SewaPolygonMap from "../components/sewa/SewaPolygonMap";
 import ChatbotButton from "../components/chatbot/ChatbotButton";
 import ChatbotModal from "../components/chatbot/ChatbotModal";
-import PublicNavbar from "../components/layout/PublicNavbar";
 import { normalizeRole } from "../utils/permissions";
 import BrandMark from "../components/shared/BrandMark";
 
@@ -423,17 +421,12 @@ export default function LandingPage() {
 
   // Sections refs
   const petaRef = useRef(null);
-  const asetRef = useRef(null);
   const sewaRef = useRef(null);
   const kontakRef = useRef(null);
 
   // Sewa data
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [kecamatan, setKecamatan] = useState("");
-  const [jenisAset, setJenisAset] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
 
   // Map data
@@ -467,6 +460,12 @@ export default function LandingPage() {
   const [otpCode, setOtpCode] = useState("");
   const [mfaEmailLoading, setMfaEmailLoading] = useState(false);
 
+  useEffect(() => {
+    if (location.state?.openLoginPanel === true) {
+      setShowLoginPanel(true);
+    }
+  }, [location.key, location.state?.openLoginPanel]);
+
   // Fetch map markers
   useEffect(() => {
     petaService
@@ -475,39 +474,15 @@ export default function LandingPage() {
       .catch(() => setMapAssets([]));
   }, []);
 
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 400);
-    return () => clearTimeout(timer);
-  }, [search]);
-
   // Fetch available sewa
   useEffect(() => {
     setLoading(true);
-    const params = {};
-    if (debouncedSearch) params.search = debouncedSearch;
-    if (kecamatan) params.kecamatan = kecamatan;
-    if (jenisAset) params.jenis_aset = jenisAset;
-
     sewaService
-      .getPublicAvailable(params)
+      .getPublicAvailable()
       .then((res) => setItems(res.data.data || []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
-  }, [debouncedSearch, kecamatan, jenisAset]);
-
-  const filterOptions = useMemo(() => {
-    const kecSet = new Set();
-    const jenisSet = new Set();
-    items.forEach((item) => {
-      if (item.aset?.kecamatan) kecSet.add(item.aset.kecamatan);
-      if (item.aset?.jenis_aset) jenisSet.add(item.aset.jenis_aset);
-    });
-    return {
-      kecamatan: [...kecSet].sort(),
-      jenis: [...jenisSet].sort(),
-    };
-  }, [items]);
+  }, []);
 
   const filteredMapAssets = useMemo(() => {
     if (!mapSearch.trim()) return mapAssets;
@@ -521,7 +496,7 @@ export default function LandingPage() {
     );
   }, [mapAssets, mapSearch]);
 
-  const assetOverview = useMemo(() => {
+  const assetStats = useMemo(() => {
     const kecamatanSet = new Set();
     const jenisSet = new Set();
     let certified = 0;
@@ -543,7 +518,6 @@ export default function LandingPage() {
       kecamatan: kecamatanSet.size,
       jenis: jenisSet.size,
       certified,
-      featured: mapAssets.slice(0, 6),
     };
   }, [mapAssets]);
 
@@ -553,20 +527,8 @@ export default function LandingPage() {
 
   const handleApply = () => setShowLoginPanel(true);
 
-  const navLinks = [
-    {
-      label: "Peta Aset",
-      icon: MapTrifoldIcon,
-      onClick: () => navigate("/peta-publik"),
-    },
-    { label: "Katalog Aset", icon: BuildingsIcon, onClick: () => scrollTo(asetRef) },
-    { label: "Layanan Sewa", icon: HandshakeIcon, onClick: () => scrollTo(sewaRef) },
-  ];
-
-  const getPostLoginPath = (role) =>
-    normalizeRole(role) === "masyarakat"
-      ? "/sewa/aset-tersedia"
-      : "/dashboard";
+  const getHomePath = (role) =>
+    normalizeRole(role) === "masyarakat" ? "/sewa/aset-tersedia" : "/dashboard";
 
   // Login handlers
   const handleLogin = async (e) => {
@@ -606,7 +568,7 @@ export default function LandingPage() {
       setUser(response.data.user);
       startSession(response.data.sessionDuration);
       toast.success("Login berhasil!");
-      navigate(getPostLoginPath(response.data.user?.role));
+      navigate(getHomePath(response.data.user?.role));
     } catch (err) {
       const msg = err.response?.data?.error || "Login gagal";
       setLoginError(msg);
@@ -634,7 +596,7 @@ export default function LandingPage() {
       setUser(response.data.user);
       startSession(response.data.sessionDuration);
       toast.success("Login berhasil!");
-      navigate(getPostLoginPath(response.data.user?.role));
+      navigate(getHomePath(response.data.user?.role));
     } catch (err) {
       const msg = err.response?.data?.error || "Verifikasi OTP gagal";
       setLoginError(msg);
@@ -736,12 +698,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="h-screen overflow-y-auto bg-surface-secondary">
-      <PublicNavbar
-        links={navLinks}
-        onLogin={() => setShowLoginPanel(true)}
-      />
-
+    <div className="min-h-[calc(100vh-4rem)] bg-surface-secondary">
       {/* ==================== HERO ==================== */}
       <section className="relative overflow-hidden bg-linear-to-br from-emerald-100 via-white to-white dark:from-slate-950 dark:via-emerald-950 dark:to-teal-900">
         <div className="absolute inset-0 opacity-0 dark:opacity-10">
@@ -773,26 +730,30 @@ export default function LandingPage() {
                 <MapTrifoldIcon size={19} weight="fill" />
                 Jelajahi Peta Aset
               </button>
-              <button
-                type="button"
-                onClick={() => scrollTo(asetRef)}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition hover:border-emerald-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-white dark:border-white/20 dark:bg-white/10 dark:text-white dark:shadow-none dark:hover:border-white/20 dark:hover:bg-white/15 dark:focus:ring-white/60 dark:focus:ring-offset-emerald-950"
-              >
-                <BuildingsIcon size={19} weight="duotone" />
-                Lihat Katalog Aset
-              </button>
             </div>
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-slate-600 dark:text-slate-300">
               <span className="inline-flex items-center gap-2">
-                <MapPinIcon size={15} weight="fill" className="text-sky-600 dark:text-sky-300" />
+                <MapPinIcon
+                  size={15}
+                  weight="fill"
+                  className="text-sky-600 dark:text-sky-300"
+                />
                 Persebaran dan batas bidang
               </span>
               <span className="inline-flex items-center gap-2">
-                <ShieldCheckIcon size={15} weight="fill" className="text-emerald-600 dark:text-emerald-300" />
+                <ShieldCheckIcon
+                  size={15}
+                  weight="fill"
+                  className="text-emerald-600 dark:text-emerald-300"
+                />
                 Informasi legalitas
               </span>
               <span className="inline-flex items-center gap-2">
-                <StackIcon size={15} weight="fill" className="text-amber-600 dark:text-amber-300" />
+                <StackIcon
+                  size={15}
+                  weight="fill"
+                  className="text-amber-600 dark:text-amber-300"
+                />
                 Data pemanfaatan aset
               </span>
             </div>
@@ -813,20 +774,42 @@ export default function LandingPage() {
             </div>
             <div className="mt-6 grid grid-cols-2 gap-3">
               {[
-                { label: "Total aset", value: assetOverview.total, icon: BuildingsIcon },
-                { label: "Kecamatan", value: assetOverview.kecamatan, icon: MapPinIcon },
-                { label: "Jenis aset", value: assetOverview.jenis, icon: StackIcon },
-                { label: "Bersertifikat", value: assetOverview.certified, icon: ShieldCheckIcon },
+                {
+                  label: "Total aset",
+                  value: assetStats.total,
+                  icon: BuildingsIcon,
+                },
+                {
+                  label: "Kecamatan",
+                  value: assetStats.kecamatan,
+                  icon: MapPinIcon,
+                },
+                {
+                  label: "Jenis aset",
+                  value: assetStats.jenis,
+                  icon: StackIcon,
+                },
+                {
+                  label: "Bersertifikat",
+                  value: assetStats.certified,
+                  icon: ShieldCheckIcon,
+                },
               ].map((stat) => (
                 <div
                   key={stat.label}
                   className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-950/25"
                 >
-                  <stat.icon size={18} weight="duotone" className="text-emerald-600 dark:text-emerald-300" />
+                  <stat.icon
+                    size={18}
+                    weight="duotone"
+                    className="text-emerald-600 dark:text-emerald-300"
+                  />
                   <p className="mt-3 text-2xl font-black text-slate-900 dark:text-white">
                     {stat.value || "—"}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {stat.label}
+                  </p>
                 </div>
               ))}
             </div>
@@ -839,96 +822,6 @@ export default function LandingPage() {
               <ArrowRightIcon size={16} weight="bold" />
             </button>
           </aside>
-        </div>
-      </section>
-
-      {/* ==================== KATALOG ASET ==================== */}
-      <section ref={asetRef} className="border-b border-border bg-surface">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-          <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">
-                Katalog Aset
-              </p>
-              <h3 className="mt-2 text-2xl font-bold text-text-primary md:text-3xl">
-                Sorotan aset Kota Pasuruan
-              </h3>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-text-secondary">
-                Temukan informasi dasar aset yang tersebar di berbagai wilayah.
-                Pilih salah satu aset untuk melihat posisinya pada peta.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate("/peta-publik")}
-              className="inline-flex items-center gap-2 self-start rounded-xl border border-border bg-surface-secondary px-4 py-2.5 text-sm font-semibold text-text-primary transition hover:border-emerald-500/40 hover:text-emerald-700 dark:hover:text-emerald-300 sm:self-auto"
-            >
-              Lihat Semua di Peta
-              <ArrowRightIcon size={15} weight="bold" />
-            </button>
-          </div>
-
-          {assetOverview.featured.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {assetOverview.featured.map((asset, index) => (
-                <article
-                  key={asset.id || asset.id_aset || `${asset.nama_aset}-${index}`}
-                  className="group overflow-hidden rounded-2xl border border-border bg-surface-secondary transition hover:-translate-y-0.5 hover:border-emerald-500/30 hover:shadow-lg"
-                >
-                  <div className="flex items-center justify-between border-b border-border bg-linear-to-r from-emerald-500/10 to-sky-500/10 px-5 py-4">
-                    <span className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                      <BuildingsIcon size={16} weight="duotone" />
-                      {asset.jenis_aset || "Aset Tanah"}
-                    </span>
-                    {asset.status && (
-                      <span className="rounded-full bg-surface px-2.5 py-1 text-[10px] font-bold text-text-muted shadow-sm">
-                        {asset.status}
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <h4 className="line-clamp-2 min-h-12 text-base font-bold leading-snug text-text-primary">
-                      {asset.nama_aset || "Aset Tanah Kota Pasuruan"}
-                    </h4>
-                    <p className="mt-3 flex min-h-10 items-start gap-2 text-xs leading-relaxed text-text-secondary">
-                      <MapPinIcon size={15} weight="fill" className="mt-0.5 shrink-0 text-emerald-500" />
-                      <span className="line-clamp-2">
-                        {asset.lokasi || asset.kecamatan || "Kota Pasuruan"}
-                      </span>
-                    </p>
-                    <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-                      <span className="text-xs font-medium text-text-muted">
-                        {Number(asset.luas) > 0
-                          ? `${Number(asset.luas).toLocaleString("id-ID")} m²`
-                          : "Luas belum tersedia"}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFocusedAsset(asset);
-                          scrollTo(petaRef);
-                        }}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 transition group-hover:gap-2 dark:text-emerald-300"
-                      >
-                        Lihat di peta
-                        <ArrowRightIcon size={13} weight="bold" />
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-border bg-surface-secondary px-6 py-12 text-center">
-              <BuildingsIcon size={36} weight="duotone" className="mx-auto text-text-muted" />
-              <p className="mt-3 text-sm font-semibold text-text-primary">
-                Data aset sedang disiapkan
-              </p>
-              <p className="mt-1 text-xs text-text-muted">
-                Katalog akan tampil setelah data publik tersedia.
-              </p>
-            </div>
-          )}
         </div>
       </section>
 
@@ -950,7 +843,7 @@ export default function LandingPage() {
               Peta Lokasi Aset
             </h3>
             <p className="text-sm text-text-muted">
-              Lokasi seluruh aset tanah Kota Pasuruan
+              Peta berpusat di Sekolah Tinggi Pertanahan Nasional, Yogyakarta
             </p>
           </div>
           <div className="relative w-64 hidden sm:block">
@@ -1059,7 +952,9 @@ export default function LandingPage() {
               allAssets={mapAssets}
               mode="integrated"
               highlightAssetId={focusedAsset?.id || null}
-              highlightRequestKey={focusedAsset ? `landing-${focusedAsset.id}` : null}
+              highlightRequestKey={
+                focusedAsset ? `landing-${focusedAsset.id}` : null
+              }
               showControls={false}
               activeLayer="bidang"
               showMarkers={showMapMarkers}
@@ -1092,82 +987,33 @@ export default function LandingPage() {
         ref={sewaRef}
         className="bg-surface border-t border-b border-border"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/15 flex items-center justify-center">
-              <HandshakeIcon
-                size={20}
-                weight="fill"
-                className="text-emerald-600 dark:text-emerald-400"
-              />
-            </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+          <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h3 className="text-lg font-bold text-text-primary">
-                Aset Tersedia untuk Disewa
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">
+                Sewa Aset
+              </p>
+              <h3 className="mt-2 text-2xl font-bold text-text-primary md:text-3xl">
+                Aset pilihan yang siap disewa
               </h3>
-              <p className="text-sm text-text-muted">
-                {loading ? "Memuat..." : `${items.length} aset tersedia`}
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-text-secondary">
+                Lihat beberapa aset terbaru di beranda atau buka katalog lengkap
+                untuk mencari dan memfilter aset sesuai kebutuhan Anda.
               </p>
             </div>
+            <button
+              type="button"
+              onClick={() => navigate("/sewa-aset")}
+              className="inline-flex items-center gap-2 self-start rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-surface transition hover:bg-accent-hover sm:self-auto"
+            >
+              Lihat Semua Aset
+              <ArrowRightIcon size={16} weight="bold" />
+            </button>
           </div>
 
-          {/* Search + Filters */}
-          <div className="bg-surface-secondary rounded-xl border border-border p-4 flex flex-col sm:flex-row gap-3 mb-8">
-            <div className="relative flex-1">
-              <MagnifyingGlassIcon
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
-              />
-              <input
-                type="text"
-                placeholder="Cari nama atau lokasi aset..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-colors"
-              />
-            </div>
-            <div className="relative sm:w-44">
-              <FunnelIcon
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
-              />
-              <select
-                value={kecamatan}
-                onChange={(e) => setKecamatan(e.target.value)}
-                className="w-full pl-9 pr-8 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-colors"
-              >
-                <option value="">Semua Kecamatan</option>
-                {filterOptions.kecamatan.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="relative sm:w-44">
-              <TagIcon
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
-              />
-              <select
-                value={jenisAset}
-                onChange={(e) => setJenisAset(e.target.value)}
-                className="w-full pl-9 pr-8 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-colors"
-              >
-                <option value="">Semua Jenis</option>
-                {filterOptions.jenis.map((j) => (
-                  <option key={j} value={j}>
-                    {j}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Grid */}
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {Array.from({ length: 8 }).map((_, i) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
                   className="bg-surface rounded-xl border border-border overflow-hidden animate-pulse h-full flex flex-col"
@@ -1196,14 +1042,12 @@ export default function LandingPage() {
                 Belum Ada Aset Tersedia
               </h4>
               <p className="text-sm text-text-muted max-w-md mx-auto">
-                {search || kecamatan || jenisAset
-                  ? "Tidak ditemukan aset yang sesuai filter."
-                  : "Saat ini belum ada aset yang tersedia untuk disewakan."}
+                Saat ini belum ada aset yang tersedia untuk disewakan.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {items.map((item) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {items.slice(0, 3).map((item) => (
                 <AssetCard
                   key={item.id_sewa}
                   item={item}
@@ -1226,7 +1070,8 @@ export default function LandingPage() {
           </h3>
           <p className="text-text-secondary text-sm max-w-lg mx-auto">
             Pengajuan sewa dilakukan melalui akun masyarakat agar status
-            permintaan dan dokumen balasan pengelola aset bisa dipantau dengan aman.
+            permintaan dan dokumen balasan pengelola aset bisa dipantau dengan
+            aman.
           </p>
         </div>
 
@@ -1423,6 +1268,7 @@ export default function LandingPage() {
         <div className="relative h-full w-screen sm:w-96 md:w-104 bg-surface dark:bg-gray-900 flex flex-col shadow-2xl max-h-screen overflow-hidden border-l border-border ml-auto">
           {/* Close button */}
           <button
+            aria-label="Tutup panel login"
             onClick={() => {
               setShowLoginPanel(false);
               setMfaStep(false);
@@ -1441,7 +1287,7 @@ export default function LandingPage() {
           <div className="flex-1 overflow-y-auto min-h-0">
             {/* Header */}
             <div className="px-6 md:px-8 pt-8 pb-6 text-center">
-              <BrandMark className="mx-auto mb-4 h-16 w-16 text-lg shadow-xl" />
+              <BrandMark className="mx-auto mb-4 h-16 w-16 text-lg" />
               <h2 className="text-text-primary font-bold text-xl tracking-tight">
                 Bhumi Satya
               </h2>

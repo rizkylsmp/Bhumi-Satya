@@ -60,6 +60,10 @@ export default function RootLayout() {
 
   // Halaman peta tidak perlu scroll wrapper
   const isMapPage = location.pathname === "/peta";
+  const isCompactReferencePage =
+    location.pathname === "/kelola-3d" ||
+    location.pathname.startsWith("/kelola-3d/");
+  const useCompactPageDensity = !isMapPage && !isCompactReferencePage;
 
   // Fetch notifications (centralized)
   const fetchNotifications = useCallback(async () => {
@@ -137,7 +141,7 @@ export default function RootLayout() {
   const closeSidebar = () => setSidebarOpen(false);
 
   return (
-    <div className="h-screen bg-surface-secondary flex flex-col overflow-hidden">
+    <div className="flex h-dvh w-full min-w-0 flex-col bg-surface-secondary">
       {/* Session Expired Dialog */}
       {showExtendDialog && (
         <SessionExpiredDialog
@@ -154,11 +158,11 @@ export default function RootLayout() {
         onMarkAllAsRead={handleMarkAllAsRead}
         onMarkAsRead={handleMarkAsRead}
       />
-      <div className="flex flex-1 overflow-hidden min-h-0">
+      <div className="flex min-h-0 min-w-0 flex-1">
         {/* Desktop Sidebar - fixed height, no scroll */}
         <div
-          className={`hidden lg:block transition-all duration-300 ease-in-out relative z-30 ${
-            sidebarCollapsed ? "w-18" : "w-68"
+          className={`relative z-30 hidden shrink-0 transition-all duration-300 ease-in-out lg:block ${
+            sidebarCollapsed ? "w-16" : "w-60"
           }`}
         >
           <Sidebar
@@ -190,11 +194,17 @@ export default function RootLayout() {
 
         {/* Main Content */}
         <main
-          className={`flex-1 ${
+          className={`app-main-content w-0 min-w-0 max-w-full flex-1 ${
             isMapPage ? "overflow-hidden" : "overflow-y-auto"
           }`}
         >
-          <Outlet context={{ refreshNotifications: fetchNotifications }} />
+          {useCompactPageDensity ? (
+            <div className="admin-density-compact">
+              <Outlet context={{ refreshNotifications: fetchNotifications }} />
+            </div>
+          ) : (
+            <Outlet context={{ refreshNotifications: fetchNotifications }} />
+          )}
         </main>
       </div>
     </div>

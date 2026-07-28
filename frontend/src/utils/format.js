@@ -16,7 +16,7 @@ export function formatDate(date, options = {}) {
 
   try {
     return new Intl.DateTimeFormat("id-ID", defaultOptions).format(new Date(date));
-  } catch (error) {
+  } catch {
     console.warn("Invalid date:", date);
     return "-";
   }

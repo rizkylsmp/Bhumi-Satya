@@ -1,18 +1,42 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
-  ChartBarIcon,
+  HouseIcon,
   ListIcon,
+  MapTrifoldIcon,
   MoonIcon,
   SignInIcon,
+  StorefrontIcon,
   SunIcon,
 } from "@phosphor-icons/react";
 import { useThemeStore } from "../../stores/themeStore";
 import BrandMark from "../shared/BrandMark";
 
-/** Shared public navigation for the landing page and full-screen public map. */
-export default function PublicNavbar({ links = [], onLogin, fixed = false }) {
+const PUBLIC_LINKS = [
+  {
+    label: "Beranda",
+    icon: HouseIcon,
+    path: "/beranda",
+    matches: ["/beranda", "/login"],
+  },
+  {
+    label: "Peta Aset",
+    icon: MapTrifoldIcon,
+    path: "/peta-publik",
+    matches: ["/peta-publik"],
+  },
+  {
+    label: "Sewa Aset",
+    icon: StorefrontIcon,
+    path: "/sewa-aset",
+    matches: ["/sewa-aset"],
+  },
+];
+
+/** Navigasi persisten untuk seluruh halaman publik. */
+export default function PublicNavbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { darkMode, toggleDarkMode, initDarkMode } = useThemeStore();
   const [mobileNav, setMobileNav] = useState(false);
 
@@ -20,16 +44,21 @@ export default function PublicNavbar({ links = [], onLogin, fixed = false }) {
     initDarkMode();
   }, [initDarkMode]);
 
-  const runLink = (link) => {
+  const openPage = (path) => {
     setMobileNav(false);
-    link.onClick?.();
+    navigate(path);
+  };
+
+  const openLogin = () => {
+    setMobileNav(false);
+    navigate("/login", { state: { openLoginPanel: true } });
   };
 
   return (
-    <nav className={`${fixed ? "fixed inset-x-0 top-0" : "sticky top-0"} z-50 border-b border-border bg-surface/80 backdrop-blur-xl`}>
+    <nav className="sticky top-0 z-50 shrink-0 border-b border-border bg-surface/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <button
-          onClick={() => navigate("/sewa-tersedia")}
+          onClick={() => navigate("/beranda")}
           className="flex items-center gap-3 transition-opacity hover:opacity-80"
         >
           <BrandMark className="h-9 w-9 text-xs" />
@@ -40,16 +69,24 @@ export default function PublicNavbar({ links = [], onLogin, fixed = false }) {
         </button>
 
         <div className="hidden items-center gap-1 md:flex">
-          {links.map((link) => (
-            <button
-              key={link.label}
-              onClick={() => runLink(link)}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary"
-            >
-              <link.icon size={16} weight="bold" />
-              {link.label}
-            </button>
-          ))}
+          {PUBLIC_LINKS.map((link) => {
+            const active = link.matches.includes(location.pathname);
+            return (
+              <button
+                key={link.path}
+                onClick={() => openPage(link.path)}
+                aria-current={active ? "page" : undefined}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  active
+                    ? "bg-accent/10 text-accent"
+                    : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
+                }`}
+              >
+                <link.icon size={16} weight="bold" />
+                {link.label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -68,14 +105,7 @@ export default function PublicNavbar({ links = [], onLogin, fixed = false }) {
             {darkMode ? <SunIcon size={18} weight="bold" /> : <MoonIcon size={18} weight="bold" />}
           </button>
           <button
-            onClick={() => navigate("/ekasmat")}
-            className="hidden items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:border-violet-500/40 hover:text-violet-700 dark:hover:text-violet-300 md:inline-flex"
-          >
-            <ChartBarIcon size={16} weight="bold" />
-            EKASMAT
-          </button>
-          <button
-            onClick={onLogin}
+            onClick={openLogin}
             className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-surface transition-colors hover:bg-accent-hover sm:px-4"
             aria-label="Login Bhumi Satya"
           >
@@ -87,23 +117,24 @@ export default function PublicNavbar({ links = [], onLogin, fixed = false }) {
 
       {mobileNav && (
         <div className="space-y-1 border-t border-border bg-surface px-4 py-2 md:hidden">
-          {links.map((link) => (
-            <button
-              key={link.label}
-              onClick={() => runLink(link)}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary"
-            >
-              <link.icon size={16} weight="bold" />
-              {link.label}
-            </button>
-          ))}
-          <button
-            onClick={() => navigate("/ekasmat")}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary"
-          >
-            <ChartBarIcon size={16} weight="bold" />
-            EKASMAT
-          </button>
+          {PUBLIC_LINKS.map((link) => {
+            const active = link.matches.includes(location.pathname);
+            return (
+              <button
+                key={link.path}
+                onClick={() => openPage(link.path)}
+                aria-current={active ? "page" : undefined}
+                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  active
+                    ? "bg-accent/10 text-accent"
+                    : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
+                }`}
+              >
+                <link.icon size={16} weight="bold" />
+                {link.label}
+              </button>
+            );
+          })}
         </div>
       )}
     </nav>

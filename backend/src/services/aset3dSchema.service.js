@@ -6,6 +6,23 @@ const CREATE_CATALOG_SCHEMA_SQL = `
     ADD COLUMN IF NOT EXISTS "offset_y_m" DECIMAL(12, 3) NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS "offset_z_m" DECIMAL(12, 3) NOT NULL DEFAULT 0;
 
+  ALTER TABLE "aset_model_3d"
+    ADD COLUMN IF NOT EXISTS "review_status" VARCHAR(24) NOT NULL DEFAULT 'draft',
+    ADD COLUMN IF NOT EXISTS "review_notes" TEXT NULL,
+    ADD COLUMN IF NOT EXISTS "reviewed_by" INTEGER NULL,
+    ADD COLUMN IF NOT EXISTS "reviewed_at" TIMESTAMP WITH TIME ZONE NULL,
+    ADD COLUMN IF NOT EXISTS "expires_at" TIMESTAMP WITH TIME ZONE NULL,
+    ADD COLUMN IF NOT EXISTS "source_data_type" VARCHAR(32) NULL,
+    ADD COLUMN IF NOT EXISTS "source_crs" VARCHAR(32) NULL,
+    ADD COLUMN IF NOT EXISTS "source_unit" VARCHAR(12) NULL,
+    ADD COLUMN IF NOT EXISTS "source_origin_x" DECIMAL(18, 6) NULL,
+    ADD COLUMN IF NOT EXISTS "source_origin_y" DECIMAL(18, 6) NULL,
+    ADD COLUMN IF NOT EXISTS "source_origin_z" DECIMAL(18, 6) NULL,
+    ADD COLUMN IF NOT EXISTS "quality_checklist" JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+  CREATE INDEX IF NOT EXISTS "aset_model_3d_review_status_idx"
+    ON "aset_model_3d" ("review_status");
+
   CREATE TABLE IF NOT EXISTS "aset_3d_catalog" (
     "kode_3d" VARCHAR(40) PRIMARY KEY,
     "id_aset" INTEGER NOT NULL UNIQUE
@@ -25,6 +42,32 @@ const CREATE_CATALOG_SCHEMA_SQL = `
     ON "aset_3d_catalog" ("status");
   CREATE INDEX IF NOT EXISTS "aset_3d_catalog_created_at_idx"
     ON "aset_3d_catalog" ("created_at");
+
+  CREATE TABLE IF NOT EXISTS "aset_model_3d_object" (
+    "id_object_3d" UUID PRIMARY KEY,
+    "id_model_3d" INTEGER NOT NULL
+      REFERENCES "aset_model_3d" ("id_model_3d")
+      ON UPDATE CASCADE
+      ON DELETE CASCADE,
+    "object_code" VARCHAR(120) NOT NULL,
+    "name" VARCHAR(200) NOT NULL,
+    "category" VARCHAR(32) NOT NULL DEFAULT 'bangunan',
+    "floor" VARCHAR(50) NULL,
+    "usage" VARCHAR(150) NULL,
+    "area_m2" DECIMAL(16, 3) NULL,
+    "volume_m3" DECIMAL(18, 3) NULL,
+    "height_m" DECIMAL(12, 3) NULL,
+    "properties" JSONB NOT NULL DEFAULT '{}'::jsonb,
+    "created_by" INTEGER NULL,
+    "updated_by" INTEGER NULL,
+    "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS "model3d_object_code_unique"
+    ON "aset_model_3d_object" ("id_model_3d", "object_code");
+  CREATE INDEX IF NOT EXISTS "model3d_object_category_idx"
+    ON "aset_model_3d_object" ("category");
 
   UPDATE "aset_3d_catalog"
   SET "kode_3d" = 'TMP3D-' || "id_aset"

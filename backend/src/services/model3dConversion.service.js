@@ -142,6 +142,9 @@ export const processModel3dConversion = async (model) => {
     const previousLowPath = model.lod_low_storage_path;
     await model.update({
       conversion_status: "ready",
+      review_status: ["verified", "active"].includes(model.review_status)
+        ? model.review_status
+        : "needs_review",
       converted_storage_path: convertedStoragePath,
       converted_public_url: publicUrl,
       converted_mime_type: "model/gltf-binary",
@@ -196,6 +199,9 @@ export const processModel3dConversion = async (model) => {
     await Promise.all(uploadedLodPaths.map((path) => deleteFromSupabase(path).catch(() => {})));
     await model.update({
       conversion_status: "failed",
+      review_status: ["verified", "active"].includes(model.review_status)
+        ? model.review_status
+        : "draft",
       conversion_error: String(error.message || "Konversi gagal").slice(0, 2000),
       updated_at: new Date(),
     });

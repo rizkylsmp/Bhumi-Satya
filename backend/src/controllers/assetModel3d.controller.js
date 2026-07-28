@@ -25,7 +25,16 @@ import {
   Model3dMetadataValidationError,
   normalizeModel3dMetadata,
 } from "../utils/model3dMetadata.js";
+import {
+  Model3dGovernanceValidationError,
+  normalizeModel3dReview,
+} from "../utils/model3dGovernance.js";
 import { analyzeGlb } from "../utils/glbOptimization.js";
+import {
+  contentTypeFor3dTile,
+  inspectThreeDTilesPackage,
+  ThreeDTilesPackageValidationError,
+} from "../utils/threeDTilesPackage.js";
 
 class ModelUploadValidationError extends Error {
   constructor(message) {
@@ -129,6 +138,12 @@ export const download = async (req, res) => {
     }
 
     const variant = req.query.variant === "glb" ? "glb" : "source";
+    if (variant === "glb" && String(model.format).toUpperCase() === "3DTILES") {
+      return res.status(400).json({
+        success: false,
+        error: "Paket 3D Tiles diunduh sebagai ZIP sumber, bukan GLB",
+      });
+    }
     if (variant === "glb" && (!model.converted_storage_path || model.conversion_status !== "ready")) {
       return res.status(409).json({ success: false, error: "File GLB belum tersedia" });
     }
@@ -156,7 +171,7 @@ export const download = async (req, res) => {
 };
 
 export const upload = async (req, res) => {
-  let uploadedStoragePath = null;
+  const uploadedStoragePaths = [];
   try {
     const asset = await Aset.findByPk(req.params.id);
     if (!asset) return res.status(404).json({ success: false, error: "Aset tidak ditemukan" });
@@ -167,16 +182,17 @@ export const upload = async (req, res) => {
         error: "Tambahkan aset ke katalog Kelola 3D sebelum mengimpor model",
       });
     }
-    if (!req.file) return res.status(400).json({ success: false, error: "File KMZ atau GLB diperlukan" });
+    if (!req.file) return res.status(400).json({ success: false, error: "File KMZ, GLB, atau ZIP 3D Tiles diperlukan" });
 
     const originalName = req.file.originalname || "model.glb";
     const extension = originalName.split(".").pop()?.toLowerCase();
-    if (!["kmz", "glb"].includes(extension)) {
-      throw new ModelUploadValidationError("File model harus berformat KMZ atau GLB");
+    if (!["kmz", "glb", "zip"].includes(extension)) {
+      throw new ModelUploadValidationError("File model harus berformat KMZ, GLB, atau ZIP 3D Tiles");
     }
 
     const assetLocation = resolveAssetLocation(asset);
     let manifest;
+    let packageFiles = null;
     if (extension === "kmz") {
       const inspectedManifest = inspectKmzModel(req.file.buffer);
       const locationAssessment = assessKmzModelLocation({
@@ -186,7 +202,7 @@ export const upload = async (req, res) => {
         modelLng: inspectedManifest.longitude,
       });
       manifest = { ...inspectedManifest, locationAssessment };
-    } else {
+    } else if (extension === "glb") {
       if (!Number.isFinite(assetLocation.latitude) || !Number.isFinite(assetLocation.longitude)) {
         throw new ModelUploadValidationError(
           "GLB tidak menyimpan koordinat peta. Lengkapi koordinat atau geometri spasial aset terlebih dahulu.",
@@ -221,6 +237,36 @@ export const upload = async (req, res) => {
           message: "GLB ditempatkan mengikuti koordinat/geometri spasial aset",
         },
       };
+    } else {
+      const inspectedPackage = inspectThreeDTilesPackage(req.file.buffer);
+      packageFiles = inspectedPackage.files;
+      const packageCenter = inspectedPackage.manifest.boundingCenter;
+      const hasAssetLocation = Number.isFinite(assetLocation.latitude)
+        && Number.isFinite(assetLocation.longitude);
+      manifest = {
+        ...inspectedPackage.manifest,
+        latitude: packageCenter.latitude,
+        longitude: packageCenter.longitude,
+        altitudeM: packageCenter.altitudeM,
+        altitudeMode: "absolute",
+        heading: 0,
+        tilt: 0,
+        roll: 0,
+        scaleX: 1,
+        scaleY: 1,
+        scaleZ: 1,
+        locationAssessment: hasAssetLocation
+          ? assessKmzModelLocation({
+              assetLat: assetLocation.latitude,
+              assetLng: assetLocation.longitude,
+              modelLat: packageCenter.latitude,
+              modelLng: packageCenter.longitude,
+            })
+          : {
+              status: "model-location",
+              message: "Fly-to dan penempatan memakai georeferensi paket 3D Tiles",
+            },
+      };
     }
     const checksum = crypto.createHash("sha256").update(req.file.buffer).digest("hex");
     const duplicate = await AsetModel3d.findOne({
@@ -239,25 +285,60 @@ export const upload = async (req, res) => {
     })) || 0;
     const version = latestVersion + 1;
     const safeName = originalName.replace(/[^a-zA-Z0-9._-]/g, "_");
-    uploadedStoragePath = `model-3d/aset-${asset.id_aset}/v${version}-${Date.now()}-${safeName}`;
+    const uploadedStoragePath = `model-3d/aset-${asset.id_aset}/v${version}-${Date.now()}-${safeName}`;
     const mimeType = extension === "glb"
       ? "model/gltf-binary"
+      : extension === "zip"
+        ? "application/zip"
       : "application/vnd.google-earth.kmz";
     const publicUrl = await uploadToSupabase(
       uploadedStoragePath,
       req.file.buffer,
       mimeType,
     );
+    uploadedStoragePaths.push(uploadedStoragePath);
+
+    let packageRootStoragePath = null;
+    let packageRootPublicUrl = null;
+    const packageStoragePaths = [];
+    if (packageFiles) {
+      const packagePrefix = `model-3d/aset-${asset.id_aset}/v${version}-tiles`;
+      const entries = [...packageFiles.entries()];
+      for (let index = 0; index < entries.length; index += 12) {
+        const batch = entries.slice(index, index + 12);
+        const batchResults = await Promise.allSettled(batch.map(async ([entryName, content]) => {
+          const storagePath = `${packagePrefix}/${entryName}`;
+          const url = await uploadToSupabase(
+            storagePath,
+            content,
+            contentTypeFor3dTile(entryName),
+          );
+          return { entryName, storagePath, url };
+        }));
+        const uploadedBatch = batchResults
+          .filter((result) => result.status === "fulfilled")
+          .map((result) => result.value);
+        uploadedBatch.forEach(({ entryName, storagePath, url }) => {
+          uploadedStoragePaths.push(storagePath);
+          packageStoragePaths.push(storagePath);
+          if (entryName === manifest.modelEntry) {
+            packageRootStoragePath = storagePath;
+            packageRootPublicUrl = url;
+          }
+        });
+        const failedUpload = batchResults.find((result) => result.status === "rejected");
+        if (failedUpload) throw failedUpload.reason;
+      }
+      if (!packageRootStoragePath || !packageRootPublicUrl) {
+        throw new ModelUploadValidationError("Gagal memublikasikan tileset.json utama");
+      }
+    }
 
     const model = await sequelize.transaction(async (transaction) => {
-      await AsetModel3d.update(
-        { is_active: false, updated_at: new Date() },
-        { where: { id_aset: asset.id_aset, is_active: true }, transaction },
-      );
       return AsetModel3d.create({
         id_aset: asset.id_aset,
         version,
-        is_active: true,
+        is_active: false,
         status: "ready",
         format: manifest.format,
         original_name: originalName,
@@ -266,7 +347,15 @@ export const upload = async (req, res) => {
         mime_type: mimeType,
         file_size_bytes: req.file.size,
         checksum_sha256: checksum,
-        conversion_status: "pending",
+        conversion_status: packageFiles ? "ready" : "pending",
+        converted_storage_path: packageRootStoragePath,
+        converted_public_url: packageRootPublicUrl,
+        converted_mime_type: packageFiles ? "application/json" : null,
+        converted_size_bytes: packageFiles?.get(manifest.modelEntry)?.length || null,
+        converted_checksum_sha256: packageFiles
+          ? crypto.createHash("sha256").update(packageFiles.get(manifest.modelEntry)).digest("hex")
+          : null,
+        converted_at: packageFiles ? new Date() : null,
         kml_entry: manifest.kmlEntry,
         model_entry: manifest.modelEntry,
         model_type: manifest.modelType,
@@ -284,8 +373,11 @@ export const upload = async (req, res) => {
         offset_y_m: 0,
         offset_z_m: 0,
         entry_count: manifest.entryCount,
-        manifest,
+        manifest: packageFiles
+          ? { ...manifest, packageStoragePaths }
+          : manifest,
         uploaded_by: req.user.id_user,
+        review_status: packageFiles ? "needs_review" : "processing",
       }, { transaction });
     });
 
@@ -300,20 +392,22 @@ export const upload = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: `Model 3D versi ${version} berhasil diunggah`,
+      message: packageFiles
+        ? `Paket 3D Tiles versi ${version} berhasil diunggah dan siap diverifikasi`
+        : `Model 3D versi ${version} berhasil diunggah`,
       data: serializeModel(model),
     });
   } catch (error) {
-    if (uploadedStoragePath) {
-      try {
-        await deleteFromSupabase(uploadedStoragePath);
-      } catch (cleanupError) {
-        console.error("Failed cleaning orphaned 3D upload:", cleanupError.message);
-      }
-    }
+    await Promise.allSettled(
+      uploadedStoragePaths.map((storagePath) => deleteFromSupabase(storagePath)),
+    );
     console.error("Error uploading asset 3D model:", error);
     return res.status(
-      error instanceof KmzValidationError || error instanceof ModelUploadValidationError ? 400 : 500,
+      error instanceof KmzValidationError
+        || error instanceof ModelUploadValidationError
+        || error instanceof ThreeDTilesPackageValidationError
+        ? 400
+        : 500,
     ).json({
       success: false,
       error: error.message,
@@ -331,6 +425,13 @@ export const convert = async (req, res) => {
       },
     });
     if (!model) return res.status(404).json({ success: false, error: "Versi model 3D tidak ditemukan" });
+    if (String(model.format).toUpperCase() === "3DTILES") {
+      return res.json({
+        success: true,
+        message: "Paket 3D Tiles sudah siap dan tidak memerlukan konversi",
+        data: serializeModel(model),
+      });
+    }
     if (model.conversion_status === "ready" && model.converted_public_url) {
       return res.json({ success: true, message: "GLB sudah tersedia", data: serializeModel(model) });
     }
@@ -346,6 +447,7 @@ export const convert = async (req, res) => {
     const queueOnly = process.env.MODEL3D_CONVERSION_MODE === "queue";
     await model.update({
       conversion_status: queueOnly ? "pending" : "processing",
+      review_status: "processing",
       conversion_error: null,
       updated_at: new Date(),
     });
@@ -385,17 +487,129 @@ export const activate = async (req, res) => {
       where: { id_model_3d: req.params.modelId, id_aset: req.params.id, archived_at: null },
     });
     if (!model) return res.status(404).json({ success: false, error: "Versi model 3D tidak ditemukan" });
+    if (model.conversion_status !== "ready" || !model.converted_public_url) {
+      return res.status(409).json({
+        success: false,
+        error: "Model harus selesai dikonversi sebelum diaktifkan",
+      });
+    }
+    if (!["verified", "active"].includes(model.review_status)) {
+      return res.status(409).json({
+        success: false,
+        error: "Model harus diverifikasi sebelum diaktifkan",
+      });
+    }
+    const oldData = serializeModel(model);
     await sequelize.transaction(async (transaction) => {
       await AsetModel3d.update(
-        { is_active: false, updated_at: new Date() },
+        { is_active: false, review_status: "verified", updated_at: new Date() },
         { where: { id_aset: model.id_aset, is_active: true }, transaction },
       );
-      await model.update({ is_active: true, updated_at: new Date() }, { transaction });
+      await model.update({
+        is_active: true,
+        review_status: "active",
+        updated_at: new Date(),
+      }, { transaction });
     });
-    return res.json({ success: true, data: serializeModel(model) });
+    await AuditService.logUpdate({
+      tabel: "aset_model_3d",
+      id_referensi: model.id_model_3d,
+      data_lama: oldData,
+      data_baru: serializeModel(model),
+      keterangan: `Mengaktifkan model 3D terverifikasi aset ${model.id_aset} versi ${model.version}`,
+      user_id: req.user.id_user,
+      req,
+    });
+    return res.json({
+      success: true,
+      message: "Model terverifikasi berhasil diaktifkan",
+      data: serializeModel(model),
+    });
   } catch (error) {
     console.error("Error activating asset 3D model:", error);
     return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const review = async (req, res) => {
+  try {
+    const model = await AsetModel3d.findOne({
+      where: {
+        id_model_3d: req.params.modelId,
+        id_aset: req.params.id,
+        archived_at: null,
+      },
+    });
+    if (!model) {
+      return res.status(404).json({ success: false, error: "Versi model 3D tidak ditemukan" });
+    }
+    const reviewData = normalizeModel3dReview(req.body);
+    if (
+      reviewData.review_status === "verified"
+      && (model.conversion_status !== "ready" || !model.converted_public_url)
+    ) {
+      return res.status(409).json({
+        success: false,
+        error: "Model hanya dapat diverifikasi setelah konversi selesai",
+      });
+    }
+    if (reviewData.review_status === "verified") {
+      const checklist = model.quality_checklist && typeof model.quality_checklist === "object"
+        ? model.quality_checklist
+        : {};
+      const missingChecks = [
+        ["source_documented", "dokumen sumber"],
+        ["crs_confirmed", "CRS"],
+        ["origin_confirmed", "titik origin"],
+        ["unit_confirmed", "satuan"],
+        ["geometry_checked", "geometri"],
+      ]
+        .filter(([key]) => checklist[key] !== true)
+        .map(([, label]) => label);
+      const missingMetadata = [
+        !model.source_data_type ? "jenis sumber" : null,
+        !model.source_crs ? "CRS sumber" : null,
+        !model.source_unit ? "satuan sumber" : null,
+      ].filter(Boolean);
+      const missing = [...missingMetadata, ...missingChecks];
+      if (missing.length > 0) {
+        return res.status(409).json({
+          success: false,
+          error: `Lengkapi validasi sebelum verifikasi: ${missing.join(", ")}`,
+        });
+      }
+    }
+
+    const oldData = serializeModel(model);
+    await model.update({
+      ...reviewData,
+      is_active: reviewData.review_status === "expired" ? false : model.is_active,
+      reviewed_by: req.user.id_user,
+      reviewed_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    await AuditService.logUpdate({
+      tabel: "aset_model_3d",
+      id_referensi: model.id_model_3d,
+      data_lama: oldData,
+      data_baru: serializeModel(model),
+      keterangan: `Mengubah status verifikasi model 3D aset ${model.id_aset} versi ${model.version} menjadi ${reviewData.review_status}`,
+      user_id: req.user.id_user,
+      req,
+    });
+
+    return res.json({
+      success: true,
+      message: "Status verifikasi model 3D berhasil diperbarui",
+      data: serializeModel(model),
+    });
+  } catch (error) {
+    console.error("Error reviewing asset 3D model:", error);
+    return res.status(error instanceof Model3dGovernanceValidationError ? 400 : 500).json({
+      success: false,
+      error: error.message,
+    });
   }
 };
 
@@ -642,6 +856,9 @@ export const removeArchived = async (req, res) => {
       model.converted_storage_path,
       model.lod_medium_storage_path,
       model.lod_low_storage_path,
+      ...(Array.isArray(model.manifest?.packageStoragePaths)
+        ? model.manifest.packageStoragePaths
+        : []),
     ].filter(Boolean))];
 
     await model.destroy();

@@ -365,7 +365,7 @@ function DetailModal({ item, onClose, onUpdate }) {
             <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider">
               Update Status
             </h4>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {["Baru", "Diproses", "Disetujui", "Ditolak"].map((s) => {
                 const cfg = getStatusConfig(s);
                 const Icon = cfg.icon;
@@ -556,6 +556,8 @@ export default function PermintaanPage() {
   }, [page, debouncedSearch, status, sortOrder]);
 
   useEffect(() => {
+    // Fetching is the external synchronization performed by this effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
   }, [fetchData]);
 

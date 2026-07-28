@@ -13,6 +13,7 @@ const router = express.Router();
 router.use(authMiddleware);
 router.use(ensureAset3dCatalogSchemaMiddleware);
 router.get("/", canViewAset, Aset3dCatalogController.list);
+router.get("/export", canViewAset, Aset3dCatalogController.exportCsv);
 router.get("/candidates", canViewAset, Aset3dCatalogController.candidates);
 router.get("/:kode3d", canViewAset, Aset3dCatalogController.getByCode);
 router.post(

@@ -34,7 +34,10 @@ export const resolveAssetBuildingHeight = (asset = {}) => {
 };
 
 export const hasUsableAsset3dData = (asset) =>
-  Boolean(asset?.active_model_3d?.public_url) || (
+  Boolean(
+    asset?.active_model_3d?.converted_public_url ||
+      asset?.active_model_3d?.public_url,
+  ) || (
     Boolean(normalizePolygonToGeometry(asset?.building_footprint)) &&
     Boolean(resolveAssetBuildingHeight(asset))
   );
@@ -43,7 +46,10 @@ export const getAsset3dSummary = (asset = {}) => {
   const heightData = resolveAssetBuildingHeight(asset);
   return {
     available: hasUsableAsset3dData(asset),
-    detailedModelAvailable: Boolean(asset.active_model_3d?.public_url),
+    detailedModelAvailable: Boolean(
+      asset.active_model_3d?.converted_public_url ||
+        asset.active_model_3d?.public_url,
+    ),
     height: heightData?.height || null,
     source: heightData?.source || asset.building_height_source || null,
     quality: heightData?.quality || asset.building_height_quality || null,
@@ -90,7 +96,11 @@ export const buildAssetBuildingFeatureCollection = (
   features: assets
     .filter(
       (asset) =>
-        !fallbackOnly || !asset?.active_model_3d?.public_url,
+        !fallbackOnly ||
+        !(
+          asset?.active_model_3d?.converted_public_url ||
+          asset?.active_model_3d?.public_url
+        ),
     )
     .map(buildAssetBuildingFeature)
     .filter(Boolean),

@@ -45,6 +45,22 @@ const parseGltf = (loader, data, modelType) => new Promise((resolve, reject) => 
 
 const createLitScene = (object, objectUrls = []) => {
   const scene = new THREE.Scene();
+  object.traverse((child) => {
+    if (!child.isMesh) return;
+
+    // SketchUp/DAE models often contain mixed face winding. The model matrix
+    // also mirrors the Y axis to match Mercator coordinates, so rendering only
+    // front faces can make an otherwise valid model disappear completely.
+    const materials = Array.isArray(child.material)
+      ? child.material
+      : [child.material];
+    materials.filter(Boolean).forEach((material) => {
+      material.side = THREE.DoubleSide;
+      material.needsUpdate = true;
+    });
+    child.frustumCulled = false;
+  });
+  object.updateMatrixWorld(true);
   scene.add(object);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 2.2));
   const sunlight = new THREE.DirectionalLight(0xffffff, 2.6);
@@ -200,10 +216,15 @@ export const createKmzModelLayer = ({ models, onStatus }) => {
         options.defaultProjectionData?.mainMatrix || options.modelViewProjectionMatrix,
       );
       renderer.resetState();
+      // The basemap contains its own extruded buildings at the same location.
+      // Clear only depth—not color—so the imported authoritative model remains
+      // visible instead of being fully occluded by those fallback buildings.
+      renderer.clearDepth();
       loadedModels.forEach((model) => {
         camera.projectionMatrix.copy(projection).multiply(model.transform);
         renderer.render(model.scene, camera);
       });
+      renderer.resetState();
     },
     onRemove() {
       disposed = true;

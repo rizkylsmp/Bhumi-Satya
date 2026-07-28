@@ -95,3 +95,25 @@ test("createModel3dTileset creates a low-medium-high replacement chain", () => {
   assert.equal(tileset.root.transform.length, 16);
   assert.equal(tileset.root.children[0].transform, undefined);
 });
+
+test("createModel3dTileset preserves a georeferenced 3D Tiles package", () => {
+  const rootBoundingVolume = {
+    region: [1.96, -0.14, 1.98, -0.12, 0, 120],
+  };
+  const model = {
+    ...makeModel(5, 112.9, -7.65),
+    format: "3DTILES",
+    model_type: "3DTILES",
+    converted_public_url: "https://storage.example/package/tileset.json",
+    manifest: {
+      rootBoundingVolume,
+      geometricError: 64,
+    },
+  };
+  const tileset = createModel3dTileset([model]);
+
+  assert.deepEqual(tileset.root.boundingVolume, rootBoundingVolume);
+  assert.equal(tileset.root.content.uri, model.converted_public_url);
+  assert.equal(tileset.root.extras.format, "3DTILES");
+  assert.equal(tileset.root.transform, undefined);
+});

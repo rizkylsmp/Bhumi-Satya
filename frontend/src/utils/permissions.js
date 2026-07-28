@@ -30,7 +30,6 @@ const INTERNAL_READ = {
   peta: { view: true, allLayers: true },
   riwayat: { view: false, full: false },
   notifikasi: { view: true },
-  ekasmat: { view: true },
   user: { view: false, create: false, update: false, delete: false },
   backup: { view: false, create: false, restore: false },
   pengaturan: { view: false, edit: false },
@@ -94,7 +93,6 @@ const ROLE_PERMISSIONS = {
     peta: { view: false, allLayers: false },
     riwayat: { view: false, full: false },
     notifikasi: { view: false },
-    ekasmat: { view: false },
     user: { view: false, create: false, update: false, delete: false },
     backup: { view: false, create: false, restore: false },
     pengaturan: { view: false, edit: false },
@@ -137,8 +135,6 @@ export const canAccessMenu = (role, menuId) => {
       return permissions.riwayat?.view;
     case "notifikasi":
       return permissions.notifikasi?.view;
-    case "ekasmat":
-      return permissions.ekasmat?.view;
     case "user":
       return permissions.user?.view;
     case "pengaturan":

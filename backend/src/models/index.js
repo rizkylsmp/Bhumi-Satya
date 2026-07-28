@@ -6,12 +6,12 @@ import Notifikasi from "./Notifikasi.js";
 import PusatData from "./PusatData.js";
 import SewaAset from "./SewaAset.js";
 import PermintaanSewa from "./PermintaanSewa.js";
-import EkasmatResponse from "./EkasmatResponse.js";
 import ChatMessage from "./ChatMessage.js";
 import AsetSumber from "./AsetSumber.js";
 import AsetReconciliation from "./AsetReconciliation.js";
 import AsetModel3d from "./AsetModel3d.js";
 import Aset3dCatalog from "./Aset3dCatalog.js";
+import AsetModel3dObject from "./AsetModel3dObject.js";
 
 // Define associations here to avoid circular dependencies
 // User has many Aset (created_by)
@@ -190,6 +190,17 @@ User.hasMany(AsetModel3d, {
   as: "uploadedModels3d",
 });
 
+AsetModel3d.hasMany(AsetModel3dObject, {
+  foreignKey: "id_model_3d",
+  as: "objects",
+  onDelete: "CASCADE",
+});
+
+AsetModel3dObject.belongsTo(AsetModel3d, {
+  foreignKey: "id_model_3d",
+  as: "model3d",
+});
+
 Aset.hasOne(Aset3dCatalog, {
   foreignKey: "id_aset",
   as: "catalog3d",
@@ -219,10 +230,10 @@ export {
   PusatData,
   SewaAset,
   PermintaanSewa,
-  EkasmatResponse,
   ChatMessage,
   AsetSumber,
   AsetReconciliation,
   AsetModel3d,
   Aset3dCatalog,
+  AsetModel3dObject,
 };

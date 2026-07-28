@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import AssetMapDisplay from "../components/map/AssetMapDisplay";
-import AssetMapFilter, { MapAssetStats } from "../components/map/AssetMapFilter";
+import AssetMapFilter from "../components/map/AssetMapFilter";
 import AssetLayerControl from "../components/map/AssetLayerControl";
 import AssetViewModal from "../components/asset/AssetViewModal";
 import AssetDetailPanel from "../components/map/shared/AssetDetailPanel";
@@ -11,7 +11,45 @@ import { downloadAssetPdf } from "../utils/pdfExport";
 import { downloadAssetGeojson } from "../utils/geojsonExport";
 import { hasUsableAsset3dData } from "../utils/asset3dGeojson";
 import { normalizeMapMarkers, parseMapPolygon } from "../utils/mapAssets";
-import { MapTrifoldIcon, FunnelIcon, XIcon } from "@phosphor-icons/react";
+import {
+  CaretDownIcon,
+  MapTrifoldIcon,
+  StackIcon,
+  XIcon,
+} from "@phosphor-icons/react";
+
+function DropdownSection({ id, label, open, onToggle, children }) {
+  return (
+    <section className="border-b border-border last:border-b-0">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={`map-control-${id}`}
+        className={`flex min-h-11 w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left text-[10px] font-extrabold uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${
+          open
+            ? "bg-accent text-surface"
+            : "bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
+        }`}
+      >
+        <span>{label}</span>
+        <CaretDownIcon
+          size={13}
+          weight="bold"
+          className={`shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && (
+        <div
+          id={`map-control-${id}`}
+          className="border-t border-border bg-surface-secondary/80 p-2.5"
+        >
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
 
 function hasCoordinatePair(latitude, longitude) {
   return (
@@ -85,51 +123,19 @@ function MapData2dControls({
   setShowBelumSertifikat,
   data3dFilter,
   setData3dFilter,
+  layerOnly = false,
 }) {
-  return (
-    <div className="space-y-3.5">
-      <div className="rounded-xl border border-accent/15 bg-gradient-to-r from-accent/10 to-surface-secondary px-3 py-2.5 shadow-sm" role="status" aria-live="polite">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/40" />
-            <span className="text-sm font-black text-text-primary">{filteredAssets.length}</span>
-            <span className="text-[10px] font-semibold text-text-muted">aset ditemukan</span>
-          </div>
-          {selectedKecamatanFilter && (
-            <button
-              type="button"
-              onClick={() => setSelectedKecamatanFilter("")}
-              className="shrink-0 rounded-lg border border-border bg-surface px-2 py-1 text-[10px] font-semibold text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary"
-              title="Hapus filter kecamatan"
-            >
-              Reset
-            </button>
-          )}
-        </div>
-        {selectedKecamatanFilter && (
-          <div className="mt-2 rounded-lg border border-accent/20 bg-accent/10 px-2 py-1 text-[10px] font-semibold text-accent">
-            Kec. {selectedKecamatanFilter}
-          </div>
-        )}
-      </div>
+  const [openSection, setOpenSection] = useState("layer");
+  const toggleSection = (id) => {
+    setOpenSection((current) => (current === id ? null : id));
+  };
 
-      <AssetMapFilter
-        selectedSewaLayers={selectedSewaLayers}
-        onSewaLayerToggle={handleSewaLayerToggle}
-        onSearch={handleSearch}
-        onSelectAsset={handleSelectSearchAsset}
-        assets={assets}
-        searchResults={searchFilter.trim().length >= 2 ? mapSearchResults : null}
-        searchLoading={isMapSearchLoading}
-        showStatistics={false}
-      />
-
-      <div className="border-t border-border" />
-
+  if (layerOnly) {
+    return (
       <AssetLayerControl
+        embedded
         activeLayer={activeLayer}
         setActiveLayer={setActiveLayer}
-        panelTitle="Kontrol Layer"
         bidangLabel="Bidang Tanah"
         showKelurahan={showKelurahan}
         setShowKelurahan={setShowKelurahan}
@@ -142,8 +148,110 @@ function MapData2dControls({
         data3dFilter={data3dFilter}
         setData3dFilter={setData3dFilter}
       />
+    );
+  }
 
-      <MapAssetStats assets={assets} />
+  return (
+    <div className="overflow-hidden">
+      <DropdownSection
+        id="layer"
+        label="Layer Controls"
+        open={openSection === "layer"}
+        onToggle={() => toggleSection("layer")}
+      >
+        <div className="rounded-lg border border-border bg-surface p-2.5">
+          <AssetLayerControl
+            embedded
+            activeLayer={activeLayer}
+            setActiveLayer={setActiveLayer}
+            panelTitle="Kontrol Layer"
+            bidangLabel="Bidang Tanah"
+            showKelurahan={showKelurahan}
+            setShowKelurahan={setShowKelurahan}
+            showKecamatan={showKecamatan}
+            setShowKecamatan={setShowKecamatan}
+            showSudahSertifikat={showSudahSertifikat}
+            setShowSudahSertifikat={setShowSudahSertifikat}
+            showBelumSertifikat={showBelumSertifikat}
+            setShowBelumSertifikat={setShowBelumSertifikat}
+            data3dFilter={data3dFilter}
+            setData3dFilter={setData3dFilter}
+          />
+        </div>
+      </DropdownSection>
+
+      <DropdownSection
+        id="selection"
+        label="Selection Mode"
+        open={openSection === "selection"}
+        onToggle={() => toggleSection("selection")}
+      >
+        <div className="rounded-lg border border-border bg-surface p-2.5">
+          <AssetMapFilter
+            selectedSewaLayers={selectedSewaLayers}
+            onSewaLayerToggle={handleSewaLayerToggle}
+            onSearch={handleSearch}
+            onSelectAsset={handleSelectSearchAsset}
+            assets={assets}
+            searchResults={searchFilter.trim().length >= 2 ? mapSearchResults : null}
+            searchLoading={isMapSearchLoading}
+            showStatistics={false}
+          />
+        </div>
+      </DropdownSection>
+
+      <DropdownSection
+        id="navigation"
+        label="Navigation"
+        open={openSection === "navigation"}
+        onToggle={() => toggleSection("navigation")}
+      >
+        <p className="rounded-lg border border-border bg-surface px-3 py-2 text-[10px] leading-relaxed text-text-secondary">
+          Gunakan pencarian aset atau klik objek pada peta untuk mengarahkan tampilan.
+        </p>
+      </DropdownSection>
+
+      <DropdownSection
+        id="status"
+        label="Node Status"
+        open={openSection === "status"}
+        onToggle={() => toggleSection("status")}
+      >
+        <div className="rounded-lg border border-border bg-surface px-3 py-2.5" role="status" aria-live="polite">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="text-sm font-black text-text-primary">{filteredAssets.length}</span>
+              <span className="text-[10px] font-semibold text-text-muted">aset ditemukan</span>
+            </div>
+            {selectedKecamatanFilter && (
+              <button
+                type="button"
+                onClick={() => setSelectedKecamatanFilter("")}
+                className="shrink-0 rounded-md border border-border bg-surface-secondary px-2 py-1 text-[9px] font-bold text-text-secondary transition hover:bg-surface-tertiary hover:text-text-primary"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+          {selectedKecamatanFilter && (
+            <p className="mt-2 text-[9px] font-bold text-accent">
+              Kecamatan {selectedKecamatanFilter}
+            </p>
+          )}
+        </div>
+      </DropdownSection>
+
+      <DropdownSection
+        id="tools"
+        label="Tools"
+        open={openSection === "tools"}
+        onToggle={() => toggleSection("tools")}
+      >
+        <p className="rounded-lg border border-border bg-surface px-3 py-2 text-[10px] leading-relaxed text-text-secondary">
+          Alat ukur tersedia setelah mode 3D diaktifkan.
+        </p>
+      </DropdownSection>
     </div>
   );
 }
@@ -330,12 +438,15 @@ export default function MapPage({ publicMode = false }) {
 
   // Fetch full asset detail
   const fetchAssetDetail = async (assetId) => {
-    if (publicMode) return;
-
     try {
-      const response = await asetService.getById(assetId);
+      const response = publicMode
+        ? await petaService.getPublicDetail(assetId)
+        : await asetService.getById(assetId);
       if (response.data.success) {
-        setDetailAsset(response.data.data);
+        setDetailAsset((current) => ({
+          ...current,
+          ...response.data.data,
+        }));
       }
     } catch (error) {
       console.error("Error fetching asset detail:", error);
@@ -387,8 +498,8 @@ export default function MapPage({ publicMode = false }) {
     setIsViewModalOpen(true);
     setSelectedPanelAsset(null);
     setMapSelectionClearKey((prev) => prev + 1);
-    // Enrich with full data from backend in background
-    if (!publicMode) fetchAssetDetail(asset.id);
+    // Enrich with full data from backend in background.
+    fetchAssetDetail(asset.id);
   };
 
   const handleCloseSelectedPanel = () => {
@@ -447,7 +558,7 @@ export default function MapPage({ publicMode = false }) {
 
   // Filter assets based on search and visible layer toggles.
   // NOTE: Search is NOT applied here — it only powers the dropdown/flyTo in MapFilter.
-  const filteredAssets = assets.filter((asset) => {
+  const filteredAssets = useMemo(() => assets.filter((asset) => {
     // Filter berdasarkan status sewa.
     // When all sewa filters are off, show all Bidang Tanah instead of filtering
     // everything out.
@@ -476,7 +587,14 @@ export default function MapPage({ publicMode = false }) {
       matchKecamatan &&
       match3dData
     );
-  });
+  }), [
+    assets,
+    data3dFilter,
+    selectedKecamatanFilter,
+    selectedSewaLayers,
+    showBelumSertifikat,
+    showSudahSertifikat,
+  ]);
 
   const mapLookupAssets = useMemo(() => {
     const assetById = new Map();
@@ -567,7 +685,9 @@ export default function MapPage({ publicMode = false }) {
           initialAsset3dMode={location.state?.previewModel3d === true}
           asset3dPanelContainer={asset3dPanelContainer}
           asset3dPanelOpen={showFilterPanel && sidePanelMode === "3d"}
-          asset2dPanelContent={<MapData2dControls {...data2dControlProps} />}
+          asset2dPanelContent={
+            <MapData2dControls {...data2dControlProps} layerOnly />
+          }
           onAsset3dPanelOpenChange={handleAsset3dPanelOpenChange}
           onAsset3dModeChange={handleAsset3dModeChange}
           onFeatureClick={(asset) => setSelectedPanelAsset(asset)}
@@ -589,19 +709,17 @@ export default function MapPage({ publicMode = false }) {
         {!showFilterPanel && (
           <button
             onClick={() => setShowFilterPanel(true)}
-            className="group absolute left-4 top-4 z-10 flex items-center gap-2.5 rounded-xl border border-white/80 bg-surface/95 px-3.5 py-2.5 backdrop-blur-xl transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 dark:border-slate-700"
-            aria-label="Buka Kontrol Peta"
+            className="group absolute left-4 top-4 z-30 flex h-10 items-center gap-2 rounded-lg border border-border bg-surface/95 px-3 text-text-primary shadow-lg shadow-black/10 backdrop-blur-xl transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            aria-label="Buka menu peta"
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10 text-accent transition-colors group-hover:bg-accent group-hover:text-surface">
-              <FunnelIcon size={15} weight="fill" />
-            </span>
-            <span className="text-xs font-extrabold text-text-primary">
-              Kontrol Peta
+            <StackIcon size={16} weight="fill" />
+            <span className="text-[10px] font-black uppercase tracking-[0.14em]">
+              Menu Peta
             </span>
             {(searchFilter ||
               selectedKecamatanFilter ||
               Object.values(selectedSewaLayers).some(Boolean)) && (
-              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
             )}
           </button>
         )}
@@ -618,51 +736,33 @@ export default function MapPage({ publicMode = false }) {
 
       {/* Side Panel — slides in from left */}
       <div
-        className={`absolute top-0 left-0 h-full z-30 transition-transform duration-300 ease-in-out ${
-          showFilterPanel ? "translate-x-0" : "-translate-x-full"
+        className={`absolute left-4 top-4 z-40 transition duration-200 ease-out ${
+          showFilterPanel
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none -translate-y-2 opacity-0"
         }`}
       >
-        <div className="flex h-full w-[min(22rem,calc(100vw-1rem))] flex-col border-r border-border bg-surface">
+        <div className="flex max-h-[calc(100vh-2rem)] w-[min(19rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-surface/95 shadow-xl shadow-black/15 backdrop-blur-xl">
           <div
             className={sidePanelMode === "3d" ? "hidden" : "contents"}
             aria-hidden={sidePanelMode === "3d"}
           >
-            {/* Panel Header */}
-            <div className="flex items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-accent/10 via-accent/5 to-transparent px-4 py-3.5">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-surface">
-                  <FunnelIcon size={18} weight="fill" />
-                </span>
-                <div className="min-w-0">
-                  <h2 className="text-sm font-black text-text-primary">Kontrol Peta</h2>
-                  <p className="mt-0.5 truncate text-[10px] font-medium text-text-muted">
-                    Cari, filter, dan atur tampilan aset
-                  </p>
-                </div>
-              </div>
+            <div className="flex h-11 items-center justify-between border-b border-border bg-surface px-3">
+              <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-text-primary">
+                <StackIcon size={14} weight="fill" />
+                Menu Peta
+              </span>
               <button
                 type="button"
                 onClick={() => setShowFilterPanel(false)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-accent"
-                aria-label="Tutup kontrol peta"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-accent"
+                aria-label="Tutup menu peta"
               >
-                <XIcon size={17} weight="bold" />
+                <XIcon size={14} weight="bold" />
               </button>
             </div>
 
-            <div className="border-b border-border bg-surface/95 px-2 pt-1" role="tablist" aria-label="Menu panel peta">
-              <button
-                type="button"
-                role="tab"
-                aria-selected="true"
-                aria-controls="panel-map-data2d"
-                className="w-full border-b-2 border-accent px-3 py-2.5 text-[10px] font-extrabold text-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
-              >
-                Data 2D
-              </button>
-            </div>
-
-            <div id="panel-map-data2d" role="tabpanel" className="min-h-0 flex-1 overflow-y-auto p-3.5 dark:[color-scheme:dark]">
+            <div className="min-h-0 flex-1 overflow-y-auto dark:[color-scheme:dark]">
               <MapData2dControls {...data2dControlProps} />
             </div>
           </div>
@@ -673,20 +773,13 @@ export default function MapPage({ publicMode = false }) {
         </div>
       </div>
 
-      {/* Backdrop when panel is open on mobile */}
-      {showFilterPanel && (
-        <div
-          className="absolute inset-0 bg-black/30 z-20 md:hidden"
-          onClick={() => setShowFilterPanel(false)}
-        />
-      )}
-
       {/* Asset View Modal */}
       <AssetViewModal
         isOpen={isViewModalOpen}
         onClose={handleCloseViewModal}
         asset={detailAsset}
         canEdit={false}
+        publicMode={publicMode}
         onDownloadPdf={handleDownloadAssetPdf}
         onDownloadGeojson={handleDownloadAssetGeojson}
       />

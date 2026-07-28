@@ -26,7 +26,7 @@ const outputPrefix =
 const appOnly = String(process.env.APP_ONLY || "false").toLowerCase() === "true";
 const appTables = new Set(
   (process.env.APP_TABLES ||
-    "SequelizeMeta,aset,aset_reconciliation,aset_sumber,ekasmat_responses,notifikasi,permintaan_sewa,pusat_data,riwayat,sewa_aset,users")
+    "SequelizeMeta,aset,aset_reconciliation,aset_sumber,notifikasi,permintaan_sewa,pusat_data,riwayat,sewa_aset,users")
     .split(",")
     .map((table) => table.trim())
     .filter(Boolean),

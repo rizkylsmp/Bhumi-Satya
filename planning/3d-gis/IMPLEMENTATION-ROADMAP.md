@@ -54,6 +54,119 @@ Menambahkan kemampuan 3D secara bertahap ke Bhumi Satya tanpa mengganti alur GIS
 
 **Kriteria selesai:** model detail dapat dikelola, diaudit, dan ditampilkan tanpa membebani pemuatan awal peta.
 
+## Penyelarasan dengan Modul Pelatihan Model 3D Jakarta Citata
+
+Audit ulang dilakukan terhadap modul Citata edisi Juli 2025 yang terdiri dari 198
+halaman. Bagian yang dijadikan acuan langsung untuk aplikasi adalah georeferensi,
+LOD, CityGML, 3D Tiles, unggah web, atribut bangunan, pengelolaan data, dan
+pemutakhiran model. Proses produksi desktop seperti DJI Terra, Agisoft Metashape,
+Global Mapper, DREAM3D, SketchUp, dan Revit tidak otomatis menjadi fitur web.
+
+### Kemampuan yang sudah tersedia
+
+| ID | Kemampuan modul | Kondisi Bhumi Satya |
+| --- | --- | --- |
+| CIT-00A | Katalog data 3D terhubung ke data aset | Selesai |
+| CIT-00B | Impor model, preview, fly-to, serta pengaturan posisi dan orientasi | Selesai untuk KMZ/GLB |
+| CIT-00C | Versi model, aktif/nonaktif, arsip, pulihkan, dan hapus permanen | Selesai |
+| CIT-00D | Metadata LOD, tinggi, lantai, kualitas, CRS, tanggal, dan akurasi | Selesai |
+| CIT-00E | Konversi KMZ ke GLB dan penyajian sebagai 3D Tiles 1.1 | Selesai |
+| CIT-00F | Daftar ruang yang terhubung ke versi model | Selesai |
+| CIT-00G | Search, filter dasar, sort, dan pagination katalog Kelola 3D | Selesai |
+
+### Keputusan ruang lingkup yang harus divalidasi
+
+Kolom **Keputusan** diisi dengan `KERJAKAN`, `TUNDA`, atau `TIDAK`. Rekomendasi
+merupakan titik awal dan belum dianggap persetujuan.
+
+| ID | Calon pekerjaan | Rekomendasi | Keputusan |
+| --- | --- | --- | --- |
+| CIT-01 | Impor ZIP 3D Tiles secara langsung, validasi `tileset.json`, cegah path traversal, simpan ke object storage, dan tampilkan pada preview | KERJAKAN | KERJAKAN |
+| CIT-02 | Impor CityGML/CityJSON/OBJ dan konversi server-side ke format tayang | TUNDA setelah CIT-01 stabil | TUNDA |
+| CIT-03 | UUID bangunan dan tabel atribut per objek 3D, termasuk CRUD manual dan bulk upload CSV dengan template | KERJAKAN | KERJAKAN |
+| CIT-04 | Tabel manajemen seperti modul: nama, kategori, status, Center X/Y, URL, dibuat, diperbarui, search, filter, dan export CSV sesuai hasil filter | KERJAKAN | KERJAKAN |
+| CIT-05 | Kategori selain bangunan: jalan, badan air, jalur kereta, dan landmark | TIDAK untuk tahap awal karena fokus Bhumi Satya adalah aset tanah/bangunan | TIDAK |
+| CIT-06 | Status publikasi dan verifikasi: draf, diproses, perlu verifikasi, terverifikasi, ditolak, aktif, dan kedaluwarsa | KERJAKAN | KERJAKAN |
+| CIT-07 | Multi-epoch: membandingkan dua versi model untuk mencatat perubahan fisik antarwaktu | TUNDA sampai katalog dan atribut stabil | TUNDA |
+| CIT-08 | Integrasi wajib Cesium Ion dan AWS S3 persis seperti modul | TIDAK; gunakan pipeline dan object storage Bhumi Satya yang provider-neutral | TIDAK |
+| CIT-09 | Editor pemodelan lengkap di browser untuk menggantikan QGIS/DREAM3D/SketchUp/Revit | TIDAK; web hanya mengelola, memvalidasi, dan menayangkan hasil model | TIDAK |
+| CIT-10 | SOP sumber data LiDAR, DTM/BHM, BO/RO, CRS, titik origin, satuan, dan checklist kualitas sebelum upload | KERJAKAN sebagai panduan dan validasi metadata | KERJAKAN |
+| CIT-11 | Replace file model tanpa membuat versi baru | TIDAK; Bhumi Satya tetap membuat versi baru agar audit dan rollback terjaga | TIDAK |
+
+Keputusan di atas disetujui pengguna pada 27 Juli 2026.
+
+### Urutan implementasi setelah validasi
+
+1. **Tahap A - Kontrak data dan keamanan:** CIT-06 dan bagian metadata CIT-10.
+2. **Tahap B - Impor 3D Tiles ZIP:** CIT-01, termasuk validasi arsip, storage,
+   endpoint tileset, preview, fly-to, arsip, dan penghapusan.
+3. **Tahap C - Atribut objek 3D:** CIT-03, UUID, template CSV, validasi bulk,
+   laporan baris gagal, dan CRUD manual.
+4. **Tahap D - Manajemen katalog:** CIT-04 dan kategori yang disetujui dari CIT-05.
+5. **Tahap E - Format lanjutan:** CIT-02 bila disetujui.
+6. **Tahap F - Perubahan antarwaktu:** CIT-07 bila disetujui.
+
+Setiap tahap harus melalui migration, backend test, frontend test, lint, production
+build, dan uji preview sebelum tahap berikutnya dimulai. Pekerjaan implementasi baru
+tidak dimulai sebelum keputusan ruang lingkup di atas dikonfirmasi.
+
+### Progres implementasi berdasarkan keputusan
+
+- [x] **Tahap A - Kontrak data dan keamanan** (27 Juli 2026)
+  - Status model: draf, diproses, perlu verifikasi, terverifikasi, ditolak, aktif,
+    dan kedaluwarsa.
+  - Model hasil konversi wajib diverifikasi sebelum dapat diaktifkan.
+  - Metadata sumber: jenis data, CRS, satuan, origin X/Y/Z, tanggal berlaku,
+    catatan pemeriksa, dan identitas pemeriksa.
+  - Checklist kualitas: dokumen sumber, CRS, origin, satuan, geometri, dan
+    kecocokan atribut/ID.
+  - Migration dan runtime schema safeguard untuk deployment serverless.
+  - Audit trail untuk verifikasi dan aktivasi model.
+- [x] **Tahap B - Impor 3D Tiles ZIP** (27 Juli 2026)
+  - Unggah langsung ZIP 3D Tiles hingga 100 MB dan ekstraksi terkontrol hingga
+    500 MB/5.000 file.
+  - Validasi `tileset.json`, tileset turunan, referensi konten, georeferensi
+    region/ECEF, serta perlindungan path traversal dan URL eksternal.
+  - Struktur folder dipertahankan di object storage; `converted_public_url`
+    menunjuk `tileset.json` utama tanpa konversi GLB.
+  - Preview langsung tersedia sebelum aktivasi, sedangkan tileset aktif masuk
+    ke endpoint peta yang sama dengan model GLB.
+  - Fly-to memakai pusat bounding volume paket. Paket tidak diberi transformasi
+    ECEF kedua.
+  - Arsip mempertahankan file dan hapus permanen membersihkan ZIP sumber beserta
+    seluruh isi paket.
+  - Tidak memerlukan migration baru karena format, URL hasil, manifest, status
+    konversi, dan metadata lokasi memakai kolom katalog model yang sudah ada.
+  - Panduan operator dan struktur paket tersedia di
+    `planning/3d-gis/3D-TILES-ZIP-GUIDE.md`.
+- [x] **Tahap C - Atribut objek 3D** (27 Juli 2026)
+  - Tabel atribut objek terpisah per versi model dengan UUID sebagai primary key
+    dan kode objek unik per model.
+  - CRUD manual untuk kategori bangunan, ruang, unit, dan komponen.
+  - Atribut standar: nama, kategori, lantai, penggunaan, luas, volume, tinggi,
+    dan properties JSON untuk kebutuhan tambahan.
+  - Search, filter kategori, pagination, editor inline, serta tampilan UUID.
+  - Template CSV dan impor maksimal 2.000 baris dengan upsert berbasis kode objek.
+  - Impor parsial mempertahankan baris valid dan memberikan laporan rinci untuk
+    setiap baris gagal.
+  - Migration, runtime schema safeguard serverless, dan audit trail perubahan.
+  - Panduan tersedia di `planning/3d-gis/OBJECT-ATTRIBUTES-GUIDE.md`.
+- [x] **Tahap D - Manajemen katalog** (28 Juli 2026)
+  - Tabel prioritas menampilkan nama, kategori Bangunan, status katalog dan
+    model, Center X/Y, URL model, serta waktu dibuat/diperbarui.
+  - Center mengutamakan koordinat model aktif dengan fallback koordinat aset.
+  - Search mencakup kode 3D, kode aset, nama, dan lokasi.
+  - Filter status katalog, ketersediaan model, status verifikasi, format, dan
+    kelengkapan center.
+  - Sort berdasarkan tanggal katalog/model, kode, nama, Center X, dan Center Y.
+  - Ekspor CSV memakai filter dan sort aktif serta mengekspor seluruh hasil,
+    bukan hanya halaman yang sedang terbuka.
+  - Tidak memerlukan migration karena semua kolom merupakan proyeksi katalog,
+    aset, dan versi model yang sudah ada.
+  - Panduan tersedia di `planning/3d-gis/CATALOG-MANAGEMENT-GUIDE.md`.
+- [ ] **Tahap E - Format lanjutan** (ditunda)
+- [ ] **Tahap F - Perubahan antarwaktu** (ditunda)
+
 ## Milestone 4 — Analisis 3D untuk pengelolaan aset
 
 - [ ] Menghitung estimasi luas lantai dan volume bangunan dengan label bahwa hasil bersifat estimasi.

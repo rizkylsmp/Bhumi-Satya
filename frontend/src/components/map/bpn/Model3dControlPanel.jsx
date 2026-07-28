@@ -2,27 +2,26 @@ import { createElement, useState } from "react";
 import {
   ArrowsOutIcon,
   BuildingsIcon,
+  CaretDownIcon,
   CheckCircleIcon,
   CrosshairIcon,
   CubeIcon,
   EyeIcon,
-  FolderOpenIcon,
-  FunnelSimpleIcon,
-  MagnifyingGlassIcon,
   MapPinIcon,
   MapTrifoldIcon,
   RulerIcon,
-  TableIcon,
   TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import Switch from "../../ui/Switch";
 
 const TABS = [
-  { id: "data3d", label: "Data 3D" },
-  { id: "data2d", label: "Data 2D" },
-  { id: "tampilan", label: "Tampilan" },
-  { id: "analisis", label: "Analisis" },
+  { id: "data3d", label: "Level of Detail" },
+  { id: "data2d", label: "Layer Controls" },
+  { id: "selection", label: "Selection Mode" },
+  { id: "tampilan", label: "Navigation" },
+  { id: "status", label: "Node Status" },
+  { id: "analisis", label: "Tools" },
 ];
 
 const ANALYSIS_TOOL_COPY = {
@@ -44,6 +43,32 @@ const ANALYSIS_TOOL_COPY = {
   },
 };
 
+const LOD_OPTIONS = [
+  { id: "lod1", label: "LoD 1 – Block Model" },
+  { id: "lod2", label: "LoD 2 – Roof Detail" },
+  { id: "lod2.5", label: "LoD 2.5 – Facade Detail" },
+  { id: "lod3", label: "LoD 3 – Detailed Facade" },
+  { id: "lod4", label: "LoD 4 – Architectural Detail" },
+  { id: "gaussian", label: "Gaussian Splatting" },
+];
+
+function resolveLodOption(location) {
+  const value = `${location?.lod || ""} ${location?.modelType || ""}`
+    .toLowerCase()
+    .replaceAll("_", ".");
+
+  if (value.includes("gaussian") || value.includes("splat")) return "gaussian";
+  if (value.includes("lod4") || value.includes("lod 4")) return "lod4";
+  if (
+    value.includes("lod2.5")
+    || value.includes("lod 2.5")
+    || value.includes("lod25")
+  ) return "lod2.5";
+  if (value.includes("lod3") || value.includes("lod 3")) return "lod3";
+  if (value.includes("lod2") || value.includes("lod 2")) return "lod2";
+  return "lod1";
+}
+
 function ToolButton({
   icon,
   label,
@@ -58,10 +83,10 @@ function ToolButton({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={active || undefined}
-      className={`group relative min-h-24 rounded-xl border p-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-border ${
+      className={`group relative min-h-24 rounded-xl border p-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-border ${
         active
-          ? "border-violet-500 bg-violet-50 dark:bg-violet-500/10"
-          : "border-border bg-surface hover:border-violet-300"
+          ? "border-accent bg-surface-tertiary"
+          : "border-border bg-surface hover:border-text-muted"
       }`}
     >
       {disabled && (
@@ -69,10 +94,10 @@ function ToolButton({
           Segera
         </span>
       )}
-      <span className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors group-hover:bg-violet-600 group-hover:text-white ${
+      <span className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors group-hover:bg-accent group-hover:text-surface ${
         active
-          ? "bg-violet-600 text-white"
-          : "bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300"
+          ? "bg-accent text-surface"
+          : "bg-surface-tertiary text-text-secondary"
       }`}>
         {createElement(icon, { size: 19, weight: "duotone" })}
       </span>
@@ -82,26 +107,7 @@ function ToolButton({
   );
 }
 
-function LocationAction({ icon, label, shortLabel, active = false, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={label}
-      aria-label={label}
-      aria-pressed={active || undefined}
-      className={`flex min-h-12 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 ${
-        active
-          ? "bg-violet-600 text-white"
-          : "text-accent hover:bg-accent/10 dark:text-sky-300 dark:hover:bg-sky-500/10"
-      }`}
-    >
-      {createElement(icon, { size: 17, weight: active ? "fill" : "bold" })}
-      <span className="max-w-full truncate text-[7px] font-extrabold uppercase tracking-wide">{shortLabel}</span>
-    </button>
-  );
-}
-
+/*
 function RoomTable({ rooms }) {
   if (!rooms.length) {
     return (
@@ -140,13 +146,13 @@ function RoomTable({ rooms }) {
     </div>
   );
 }
+*/
 
 export default function Model3dControlPanel({
   embedded = false,
   onClose,
   onDisable3d,
   data2dContent = null,
-  buildingCount,
   detailedModelCount,
   tiledModelCount,
   fallbackCount,
@@ -155,6 +161,10 @@ export default function Model3dControlPanel({
   locations = [],
   visibleLocationIds = null,
   onVisibleLocationIdsChange,
+  showMarkers = true,
+  onShowMarkersChange,
+  showPolygons = true,
+  onShowPolygonsChange,
   onPerspective,
   onTopView,
   onNorthView,
@@ -166,21 +176,20 @@ export default function Model3dControlPanel({
   onClearAnalysis,
 }) {
   const [activeTab, setActiveTab] = useState("data3d");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [crossSectionId, setCrossSectionId] = useState(null);
-  const [roomTableId, setRoomTableId] = useState(null);
+  const [selectedLod, setSelectedLod] = useState(null);
   const allIds = locations.map((location) => String(location.id));
   const selectedIds = visibleLocationIds === null
     ? allIds
     : visibleLocationIds.map(String).filter((id) => allIds.includes(id));
-  const selectedIdSet = new Set(selectedIds);
-  const normalizedSearch = searchTerm.trim().toLowerCase();
-  const filteredLocations = locations.filter((location) => !normalizedSearch || [
-    location.name,
-    location.location,
-    location.lod,
-    location.modelType,
-  ].some((value) => String(value || "").toLowerCase().includes(normalizedSearch)));
+  const locationsByLod = Object.fromEntries(
+    LOD_OPTIONS.map((option) => [
+      option.id,
+      locations.filter((location) => resolveLodOption(location) === option.id),
+    ]),
+  );
+  const effectiveSelectedLod = selectedLod
+    || LOD_OPTIONS.find((option) => locationsByLod[option.id].length > 0)?.id
+    || "lod3";
 
   const updateSelection = (nextIds) => {
     const normalizedIds = Array.from(new Set(nextIds.map(String)));
@@ -189,19 +198,11 @@ export default function Model3dControlPanel({
     );
   };
 
-  const toggleLocation = (locationId) => {
-    const id = String(locationId);
-    updateSelection(
-      selectedIdSet.has(id)
-        ? selectedIds.filter((selectedId) => selectedId !== id)
-        : [...selectedIds, id],
-    );
-  };
-
-  const isolateLocation = (locationId) => {
-    const id = String(locationId);
-    const isIsolated = selectedIds.length === 1 && selectedIdSet.has(id);
-    updateSelection(isIsolated ? allIds : [id]);
+  const selectLod = (lodId) => {
+    const matchingIds = locationsByLod[lodId].map((location) => String(location.id));
+    if (!matchingIds.length) return;
+    setSelectedLod(lodId);
+    updateSelection(matchingIds);
   };
 
   const tilesMessage = tilesetStatus.state === "loading"
@@ -209,55 +210,62 @@ export default function Model3dControlPanel({
     : tilesetStatus.state === "error"
       ? "Sebagian model detail gagal dimuat."
       : `${selectedIds.length} dari ${locations.length} lokasi ditampilkan`;
+  const activeTabIndex = TABS.findIndex((tab) => tab.id === activeTab);
 
   return (
     <aside
       className={embedded
-        ? "flex h-full w-full flex-col overflow-hidden bg-surface"
-        : "mt-1.5 flex max-h-[calc(100vh-5rem)] w-[min(20rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-white/80 bg-surface/95 backdrop-blur-xl dark:border-slate-700"}
-      aria-label="Panel kontrol peta"
+        ? "flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden bg-surface/95 backdrop-blur-xl"
+        : "mt-1.5 flex max-h-[calc(100vh-5rem)] w-[min(19rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-surface/95 shadow-xl shadow-black/15 backdrop-blur-xl"}
+      aria-label="Menu peta 3D"
     >
-      <header className="flex items-start gap-3 border-b border-border bg-gradient-to-r from-violet-600/12 via-sky-500/7 to-transparent px-4 py-3.5">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-sky-500 text-white">
-          <CubeIcon size={21} weight="duotone" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-black text-text-primary">Kontrol Peta</h2>
-          <p className="mt-0.5 text-[10px] font-medium text-text-muted">{locations.length} lokasi data 3D Bhumi Satya</p>
-        </div>
+      <header className="flex h-11 items-center gap-2 border-b border-border bg-surface px-3">
+        <CubeIcon size={15} weight="fill" className="text-accent" />
+        <h2 className="min-w-0 flex-1 text-[10px] font-black uppercase tracking-[0.12em] text-text-primary">
+          Menu Peta 3D
+        </h2>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Tutup panel kontrol peta"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-violet-500"
+          aria-label="Tutup menu peta 3D"
+          className="flex h-7 w-7 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-accent"
         >
-          <XIcon size={17} weight="bold" />
+          <XIcon size={14} weight="bold" />
         </button>
       </header>
 
-      <div className="overflow-x-auto border-b border-border bg-surface/95 px-2 pt-1 backdrop-blur" role="tablist" aria-label="Menu panel peta">
-        <div className="flex min-w-full">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              aria-controls={`panel-3d-${tab.id}`}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 border-b-2 px-3 py-2.5 text-[10px] font-extrabold transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500 ${
-                activeTab === tab.id
-                  ? "border-violet-600 text-violet-700 dark:text-violet-300"
-                  : "border-transparent text-text-muted hover:text-text-primary"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+      <div className="contents" role="tablist" aria-label="Menu peta 3D">
+        {TABS.map((tab, index) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-expanded={activeTab === tab.id}
+            aria-controls={`panel-3d-${tab.id}`}
+            onClick={() => setActiveTab((current) => current === tab.id ? null : tab.id)}
+            style={{ order: index * 2 }}
+            className={`flex min-h-11 w-full items-center justify-between gap-3 border-b border-border px-3.5 py-2.5 text-left text-[10px] font-extrabold uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${
+              activeTab === tab.id
+                ? "bg-accent text-surface"
+                : "bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
+            }`}
+          >
+            <span>{tab.label}</span>
+            <CaretDownIcon
+              size={13}
+              weight="bold"
+              className={`transition-transform duration-200 ${activeTab === tab.id ? "rotate-180" : ""}`}
+            />
+          </button>
+        ))}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3.5">
+      {activeTab && <div
+        className="border-b border-border bg-surface-secondary/80 p-3"
+        style={{ order: activeTabIndex * 2 + 1 }}
+      >
         {activeTab === "data2d" && (
           <section id="panel-3d-data2d" role="tabpanel">
             {data2dContent || (
@@ -269,12 +277,40 @@ export default function Model3dControlPanel({
         )}
 
         {activeTab === "data3d" && (
-          <section id="panel-3d-data3d" role="tabpanel" className="space-y-3">
-            <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-cyan-400 bg-cyan-50/60 px-3 py-2.5 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
-              <FolderOpenIcon size={17} weight="fill" />
-              <span className="text-[11px] font-extrabold">Katalog Data 3D</span>
-            </div>
+          <section id="panel-3d-data3d" role="tabpanel" aria-label="Pilih level of detail" className="space-y-1.5">
+            {LOD_OPTIONS.map((option) => {
+              const count = locationsByLod[option.id].length;
+              const isActive = effectiveSelectedLod === option.id;
 
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => selectLod(option.id)}
+                  disabled={count === 0}
+                  aria-pressed={isActive}
+                  className={`flex min-h-9 w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                    isActive
+                      ? "border-accent bg-accent text-surface"
+                      : "border-border bg-surface text-text-secondary hover:bg-surface-tertiary hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-45"
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                    isActive ? "bg-surface" : "bg-text-muted"
+                  }`} />
+                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                  {count > 0 && (
+                    <span className={`text-[8px] font-bold ${
+                      isActive ? "text-surface/70" : "text-text-muted"
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+            {/*
             <label className="relative block">
               <span className="sr-only">Cari data 3D</span>
               <MagnifyingGlassIcon size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -283,12 +319,12 @@ export default function Model3dControlPanel({
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Cari lokasi atau data 3D…"
-                className="h-9 w-full rounded-lg border border-border bg-surface-secondary pl-9 pr-3 text-[10px] font-semibold text-text-primary outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+                className="h-9 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
               />
             </label>
 
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => updateSelection(allIds)} className="rounded-lg border border-cyan-300 bg-cyan-50 px-2 py-2 text-[9px] font-extrabold text-cyan-700 transition hover:bg-cyan-100 focus-visible:ring-2 focus-visible:ring-cyan-500 dark:bg-cyan-500/10 dark:text-cyan-300">
+              <button type="button" onClick={() => updateSelection(allIds)} className="rounded-lg border border-accent bg-accent px-2 py-2 text-[9px] font-extrabold text-surface transition hover:bg-accent-hover focus-visible:ring-2 focus-visible:ring-accent">
                 Pilih Semua
               </button>
               <button type="button" onClick={() => updateSelection([])} className="rounded-lg border border-red-200 bg-red-50 px-2 py-2 text-[9px] font-extrabold text-red-600 transition hover:bg-red-100 focus-visible:ring-2 focus-visible:ring-red-500 dark:bg-red-500/10 dark:text-red-300">
@@ -301,13 +337,13 @@ export default function Model3dControlPanel({
                 <p className="text-sm font-black leading-none text-text-primary">{locations.length}</p>
                 <p className="mt-1 text-[8px] font-bold text-text-muted">Lokasi</p>
               </div>
-              <div className="rounded-lg border border-cyan-200 bg-cyan-50 px-2 py-2 text-center dark:border-cyan-500/30 dark:bg-cyan-500/10">
-                <p className="text-sm font-black leading-none text-cyan-700 dark:text-cyan-300">{selectedIds.length}</p>
-                <p className="mt-1 text-[8px] font-bold text-cyan-700/70 dark:text-cyan-300/70">Ditampilkan</p>
+              <div className="rounded-lg border border-border bg-surface px-2 py-2 text-center">
+                <p className="text-sm font-black leading-none text-text-primary">{selectedIds.length}</p>
+                <p className="mt-1 text-[8px] font-bold text-text-muted">Ditampilkan</p>
               </div>
-              <div className="rounded-lg border border-violet-200 bg-violet-50 px-2 py-2 text-center dark:border-violet-500/30 dark:bg-violet-500/10">
-                <p className="text-sm font-black leading-none text-violet-700 dark:text-violet-300">{detailedModelCount}</p>
-                <p className="mt-1 text-[8px] font-bold text-violet-700/70 dark:text-violet-300/70">Model detail</p>
+              <div className="rounded-lg border border-border bg-surface px-2 py-2 text-center">
+                <p className="text-sm font-black leading-none text-text-primary">{detailedModelCount}</p>
+                <p className="mt-1 text-[8px] font-bold text-text-muted">Model detail</p>
               </div>
             </div>
 
@@ -330,11 +366,11 @@ export default function Model3dControlPanel({
                   const showRooms = roomTableId === location.id;
                   const crossSectionActive = crossSectionId === location.id;
                   return (
-                    <article key={location.id} className={`rounded-xl border bg-surface p-3 transition ${isSelected ? "border-cyan-300" : "border-border opacity-70"}`}>
+                    <article key={location.id} className={`rounded-xl border bg-surface p-3 transition ${isSelected ? "border-accent" : "border-border opacity-70"}`}>
                       <div className="flex items-start gap-2.5">
                         <Switch
                           size="sm"
-                          tone="cyan"
+                          tone="accent"
                           checked={isSelected}
                           onCheckedChange={() => toggleLocation(location.id)}
                           className="mt-0.5"
@@ -344,11 +380,11 @@ export default function Model3dControlPanel({
                           <p className="truncate text-[11px] font-extrabold text-text-primary" title={location.name}>{location.name}</p>
                           <p className="mt-0.5 flex items-center gap-1 truncate text-[9px] text-text-muted"><MapPinIcon size={10} weight="fill" /> {location.location}</p>
                         </div>
-                        <span className="rounded-md bg-violet-50 px-1.5 py-1 text-[8px] font-black text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">{location.lod}</span>
+                        <span className="rounded-md bg-surface-tertiary px-1.5 py-1 text-[8px] font-black text-text-secondary">{location.lod}</span>
                       </div>
 
                       <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                        <div className={`h-full rounded-full bg-gradient-to-r from-cyan-500 to-violet-600 transition-all ${isSelected ? "w-full" : "w-0"}`} />
+                        <div className={`h-full rounded-full bg-accent transition-all ${isSelected ? "w-full" : "w-0"}`} />
                       </div>
 
                       <div className="mt-2 grid grid-cols-4 gap-1 border-t border-border pt-1.5">
@@ -369,6 +405,7 @@ export default function Model3dControlPanel({
                 })}
               </div>
             )}
+            */}
           </section>
         )}
 
@@ -384,9 +421,72 @@ export default function Model3dControlPanel({
           </section>
         )}
 
+        {activeTab === "selection" && (
+          <section id="panel-3d-selection" role="tabpanel" className="space-y-3">
+            <p className="text-[10px] leading-relaxed text-text-muted">
+              Atur objek yang dapat dipilih dan ditampilkan pada peta.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => updateSelection(allIds)}
+                className="rounded-lg border border-accent bg-accent px-2 py-2 text-[9px] font-extrabold text-surface focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                Pilih semua 3D
+              </button>
+              <button
+                type="button"
+                onClick={() => updateSelection([])}
+                className="rounded-lg border border-border bg-surface px-2 py-2 text-[9px] font-extrabold text-text-secondary focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                Kosongkan
+              </button>
+            </div>
+            <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-[10px] font-bold text-text-secondary">
+              Marker aset
+              <Switch
+                size="sm"
+                tone="accent"
+                checked={showMarkers}
+                onCheckedChange={onShowMarkersChange}
+                aria-label="Tampilkan marker aset"
+              />
+            </label>
+            <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-[10px] font-bold text-text-secondary">
+              Polygon aset
+              <Switch
+                size="sm"
+                tone="accent"
+                checked={showPolygons}
+                onCheckedChange={onShowPolygonsChange}
+                aria-label="Tampilkan polygon aset"
+              />
+            </label>
+          </section>
+        )}
+
+        {activeTab === "status" && (
+          <section id="panel-3d-status" role="tabpanel" className="space-y-2" aria-live="polite">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-lg border border-border bg-surface-secondary p-2.5">
+                <p className="text-base font-black text-text-primary">{selectedIds.length}</p>
+                <p className="text-[8px] font-bold text-text-muted">Objek aktif</p>
+              </div>
+              <div className="rounded-lg border border-border bg-surface-secondary p-2.5">
+                <p className="text-base font-black text-text-primary">{detailedModelCount}</p>
+                <p className="text-[8px] font-bold text-text-muted">Model detail</p>
+              </div>
+            </div>
+            <p className="rounded-lg border border-border bg-surface-secondary px-3 py-2 text-[9px] font-semibold text-text-muted">
+              {tilesMessage}
+              {fallbackStatus.failed > 0 ? ` · ${fallbackCount} model fallback` : ""}
+            </p>
+          </section>
+        )}
+
         {activeTab === "analisis" && (
           <section id="panel-3d-analisis" role="tabpanel" className="space-y-3">
-            <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 text-[10px] leading-relaxed text-violet-800 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-200">
+            <div className="rounded-xl border border-border bg-surface p-3 text-[10px] leading-relaxed text-text-secondary">
               <p className="font-extrabold">
                 {analysisTool
                   ? ANALYSIS_TOOL_COPY[analysisTool]?.title
@@ -398,7 +498,7 @@ export default function Model3dControlPanel({
                   : "Aktifkan alat, lalu klik titik atau bangunan pada peta 3D."}
               </p>
               {analysisTool === "distance" && analysisPointCount > 0 && (
-                <p className="mt-2 font-bold text-violet-600 dark:text-violet-300">
+                <p className="mt-2 font-bold text-text-primary">
                   {analysisPointCount} titik pengukuran dipilih
                 </p>
               )}
@@ -479,13 +579,14 @@ export default function Model3dControlPanel({
             </p>
           </section>
         )}
+      </div>}
       </div>
 
-      <footer className="flex items-center justify-between gap-3 border-t border-border bg-surface-secondary/70 px-4 py-2.5">
+      <footer className="flex items-center justify-between gap-3 bg-surface px-4 py-2.5">
         <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-300">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-emerald-500/15" /> Mode 3D aktif
+          <span className="h-2 w-2 rounded-full bg-emerald-500" /> Mode 3D aktif
         </span>
-        <button type="button" onClick={onDisable3d} className="text-[10px] font-extrabold text-violet-700 hover:text-violet-900 focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-violet-300">
+        <button type="button" onClick={onDisable3d} className="text-[10px] font-extrabold text-accent hover:text-accent-hover focus-visible:ring-2 focus-visible:ring-accent">
           Kembali ke 2D
         </button>
       </footer>

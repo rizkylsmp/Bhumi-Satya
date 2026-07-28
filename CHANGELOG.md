@@ -6,8 +6,47 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Menambahkan tabel manajemen katalog 3D dengan Center X/Y, URL model, status,
+  filter lanjutan, sort, dan ekspor CSV yang mengikuti hasil filter.
+- Menambahkan UUID, CRUD, pencarian, filter, pagination, template CSV, dan impor
+  massal untuk atribut per objek pada setiap versi model 3D.
+- Kelola 3D menerima ZIP 3D Tiles georeferensi secara langsung, memvalidasi
+  seluruh referensi paket, menampilkan preview, dan mengarahkan fly-to ke pusat
+  model.
+- Menambahkan validasi keamanan arsip 3D Tiles, rollback file parsial, serta
+  pembersihan seluruh isi paket saat model arsip dihapus permanen.
+
 ### Changed
 
+- Navbar publik kini memakai satu layout persisten dengan susunan menu, ukuran,
+  posisi, status aktif, dan aksi login yang konsisten di seluruh halaman.
+- Rute beranda publik kini menggunakan `/beranda`; rute lama
+  `/sewa-tersedia` dialihkan untuk menjaga kompatibilitas tautan.
+- Kolom Aksi pada tabel Kelola 3D kini dibekukan di sisi kanan agar kontrol
+  tetap terlihat saat tabel digeser horizontal.
+- Data Model, Detail Model, dan Daftar Ruang pada detail Kelola 3D kini
+  berganti sebagai komponen pada rute yang sama; seluruh komponen tetap
+  terpasang agar data dan state form bertahan saat pengguna berpindah tab.
+- Data Legal, Fisik, Administratif, dan Spasial kini memakai aksi `Kelola`
+  yang langsung membuka bagian data terkait, tanpa tombol `Tambah Aset` atau
+  aksi penghapusan data master dari halaman substansi.
+- Menu Data Spasial pada sidebar kini menjadi dropdown yang mengelompokkan
+  Kelola 2D dan Kelola 3D sesuai hak akses pengguna.
+- Seluruh halaman internal menggunakan density visual kompak yang mengikuti
+  ukuran Kelola 3D, tanpa mengubah skala landing page, halaman publik, atau
+  kanvas peta.
+- Sidebar internal kini memakai ukuran kompak yang selaras dengan halaman,
+  termasuk teks, ikon, padding, badge, dan panel submenu; menu Peta berada
+  tepat di bawah Dashboard.
+- Shell halaman internal kini menyesuaikan konten ke lebar viewport tanpa
+  menyembunyikan overflow horizontal; wrapper density menggunakan lebar riil
+  100%, sedangkan scroll horizontal hanya berada pada komponen yang memang
+  lebih lebar, seperti tabel data.
+- Merapikan struktur frontend dengan memisahkan context konfirmasi dari
+  komponennya, memindahkan komponen form statis keluar dari render, dan
+  menyederhanakan penamaan internal.
 - Seluruh menu navigasi, dropdown, tab, pagination, dan kontrol peta kini
   tampil datar tanpa efek glow atau shadow dekoratif.
 - Tombol pembuka panel peta kini selalu menggunakan label `Kontrol Peta`,
@@ -15,8 +54,18 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 - Tombol login pada peta publik kini kembali ke rute login sekaligus langsung
   membuka panel login.
 
+### Removed
+
+- Menghapus fitur EKASMAT dari halaman publik, login, menu admin, routing,
+  permission, service API, endpoint backend, model, dan artefak schema legacy.
+- Menghapus menu, tombol, dan section Katalog Aset dari landing page.
+- Menghapus modul frontend legacy yang tidak memiliki route/import aktif,
+  aset logo lama, CSS Leaflet, serta dependency UI dan peta yang tidak dipakai.
+
 ### Fixed
 
+- Memulihkan scroll vertikal seluruh landing page dan halaman publik dengan
+  menghapus penguncian tinggi viewport serta overflow global pada dokumen.
 - Memperbaiki panel kontrol yang kosong setelah ditutup dan dibuka kembali
   ketika mode 3D masih aktif.
 
@@ -39,8 +88,6 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
   landing page belum benar-benar kosong dan masih menampilkan data nonresmi.
 - Endpoint peta publik mengirim metadata pertanahan yang perlu ditinjau kembali
   sebelum dipublikasikan, termasuk NIB, nomor sertifikat, NIBAR, dan atas nama.
-- Peta publik menghasilkan error MapLibre saat memuat proyeksi dan layer
-  ekstrusi 3D karena ekspresi data dipakai pada `fill-extrusion-opacity`.
 - Endpoint autentikasi publik belum memiliki rate limiting atau penguncian akun
   untuk membatasi percobaan login, OTP, registrasi, dan reset password.
 - Tautan kontak landing page masih memakai nilai placeholder/tidak konsisten;
@@ -66,7 +113,7 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 - Portal masyarakat untuk registrasi, melihat aset tersedia, mengajukan sewa,
   dan memantau permintaan maupun sewa yang disetujui.
 - Modul internal untuk dashboard, pengelolaan aset, pusat data, penyewaan,
-  pengguna, notifikasi, riwayat audit, backup/restore, pengaturan, dan EKASMAT.
+  pengguna, notifikasi, riwayat audit, backup/restore, dan pengaturan.
 - Autentikasi JWT, hashing password, OTP email/WhatsApp, MFA berbasis TOTP,
   reset password, perpanjangan sesi, dan notifikasi aktivitas login.
 - Otorisasi berbasis role dan permission untuk `admin`, `pengelola_aset`,

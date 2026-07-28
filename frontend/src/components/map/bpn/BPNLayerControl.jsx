@@ -26,6 +26,7 @@ export default function BPNLayerControl({
   setShowBelumSertifikat,
   data3dFilter,
   setData3dFilter,
+  embedded = false,
 }) {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -74,27 +75,31 @@ export default function BPNLayerControl({
 
   return (
     <div>
-      {/* Header toggle */}
-      <button
-        onClick={() => setIsOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 bg-surface border border-border rounded-xl px-3 py-2.5 text-left hover:bg-surface-secondary transition-colors"
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          <StackIcon size={15} weight="fill" className="text-accent shrink-0" />
-          <span className="text-xs font-bold text-text-primary truncate">
-            {panelTitle}
-          </span>
-        </div>
-        {isOpen ? (
-          <CaretUpIcon size={13} className="text-text-muted shrink-0" />
-        ) : (
-          <CaretDownIcon size={13} className="text-text-muted shrink-0" />
-        )}
-      </button>
+      {/* Header toggle is omitted when this control lives inside an accordion. */}
+      {!embedded && (
+        <button
+          onClick={() => setIsOpen((v) => !v)}
+          className="w-full flex items-center justify-between gap-2 bg-surface border border-border rounded-xl px-3 py-2.5 text-left hover:bg-surface-secondary transition-colors"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <StackIcon size={15} weight="fill" className="text-accent shrink-0" />
+            <span className="text-xs font-bold text-text-primary truncate">
+              {panelTitle}
+            </span>
+          </div>
+          {isOpen ? (
+            <CaretUpIcon size={13} className="text-text-muted shrink-0" />
+          ) : (
+            <CaretDownIcon size={13} className="text-text-muted shrink-0" />
+          )}
+        </button>
+      )}
 
       {/* Body */}
-      {isOpen && (
-        <div className="mt-1.5 bg-surface border border-border rounded-xl overflow-hidden">
+      {(embedded || isOpen) && (
+        <div className={embedded
+          ? "overflow-hidden bg-surface"
+          : "mt-1.5 overflow-hidden rounded-xl border border-border bg-surface"}>
           {!isBPKAMode && (
             <div className="px-3 pt-3 pb-2.5">
               <div className="flex items-center gap-1.5 mb-2.5">

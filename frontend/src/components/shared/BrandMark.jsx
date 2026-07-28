@@ -1,11 +1,13 @@
 export default function BrandMark({ className = "" }) {
   return (
-    <span
-      role="img"
-      aria-label="Bhumi Satya"
-      className={`inline-flex shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-emerald-500 to-teal-700 font-black tracking-[-0.08em] text-white shadow-sm ${className}`}
-    >
-      BS
-    </span>
+    <img
+      src="/bhumi-satya-logo.png"
+      alt="Logo Bhumi Satya"
+      width="1254"
+      height="1254"
+      decoding="async"
+      draggable="false"
+      className={`inline-block shrink-0 object-contain ${className}`}
+    />
   );
 }

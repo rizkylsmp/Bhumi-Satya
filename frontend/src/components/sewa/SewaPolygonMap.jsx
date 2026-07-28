@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapTrifoldIcon, PolygonIcon } from "@phosphor-icons/react";
+import {
+  DEFAULT_MAP_CENTER,
+  DEFAULT_MAP_ZOOM,
+} from "../map/mapDefaults";
 
 const MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
-const DEFAULT_CENTER = [112.9063, -7.6453];
-const DEFAULT_ZOOM = 13;
 const SOURCE_ID = "sewa-polygon-source";
 const FILL_LAYER_ID = "sewa-polygon-fill";
 const OUTLINE_LAYER_ID = "sewa-polygon-outline";
@@ -93,7 +95,7 @@ function toFeatureCollection(ring) {
 }
 
 function getCenter(ring) {
-  if (!ring || ring.length < 3) return DEFAULT_CENTER;
+  if (!ring || ring.length < 3) return DEFAULT_MAP_CENTER;
   const lngs = ring.map((point) => point[0]);
   const lats = ring.map((point) => point[1]);
   return [
@@ -124,7 +126,7 @@ export default function SewaPolygonMap({
       container: containerRef.current,
       style: MAP_STYLE,
       center: getCenter(ring),
-      zoom: ring ? 16 : DEFAULT_ZOOM,
+      zoom: ring ? 16 : DEFAULT_MAP_ZOOM,
       pitch: 0,
       bearing: 0,
       antialias: true,

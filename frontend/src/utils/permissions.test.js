@@ -35,7 +35,6 @@ describe("permission utilities", () => {
       "peta",
       "riwayat",
       "notifikasi",
-      "ekasmat",
       "user",
       "pengaturan",
       "backup",

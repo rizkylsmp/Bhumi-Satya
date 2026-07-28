@@ -182,6 +182,16 @@ const createLeaf = (entry) => {
     modelId: model.id_model_3d,
     version: model.version,
   };
+  const modelFormat = String(model.format || model.model_type || "").toUpperCase();
+  if (modelFormat === "3DTILES") {
+    return {
+      boundingVolume: model.manifest?.rootBoundingVolume || { region: entry.region },
+      geometricError: Math.max(0, Number(model.manifest?.geometricError) || 0),
+      refine: "REPLACE",
+      content: { uri: model.converted_public_url },
+      extras: { ...metadata, lod: "package", format: "3DTILES" },
+    };
+  }
   const high = {
     boundingVolume: { region: entry.region },
     geometricError: 0,

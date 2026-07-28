@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "leaflet/dist/leaflet.css";
 
 /* Dark Mode Theme Configuration */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -50,6 +49,34 @@ body {
   @apply bg-surface-secondary text-text-primary;
 }
 
+/*
+ * Density halaman internal mengikuti Kelola 3D sebagai referensi.
+ * Wrapper tidak dipakai pada Kelola 3D dan peta agar ukuran referensi serta
+ * perhitungan kanvas/viewport tetap utuh.
+ */
+.app-main-content > * {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .admin-density-compact {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-height: 100%;
+    min-width: 0;
+    zoom: 0.875;
+  }
+
+  .admin-density-compact > * {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
 /* Focus visible outline for keyboard accessibility */
 *:focus:not(:focus-visible) {
   outline: none;
@@ -98,97 +125,9 @@ textarea:disabled,
   cursor: not-allowed;
 }
 
-/* Leaflet Map Container Fix */
-.leaflet-container {
-  height: 100% !important;
-  width: 100% !important;
-  z-index: 1;
-}
-
 /* Crosshair cursor for map drawing/picking mode */
-.map-cursor-crosshair .leaflet-container,
-.map-cursor-crosshair .leaflet-grab,
-.map-cursor-crosshair .leaflet-interactive {
+.map-cursor-crosshair .maplibregl-canvas {
   cursor: crosshair !important;
-}
-
-.custom-marker {
-  background: transparent !important;
-  border: none !important;
-}
-
-/* Custom Leaflet Popup Styling */
-.leaflet-popup-content-wrapper {
-  background: var(--color-surface) !important;
-  color: var(--color-text-primary) !important;
-  border-radius: 16px !important;
-  border: 1px solid var(--color-border) !important;
-  box-shadow:
-    0 20px 40px -8px rgba(0, 0, 0, 0.15),
-    0 8px 16px -4px rgba(0, 0, 0, 0.08) !important;
-  padding: 0 !important;
-  overflow: hidden;
-}
-
-.leaflet-popup-content {
-  margin: 0 !important;
-  min-width: 240px !important;
-  line-height: 1.5 !important;
-}
-
-.leaflet-popup-tip-container {
-  display: block;
-}
-
-.leaflet-popup-tip {
-  background: var(--color-surface) !important;
-  border: 1px solid var(--color-border) !important;
-  border-top: none !important;
-  border-left: none !important;
-  box-shadow: none !important;
-}
-
-.leaflet-popup-close-button {
-  display: none !important;
-}
-
-/* Leaflet tooltip styling */
-.leaflet-tooltip {
-  background: var(--color-surface) !important;
-  color: var(--color-text-primary) !important;
-  border: 1px solid var(--color-border) !important;
-  border-radius: 10px !important;
-  padding: 6px 12px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-  font-family: inherit !important;
-}
-
-.leaflet-tooltip-top::before {
-  border-top-color: var(--color-border) !important;
-}
-
-.leaflet-tooltip-bottom::before {
-  border-bottom-color: var(--color-border) !important;
-}
-
-.leaflet-tooltip.bhumi-satya-marker-number {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  color: #ffffff !important;
-  font-size: clamp(8px, 0.6rem, 9px) !important;
-  font-weight: 800 !important;
-  line-height: 1 !important;
-  padding: 0 !important;
-  pointer-events: none !important;
-  text-align: center !important;
-  text-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.55),
-    0 0 1px rgba(15, 23, 42, 0.8) !important;
-}
-
-.leaflet-tooltip.bhumi-satya-marker-number::before {
-  display: none !important;
 }
 
 /* Ensure map fills container */
@@ -200,22 +139,17 @@ textarea:disabled,
   bottom: 0;
 }
 
-/* Remove default body scroll */
+/* Public pages follow their content height; app shells manage their own viewport. */
 html,
 body,
 #root {
-  height: 100%;
   min-height: 100%;
   min-height: -webkit-fill-available;
-  overflow: hidden;
 }
 
 /* Fix for mobile viewport height (address bar issue) */
 @supports (height: 100dvh) {
-  html,
-  body,
   #root {
-    height: 100dvh;
     min-height: 100dvh;
   }
 }

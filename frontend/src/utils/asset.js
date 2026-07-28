@@ -1,6 +1,6 @@
 /**
  * Asset-related utility functions
- * Shared across LandingPage, LoginPage, and other asset-related components
+ * Shared across public and administrative asset components.
  */
 
 export const CERTIFICATE_COLORS = {

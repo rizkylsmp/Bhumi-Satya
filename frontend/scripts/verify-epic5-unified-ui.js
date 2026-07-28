@@ -21,7 +21,7 @@ try {
     mapPage,
     assetSearch,
     assetForm,
-    loginPage,
+    landingPage,
     masyarakatAuth,
     asetTersedia,
     sewaDisetujui,
@@ -63,10 +63,6 @@ try {
     "Dashboard harus memakai panel terpadu",
   );
   assert(
-    /mode="integrated"/.test(dashboard),
-    "Peta dashboard harus memakai mode integrated",
-  );
-  assert(
     !/DashboardBPKAPanel|isBPKARole/.test(dashboard),
     "Dashboard masih memilih panel berdasarkan instansi",
   );
@@ -81,8 +77,8 @@ try {
   );
   assert(
     /path: "\/peta-publik",\s*element: \(\s*<LazyPage>\s*<PublicMapPage/.test(router) &&
-      /peta-publik/.test(loginPage) &&
-      /Buka Peta Layar Penuh/.test(loginPage),
+      /peta-publik/.test(landingPage) &&
+      /Buka Peta Layar Penuh/.test(landingPage),
     "Landing page harus menyediakan tautan ke peta publik layar penuh",
   );
   assert(
@@ -108,12 +104,11 @@ try {
     "Form aset tidak boleh memiliki mode atau label institusi",
   );
   assert(
-    /Sewa Aset Tanah/.test(loginPage) &&
-      /Lihat Aset Tersedia/.test(loginPage) &&
-      /Login Masyarakat/.test(loginPage) &&
-      /EKASMAT/.test(loginPage) &&
-      !/\bBPN\b|\bBPKA\b/.test(loginPage),
-    "Landing login harus menggunakan satu identitas Bhumi Satya tanpa pemilih sistem lama",
+    /Aset pilihan yang siap disewa/.test(landingPage) &&
+      /Masuk ke akun Anda untuk melanjutkan/.test(landingPage) &&
+      !/Login Masyarakat|Login Internal/.test(landingPage) &&
+      !/\bBPN\b|\bBPKA\b/.test(landingPage),
+    "Landing page harus menggunakan satu alur login Bhumi Satya",
   );
   assert(
     !/\bBPKA\b|\bBPN\b/.test(`${masyarakatAuth}${asetTersedia}${sewaDisetujui}`),

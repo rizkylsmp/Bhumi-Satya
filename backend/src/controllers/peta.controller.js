@@ -8,6 +8,35 @@ const normalizeSumber = (value) => {
   return ["BPN", "BPKA"].includes(normalized) ? normalized : null;
 };
 
+const getPublishedModelAssetIds = async () => {
+  const models = await AsetModel3d.findAll({
+    attributes: ["id_aset"],
+    where: {
+      is_active: true,
+      status: "ready",
+      conversion_status: "ready",
+      archived_at: null,
+    },
+    raw: true,
+  });
+  return [...new Set(models.map((model) => model.id_aset).filter(Boolean))];
+};
+
+const buildMapAssetLocationFilters = (publishedModelAssetIds = []) => {
+  const filters = [
+    {
+      koordinat_lat: { [Op.ne]: null },
+      koordinat_long: { [Op.ne]: null },
+    },
+    { polygon_bidang: { [Op.ne]: null } },
+    { building_footprint: { [Op.ne]: null } },
+  ];
+  if (publishedModelAssetIds.length > 0) {
+    filters.push({ id_aset: { [Op.in]: publishedModelAssetIds } });
+  }
+  return filters;
+};
+
 export const getModel3dTileset = async (req, res) => {
   try {
     const requestedAssetIds = String(req.query.asset_ids || "")
@@ -27,6 +56,8 @@ export const getModel3dTileset = async (req, res) => {
         "id_model_3d",
         "id_aset",
         "version",
+        "format",
+        "model_type",
         "converted_public_url",
         "converted_bounds",
         "converted_triangle_count",
@@ -46,6 +77,7 @@ export const getModel3dTileset = async (req, res) => {
         "offset_x_m",
         "offset_y_m",
         "offset_z_m",
+        "manifest",
       ],
       where: modelWhere,
       include: [{
@@ -71,7 +103,7 @@ export const getModel3dTileset = async (req, res) => {
       };
     }));
     if (!tileset) {
-      return res.status(404).json({ success: false, error: "Belum ada GLB aktif untuk tileset 3D" });
+      return res.status(404).json({ success: false, error: "Belum ada model 3D aktif untuk tileset" });
     }
     // Transformasi posisi model dapat diubah dari preview Kelola 3D.
     // Jangan gunakan tileset lama setelah metadata X/Y/Z disimpan.
@@ -99,16 +131,11 @@ const appendExplicitSourceFilters = (where, query = {}) => {
  */
 export const getPublicMarkers = async (req, res) => {
   try {
+    const publishedModelAssetIds = await getPublishedModelAssetIds();
+
     const assets = await Aset.findAll({
       where: {
-        [Op.or]: [
-          {
-            koordinat_lat: { [Op.ne]: null },
-            koordinat_long: { [Op.ne]: null },
-          },
-          { polygon_bidang: { [Op.ne]: null } },
-          { building_footprint: { [Op.ne]: null } },
-        ],
+        [Op.or]: buildMapAssetLocationFilters(publishedModelAssetIds),
       },
       attributes: [
         "id_aset",
@@ -153,6 +180,39 @@ export const getPublicMarkers = async (req, res) => {
           attributes: ["id_sewa", "status"],
           required: false,
         },
+        {
+          model: AsetModel3d,
+          as: "models3d",
+          attributes: [
+            "id_model_3d",
+            "version",
+            "format",
+            "model_type",
+            "conversion_status",
+            "converted_public_url",
+            "converted_bounds",
+            "location_lat",
+            "location_long",
+            "altitude_m",
+            "altitude_mode",
+            "heading",
+            "tilt",
+            "roll",
+            "scale_x",
+            "scale_y",
+            "scale_z",
+            "offset_x_m",
+            "offset_y_m",
+            "offset_z_m",
+          ],
+          where: {
+            is_active: true,
+            status: "ready",
+            conversion_status: "ready",
+            archived_at: null,
+          },
+          required: false,
+        },
       ],
     });
 
@@ -164,6 +224,7 @@ export const getPublicMarkers = async (req, res) => {
       const availableSewa = plain.sewas?.find(
         (sewa) => sewa.status === "Tersedia",
       );
+      const activeModel3d = plain.models3d?.[0] || null;
 
       return {
         id: plain.id_aset,
@@ -212,6 +273,7 @@ export const getPublicMarkers = async (req, res) => {
         model_3d_accuracy_m: plain.model_3d_accuracy_m
           ? parseFloat(plain.model_3d_accuracy_m)
           : null,
+        active_model_3d: activeModel3d,
         sumber: plain.sumber || null,
         status_sewa: activeSewa
           ? "Tersewa"
@@ -309,16 +371,10 @@ export const getLayers = async (req, res) => {
 export const getMarkers = async (req, res) => {
   try {
     const { status, jenis_aset } = req.query;
+    const publishedModelAssetIds = await getPublishedModelAssetIds();
 
     const where = {
-      [Op.or]: [
-        {
-          koordinat_lat: { [Op.ne]: null },
-          koordinat_long: { [Op.ne]: null },
-        },
-        { polygon_bidang: { [Op.ne]: null } },
-        { building_footprint: { [Op.ne]: null } },
-      ],
+      [Op.or]: buildMapAssetLocationFilters(publishedModelAssetIds),
     };
     appendExplicitSourceFilters(where, req.query);
 
@@ -401,7 +457,12 @@ export const getMarkers = async (req, res) => {
             "offset_z_m",
             "manifest",
           ],
-          where: { is_active: true, archived_at: null, status: "ready" },
+          where: {
+            is_active: true,
+            archived_at: null,
+            status: "ready",
+            conversion_status: "ready",
+          },
           required: false,
         },
       ],

@@ -9,11 +9,13 @@ import {
   CheckIcon,
   ArrowsOutIcon,
 } from "@phosphor-icons/react";
+import {
+  DEFAULT_MAP_CENTER_LAT_LNG,
+  DEFAULT_MAP_ZOOM,
+} from "../mapDefaults";
 
 const MAP_STYLE =
   "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
-const PASURUAN_CITY_CENTER = [-7.6469, 112.9075]; // [lat, lng]
-const DEFAULT_ZOOM = 14;
 
 const toNumber = (value) => {
   if (value === null || value === undefined || value === "") return null;
@@ -53,7 +55,7 @@ function MapLibreCoordinateCanvas({ centerLatLng, selectedCoords, onSelect }) {
       container: containerRef.current,
       style: MAP_STYLE,
       center: initialCenter,
-      zoom: DEFAULT_ZOOM,
+      zoom: DEFAULT_MAP_ZOOM,
       attributionControl: true,
     });
 
@@ -121,7 +123,7 @@ export default function MapCoordinatePicker({
   const [isExpanded, setIsExpanded] = useState(!hasValidCoords);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [tempCoords, setTempCoords] = useState(null);
-  const defaultCenter = PASURUAN_CITY_CENTER;
+  const defaultCenter = DEFAULT_MAP_CENTER_LAT_LNG;
 
   // Determine map center and marker position
   const position = hasValidCoords ? [parsedLat, parsedLng] : null;
@@ -211,7 +213,7 @@ export default function MapCoordinatePicker({
                   onCoordinateChange(val, longitude || "");
                 }
               }}
-              placeholder="-7.6469"
+              placeholder="-7.782708"
               className="w-full text-sm font-medium text-text-primary bg-transparent outline-none placeholder:text-text-muted"
             />
           </div>
@@ -229,7 +231,7 @@ export default function MapCoordinatePicker({
                   onCoordinateChange(latitude || "", val);
                 }
               }}
-              placeholder="112.9075"
+              placeholder="110.343311"
               className="w-full text-sm font-medium text-text-primary bg-transparent outline-none placeholder:text-text-muted"
             />
           </div>

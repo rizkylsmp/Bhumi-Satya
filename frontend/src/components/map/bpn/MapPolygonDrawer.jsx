@@ -13,11 +13,13 @@ import {
   CheckIcon,
   DownloadSimpleIcon,
 } from "@phosphor-icons/react";
+import {
+  DEFAULT_MAP_CENTER_LAT_LNG,
+  DEFAULT_MAP_ZOOM,
+} from "../mapDefaults";
 
 const MAP_STYLE =
   "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
-const PASURUAN_CITY_CENTER = [-7.6469, 112.9075]; // [lat, lng]
-const DEFAULT_ZOOM = 14;
 
 const toNumber = (value) => {
   if (value === null || value === undefined || value === "") return null;
@@ -191,7 +193,7 @@ function MapLibrePolygonCanvas({
       container: containerRef.current,
       style: MAP_STYLE,
       center: initialCenter,
-      zoom: DEFAULT_ZOOM,
+      zoom: DEFAULT_MAP_ZOOM,
       attributionControl: true,
     });
 
@@ -306,7 +308,7 @@ export default function MapPolygonDrawer({
   const [points, setPoints] = useState([]);
   const [savedPoints, setSavedPoints] = useState([]); // backup for cancel
 
-  const defaultCenter = PASURUAN_CITY_CENTER;
+  const defaultCenter = DEFAULT_MAP_CENTER_LAT_LNG;
   const parsedLat = toNumber(centerLat);
   const parsedLng = toNumber(centerLng);
   const hasCenter = parsedLat !== null && parsedLng !== null;
@@ -327,6 +329,8 @@ export default function MapPolygonDrawer({
       const normalized = removeClosingPoint(
         polygonData.map((p) => (Array.isArray(p) ? p : [p.lat, p.lng])),
       );
+      // Prop geometry must replace the local drawing state when editing an asset.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPoints((prev) =>
         arePointsEqual(prev, normalized) ? prev : normalized,
       );

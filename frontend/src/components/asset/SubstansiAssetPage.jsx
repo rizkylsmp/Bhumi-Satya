@@ -3,18 +3,11 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import AssetSearch from "./AssetSearch";
 import Pagination from "./Pagination";
-import AssetViewModal from "./AssetViewModal";
-import ActionButtons from "./ActionButtons";
 import { asetService } from "../../services/api";
-import { useAuthStore } from "../../stores/authStore";
-import { hasPermission } from "../../utils/permissions";
-import { downloadAssetPdf } from "../../utils/pdfExport";
-import { downloadAssetGeojson } from "../../utils/geojsonExport";
 import useColumnResize from "../../hooks/useColumnResize";
-import { useConfirm } from "../ui/ConfirmDialog";
 import {
-  PlusIcon,
   ArrowsClockwiseIcon,
+  ArrowRightIcon,
   PackageIcon,
   CaretUpIcon,
   CaretDownIcon,
@@ -245,20 +238,12 @@ const SortIcon = ({ column, sortBy, sortOrder }) => {
 export default function SubstansiAssetPage({
   title,
   subtitle,
-  // eslint-disable-next-line no-unused-vars -- Icon is rendered as a React component in JSX below.
   icon: Icon,
   iconColor = "from-blue-500 to-blue-600",
   columns = [],
   statsCards,
   substansi = null,
 }) {
-  // Auth & Permissions
-  const user = useAuthStore((state) => state.user);
-  const userRole = user?.role || "";
-  const canCreate = hasPermission(userRole, "aset", "create");
-  const canUpdate = hasPermission(userRole, "aset", "update");
-  const canDelete = hasPermission(userRole, "aset", "delete");
-  const confirm = useConfirm();
   const navigate = useNavigate();
 
   // Data state
@@ -270,9 +255,6 @@ export default function SubstansiAssetPage({
   const [assetStats, setAssetStats] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({});
-
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [viewingAsset, setViewingAsset] = useState(null);
 
   // Sort state
   const [sortBy, setSortBy] = useState("kode_aset");
@@ -348,87 +330,11 @@ export default function SubstansiAssetPage({
     }
   };
 
-  const handleOpenAddForm = () => {
-    navigate(`/aset/tambah?kembali=${encodeURIComponent(substansi || "")}`);
-  };
-
-  const handleOpenEditForm = (assetId) => {
+  const handleManageAsset = (assetId) => {
     const query = substansi
       ? `?bagian=${encodeURIComponent(substansi)}`
       : "";
     navigate(`/aset/${assetId}/edit${query}`);
-  };
-
-  const handleViewAsset = async (assetId) => {
-    try {
-      const response = await asetService.getById(assetId);
-      setViewingAsset(response.data.data);
-      setIsViewModalOpen(true);
-    } catch (error) {
-      console.error("Error fetching asset:", error);
-      toast.error("Gagal memuat data aset");
-    }
-  };
-
-  const handleCloseViewModal = () => {
-    setIsViewModalOpen(false);
-    setViewingAsset(null);
-  };
-
-  const handleDownloadAssetPdf = async (asset) => {
-    try {
-      const assetId = asset?.id_aset || asset?.id;
-      if (assetId) {
-        const response = await asetService.getById(assetId);
-        downloadAssetPdf(response?.data?.data || asset);
-        return;
-      }
-      downloadAssetPdf(asset);
-    } catch (error) {
-      console.error("Error downloading asset PDF:", error);
-      downloadAssetPdf(asset);
-    }
-  };
-
-  const handleDownloadAssetGeojson = async (asset) => {
-    try {
-      const assetId = asset?.id_aset || asset?.id;
-      if (assetId) {
-        const response = await asetService.getById(assetId);
-        const downloaded = downloadAssetGeojson(response?.data?.data || asset);
-        if (!downloaded) toast.error("Data polygon aset belum tersedia");
-        return;
-      }
-      const downloaded = downloadAssetGeojson(asset);
-      if (!downloaded) toast.error("Data polygon aset belum tersedia");
-    } catch (error) {
-      console.error("Error downloading asset GeoJSON:", error);
-      const downloaded = downloadAssetGeojson(asset);
-      if (!downloaded) toast.error("Data polygon aset belum tersedia");
-    }
-  };
-
-  const handleDeleteAsset = async (assetId) => {
-    const confirmed = await confirm({
-      title: "Hapus Aset",
-      message:
-        "Apakah Anda yakin ingin menghapus aset ini? Data yang dihapus tidak dapat dikembalikan.",
-      confirmText: "Hapus",
-      cancelText: "Batal",
-      type: "danger",
-    });
-    if (!confirmed) return;
-
-    try {
-      await asetService.delete(assetId);
-      toast.success("Aset berhasil dihapus");
-      fetchAssets();
-      fetchAssetStats();
-    } catch (error) {
-      console.error("Error deleting asset:", error);
-      const errorMsg = error.response?.data?.error || "Gagal menghapus aset";
-      toast.error(errorMsg);
-    }
   };
 
   // ==================== SORTED DATA ====================
@@ -609,16 +515,6 @@ export default function SubstansiAssetPage({
             />
             <span className="hidden sm:inline">Refresh</span>
           </button>
-          {canCreate && (
-            <button
-              type="button"
-              onClick={handleOpenAddForm}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-surface shadow-md shadow-accent/20 transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-            >
-              <PlusIcon size={18} weight="bold" />
-              <span className="hidden sm:inline">Tambah Aset</span>
-            </button>
-          )}
         </div>
       </div>
 
@@ -712,7 +608,7 @@ export default function SubstansiAssetPage({
                         {col.label}
                       </TableHeader>
                     ))}
-                    <TableHeader className="sticky right-0 z-30 min-w-[180px] w-[180px] bg-surface-secondary text-center border-l border-border/50 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.12)]">
+                    <TableHeader className="sticky right-0 z-30 w-36 min-w-36 border-l border-border bg-surface-secondary text-right">
                       Aksi
                     </TableHeader>
                   </tr>
@@ -765,33 +661,22 @@ export default function SubstansiAssetPage({
 
                         {/* Actions */}
                         <td
-                          className={`sticky right-0 z-20 min-w-[180px] w-[180px] border-l border-border/50 px-3 py-4 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.12)] transition-colors ${
+                          className={`sticky right-0 z-20 w-36 min-w-36 border-l border-border px-3 py-4 transition-colors ${
                             isHovered
                               ? "bg-accent/5 dark:bg-accent/10"
                               : "bg-surface"
                           }`}
                         >
-                          <div
-                            className={`transition-all duration-200 ${
-                              isHovered ? "opacity-100" : "opacity-70"
-                            }`}
-                          >
-                            <ActionButtons
-                              assetId={asset.id_aset}
-                              asset={asset}
-                              onEdit={
-                                canUpdate
-                                  ? (id) => handleOpenEditForm(id)
-                                  : null
-                              }
-                              onView={() => handleViewAsset(asset.id_aset)}
-                              onDelete={
-                                canDelete ? (id) => handleDeleteAsset(id) : null
-                              }
-                              showEdit={canUpdate}
-                              showDelete={canDelete}
-                              highlightEdit={!!substansi}
-                            />
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleManageAsset(asset.id_aset)}
+                              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent"
+                              aria-label={`Kelola ${title.toLowerCase()} ${asset.nama_aset}`}
+                            >
+                              <span>Kelola</span>
+                              <ArrowRightIcon size={12} weight="bold" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -822,20 +707,15 @@ export default function SubstansiAssetPage({
                           {asset.nama_aset}
                         </p>
                       </div>
-                      <ActionButtons
-                        assetId={asset.id_aset}
-                        asset={asset}
-                        onEdit={
-                          canUpdate ? (id) => handleOpenEditForm(id) : null
-                        }
-                        onView={() => handleViewAsset(asset.id_aset)}
-                        onDelete={
-                          canDelete ? (id) => handleDeleteAsset(id) : null
-                        }
-                        showEdit={canUpdate}
-                        showDelete={canDelete}
-                        highlightEdit={!!substansi}
-                      />
+                      <button
+                        type="button"
+                        onClick={() => handleManageAsset(asset.id_aset)}
+                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent"
+                        aria-label={`Kelola ${title.toLowerCase()} ${asset.nama_aset}`}
+                      >
+                        <span>Kelola</span>
+                        <ArrowRightIcon size={12} weight="bold" />
+                      </button>
                     </div>
 
                     {/* Substansi Fields - show first 4 columns */}
@@ -872,16 +752,6 @@ export default function SubstansiAssetPage({
         </div>
       )}
 
-      {/* View Modal */}
-      <AssetViewModal
-        isOpen={isViewModalOpen}
-        onClose={handleCloseViewModal}
-        asset={viewingAsset}
-        onEdit={canUpdate ? handleOpenEditForm : null}
-        canEdit={canUpdate}
-        onDownloadPdf={handleDownloadAssetPdf}
-        onDownloadGeojson={handleDownloadAssetGeojson}
-      />
     </div>
   );
 }

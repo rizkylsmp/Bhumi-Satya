@@ -8,7 +8,7 @@ import {
   getRoleDisplayName,
   getRoleBadgeColor,
 } from "../utils/permissions";
-import { useConfirm } from "../components/ui/ConfirmDialog";
+import { useConfirm } from "../components/ui/confirmContext";
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -477,7 +477,7 @@ export default function UserManagementPage() {
               {[1, 2, 3, 4].map((item) => (
                 <div
                   key={item}
-                  className="grid grid-cols-6 gap-3 rounded-xl border border-border bg-surface-secondary/60 p-3"
+                  className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-surface-secondary/60 p-3 sm:grid-cols-3 xl:grid-cols-6"
                 >
                   <div className="h-4 rounded bg-border/70" />
                   <div className="col-span-2 h-4 rounded bg-border/70" />
