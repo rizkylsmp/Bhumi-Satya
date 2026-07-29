@@ -145,8 +145,8 @@ export default function PengaturanPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-text-primary">
             Pengaturan
           </h1>
-          <p className="text-text-tertiary text-xs sm:text-sm mt-0.5">
-            Konfigurasi dan pengaturan aplikasi sistem
+          <p className="mt-0.5 text-xs text-text-tertiary">
+            Preferensi aplikasi dan sistem.
           </p>
         </div>
       </div>

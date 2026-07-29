@@ -4,7 +4,6 @@ import {
   PlusIcon,
   MagnifyingGlassIcon,
   XIcon,
-  FunnelIcon,
   ArrowCounterClockwiseIcon,
   ArrowsClockwiseIcon,
   HandshakeIcon,
@@ -128,7 +127,6 @@ export default function PenyewaanPage() {
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
   const [stats, setStats] = useState(null);
   const [openDownloadMenu, setOpenDownloadMenu] = useState(null);
 
@@ -270,8 +268,8 @@ export default function PenyewaanPage() {
             <h1 className="text-xl lg:text-2xl font-bold text-text-primary">
               Penyewaan Aset
             </h1>
-            <p className="text-text-muted text-sm">
-              Kelola aset yang disediakan untuk disewa
+            <p className="mt-0.5 text-xs text-text-muted">
+              Aset dan kontrak penyewaan.
             </p>
           </div>
         </div>
@@ -353,8 +351,8 @@ export default function PenyewaanPage() {
       </div>
 
       {/* Search & Filter */}
-      <div className="bg-surface rounded-2xl border border-border p-4 lg:p-5">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <div className="rounded-xl border border-border bg-surface p-2">
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <MagnifyingGlassIcon
               size={18}
@@ -365,7 +363,7 @@ export default function PenyewaanPage() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Cari nama aset, penyewa, nomor kontrak..."
-              className="w-full pl-10 pr-10 py-2.5 border border-border rounded-xl text-sm bg-surface text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
+              className="h-9 w-full rounded-lg border border-border bg-surface-secondary pl-9 pr-9 text-xs text-text-primary placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/15"
             />
             {searchInput && (
               <button
@@ -376,53 +374,31 @@ export default function PenyewaanPage() {
               </button>
             )}
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-medium transition-colors ${
-              showFilters || statusFilter
-                ? "bg-accent/10 border-accent/30 text-accent"
-                : "border-border text-text-secondary hover:bg-surface-secondary"
-            }`}
+          <select
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(event.target.value);
+              setCurrentPage(1);
+            }}
+            className="h-9 rounded-lg border border-border bg-surface px-3 text-[11px] font-medium text-text-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 sm:w-44"
+            aria-label="Filter status penyewaan"
           >
-            <FunnelIcon size={16} />
-            Filter
-          </button>
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           {(searchInput || statusFilter) && (
             <button
               onClick={resetFilters}
-              className="inline-flex items-center gap-2 px-4 py-2.5 border border-border rounded-xl text-sm text-text-secondary hover:bg-surface-secondary transition-colors"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border px-3 text-[11px] font-semibold text-text-secondary transition hover:bg-surface-secondary"
             >
-              <ArrowCounterClockwiseIcon size={16} />
+              <ArrowCounterClockwiseIcon size={14} />
               Reset
             </button>
           )}
         </div>
-
-        {showFilters && (
-          <div className="mt-4 pt-4 border-t border-border">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-text-muted mb-1.5 uppercase tracking-wider">
-                  Status
-                </label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-surface text-text-primary focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
-                >
-                  {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Cards Info */}
@@ -669,8 +645,8 @@ export default function PenyewaanPage() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="bg-surface rounded-2xl border border-border p-4">
+      {totalItems > 0 && (
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -681,6 +657,9 @@ export default function PenyewaanPage() {
               setItemsPerPage(val);
               setCurrentPage(1);
             }}
+            pageSizeOptions={[6, 12, 24, 48]}
+            embedded
+            itemLabel="penyewaan"
           />
         </div>
       )}

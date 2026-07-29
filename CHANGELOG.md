@@ -15,6 +15,14 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Menambahkan skrip idempoten `db:seed:pajak` untuk membuat atau memperbarui
+  10 data sampel pajak lengkap di database lokal.
+- Menambahkan menu Data Pajak dengan 15 field identitas objek pajak, data
+  Bapenda, hasil pemetaan, NJOP, PBB, volume, dan tinggi bangunan, termasuk
+  penyimpanan PostgreSQL, statistik, pencarian, serta formulir pengelolaan.
+- Menambahkan menu dan halaman Data KIB dengan statistik, pencarian, tabel
+  inventaris, serta form kelola NIBAR, kode barang, nilai, penggunaan, dan
+  status plotting.
 - Menambahkan pemilih basemap pada preview Kelola 3D dengan preferensi layer yang
   tersimpan.
 - Menambahkan tabel manajemen katalog 3D dengan Center X/Y, URL model, status,
@@ -29,6 +37,18 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Menyeragamkan desain search, filter, dan pagination bergaya Kelola 3D pada
+  Pusat Data, seluruh menu Kelola Data, penyewaan, permintaan, riwayat,
+  notifikasi, dan pengguna; tombol Refresh Kelola 3D dipindahkan ke header.
+- Mengganti route pengelolaan data per substansi dari `/edit` menjadi
+  `/kelola`, mempertahankan `/edit` untuk Pusat Data, serta memusatkan tombol
+  Kelola pada kolom aksi.
+- Memindahkan Data Spasial dan Penyewaan ke dalam dropdown Kelola Data sebagai
+  submenu tingkat kedua, termasuk dukungan active state dan flyout sidebar
+  ringkas.
+- Memadatkan toolbar pencarian dan filter pada Pusat Data, seluruh menu Kelola
+  Data, Kelola 3D, penyewaan, pengguna, dan riwayat; panel bertingkat diganti
+  kontrol satu baris dengan filter lanjutan yang dapat dibuka seperlunya.
 - Sidebar kini memakai animasi ringan saat dibuka atau diringkas, termasuk
   backdrop mobile, ikon menu, submenu, flyout, dan kemunculan item secara
   bertahap dengan dukungan preferensi pengurangan gerakan.

@@ -69,16 +69,15 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-[1800px] space-y-5">
         <header className="flex min-w-0 items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent text-white">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-sky-400 via-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/25 ring-1 ring-inset ring-white/30 dark:from-sky-400 dark:via-blue-500 dark:to-indigo-600 dark:shadow-blue-950/60 dark:ring-blue-200/30">
               <ChartBarIcon size={24} weight="fill" />
             </span>
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-text-primary lg:text-2xl">
                 Dashboard Bhumi Satya
               </h1>
-              <p className="truncate text-sm text-text-secondary">
-                Selamat datang, {user?.nama_lengkap || "Pengguna"}. Pantau
-                kesiapan Digital Twin dan penyewaan dari satu tempat.
+              <p className="mt-0.5 truncate text-xs text-text-secondary">
+                Ringkasan Digital Twin dan penyewaan.
               </p>
             </div>
           </div>

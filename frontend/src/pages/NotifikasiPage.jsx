@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
 import toast from "react-hot-toast";
 import { notifikasiService } from "../services/api";
+import Pagination from "../components/asset/Pagination";
 import {
   UserIcon,
   NotePencilIcon,
@@ -31,12 +32,20 @@ export default function NotifikasiPage() {
   const [activeTab, setActiveTab] = useState("semua");
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10,
+  });
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = { page, limit };
       if (activeTab === "belum_dibaca") params.unreadOnly = "true";
 
       const response = await notifikasiService.getAll(params);
@@ -60,6 +69,12 @@ export default function NotifikasiPage() {
       }));
 
       setNotifications(transformedData);
+      setPagination(response.data.pagination || {
+        currentPage: page,
+        totalPages: 1,
+        totalItems: transformedData.length,
+        itemsPerPage: limit,
+      });
     } catch (error) {
       console.error("Error fetching notifications:", error);
       // Use sample data as fallback
@@ -67,7 +82,7 @@ export default function NotifikasiPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, limit, page]);
 
   useEffect(() => {
     fetchNotifications();
@@ -286,8 +301,8 @@ export default function NotifikasiPage() {
             <h1 className="text-xl sm:text-2xl font-bold text-text-primary">
               Notifikasi
             </h1>
-            <p className="text-text-tertiary text-sm">
-              Kelola pemberitahuan & aktivitas terbaru
+            <p className="mt-0.5 text-xs text-text-tertiary">
+              Pemberitahuan dan aktivitas terbaru.
             </p>
           </div>
         </div>
@@ -361,7 +376,10 @@ export default function NotifikasiPage() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setPage(1);
+                }}
                 className={`flex-1 sm:flex-none px-4 sm:px-6 py-3.5 text-xs sm:text-sm font-medium transition-all relative whitespace-nowrap ${
                   activeTab === tab.id
                     ? "text-accent"
@@ -524,18 +542,19 @@ export default function NotifikasiPage() {
           </div>
         )}
 
-        {/* Footer */}
         {filteredNotifications.length > 0 && (
-          <div className="px-4 sm:px-6 py-3 border-t border-border bg-surface-secondary/30 flex items-center justify-between">
-            <span className="text-xs text-text-tertiary">
-              Menampilkan {filteredNotifications.length} notifikasi
-            </span>
-            {stats.belumDibaca > 0 && activeTab === "semua" && (
-              <span className="text-xs text-accent font-medium">
-                {stats.belumDibaca} belum dibaca
-              </span>
-            )}
-          </div>
+          <Pagination
+            pagination={pagination}
+            onChange={setPage}
+            pageSize={limit}
+            pageSizeOptions={[10, 20, 50]}
+            onPageSizeChange={(value) => {
+              setLimit(value);
+              setPage(1);
+            }}
+            embedded
+            itemLabel="notifikasi"
+          />
         )}
       </div>
     </div>

@@ -127,7 +127,7 @@ export default function DataFisikPage() {
   return (
     <SubstansiAssetPage
       title="Data Fisik"
-      subtitle="Informasi lokasi, luas, batas tanah, dan kondisi fisik aset"
+      subtitle="Lokasi dan kondisi fisik aset."
       icon={RulerIcon}
       iconColor="from-teal-500 to-teal-600"
       columns={columns}

@@ -1,13 +1,22 @@
+import { useState } from "react";
 import {
   ArrowRightIcon,
+  ArrowsInSimpleIcon,
+  ArrowsOutSimpleIcon,
   BuildingsIcon,
-  CalendarBlankIcon,
+  CaretDownIcon,
   CheckCircleIcon,
   CubeIcon,
+  DatabaseIcon,
+  FileTextIcon,
   IdentificationCardIcon,
+  InfoIcon,
+  MapTrifoldIcon,
   MapPinIcon,
   NoteIcon,
+  ReceiptIcon,
   RulerIcon,
+  SealCheckIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { buildAssetPopupData, hasPopupValue } from "../../../utils/assetPopupData";
@@ -21,29 +30,138 @@ const formatNumber = (value, suffix = "") => {
   return suffix ? `${formatted} ${suffix}` : formatted;
 };
 
-function DetailRow({ label, value }) {
+const formatValue = (item) => {
+  if (item.format === "currency") {
+    const numeric = Number(item.value);
+    return Number.isFinite(numeric)
+      ? new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          maximumFractionDigits: 0,
+        }).format(numeric)
+      : String(item.value);
+  }
+  if (item.format === "area") return formatNumber(item.value, "m²");
+  if (item.format === "coordinate") {
+    const numeric = Number(item.value);
+    return Number.isFinite(numeric)
+      ? numeric.toLocaleString("id-ID", {
+          useGrouping: false,
+          maximumFractionDigits: 8,
+        })
+      : String(item.value);
+  }
+  return String(item.value);
+};
+
+function DetailRow({ label, value, format }) {
   return (
-    <div className="flex items-start justify-between gap-3 py-2">
-      <dt className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-text-muted">
+    <div className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-3 border-b border-border/50 px-3 py-2.5 last:border-b-0">
+      <dt className="text-[9px] font-bold uppercase tracking-wide text-text-muted">
         {label}
       </dt>
       <dd className="min-w-0 break-words text-right text-[11px] font-semibold leading-relaxed text-text-primary">
-        {String(value)}
+        {formatValue({ value, format })}
       </dd>
     </div>
   );
 }
 
-function ModelMetric({ label, value }) {
+function AccordionSection({
+  id,
+  icon: Icon,
+  title,
+  summary,
+  open,
+  onToggle,
+  children,
+}) {
   return (
-    <div className="min-w-0 rounded-lg bg-surface px-2 py-2 text-center">
-      <p className="truncate text-[11px] font-black text-text-primary">
-        {hasPopupValue(value) ? value : "—"}
-      </p>
-      <p className="mt-0.5 text-[7px] font-bold uppercase tracking-wide text-text-muted">
-        {label}
-      </p>
-    </div>
+    <section className="overflow-hidden rounded-xl border border-border bg-surface">
+      <h4>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-controls={`popup-section-${id}`}
+          className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+        >
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
+            <Icon size={12} weight="duotone" />
+          </span>
+          <span className="flex min-w-0 flex-1 items-center gap-2">
+            <span className="truncate text-[9px] font-black uppercase tracking-[0.08em] text-text-primary">
+              {title}
+            </span>
+            {summary && (
+              <span className="truncate text-[7px] font-semibold text-text-muted">
+                {summary}
+              </span>
+            )}
+          </span>
+          <CaretDownIcon
+            size={11}
+            weight="bold"
+            className={`shrink-0 text-text-muted transition-transform ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      </h4>
+      <div
+        id={`popup-section-${id}`}
+        hidden={!open}
+        className="border-t border-border bg-surface-secondary/35"
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function ModelDetails({ model, statusLabel }) {
+  const rows = [
+    { label: "LOD", value: model.lod },
+    {
+      label: "Versi",
+      value: hasPopupValue(model.version) ? `v${model.version}` : null,
+    },
+    { label: "Format", value: model.format },
+    { label: "Tinggi", value: model.height, format: "height" },
+    { label: "Jumlah Lantai", value: model.floors },
+    { label: "CRS Sumber", value: model.sourceCrs },
+  ].filter((item) => hasPopupValue(item.value));
+
+  return (
+    <>
+      {model.recordAvailable && (
+        <div className="border-b border-border/50 px-3 py-2">
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[7px] font-black uppercase ${
+              model.active
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+            }`}
+          >
+            <CheckCircleIcon size={10} weight="fill" />
+            {statusLabel}
+          </span>
+        </div>
+      )}
+      <dl>
+        {rows.map((item) => (
+          <DetailRow
+            key={item.label}
+            {...item}
+            value={
+              item.format === "height"
+                ? formatNumber(item.value, "m")
+                : item.value
+            }
+          />
+        ))}
+      </dl>
+    </>
   );
 }
 
@@ -55,47 +173,132 @@ export default function AssetPopupCard({
   headerProps = {},
   isDragging = false,
   preview = false,
+  showModel3d = true,
 }) {
+  const [openSections, setOpenSections] = useState(() => new Set(["general"]));
+
   if (!asset) return null;
 
   const popup = buildAssetPopupData(asset, model);
   const modelStatusLabel = popup.model.active
     ? "Ditampilkan di peta"
     : "Preview versi belum aktif";
+  const sections = [
+    {
+      id: "general",
+      icon: InfoIcon,
+      title: "Data Umum",
+      summary: `${popup.general.length} informasi`,
+      visible: popup.general.length > 0 || popup.location || popup.description,
+    },
+    {
+      id: "legal",
+      icon: SealCheckIcon,
+      title: "Data Legal & Pertanahan",
+      summary: `${popup.legal.length} informasi`,
+      visible: popup.legal.length > 0,
+    },
+    {
+      id: "physical",
+      icon: RulerIcon,
+      title: "Data Fisik",
+      summary: `${popup.physical.length} informasi`,
+      visible: popup.physical.length > 0,
+    },
+    {
+      id: "kib",
+      icon: DatabaseIcon,
+      title: "Data KIB",
+      summary: `${popup.kib.length} informasi`,
+      visible: popup.kib.length > 0,
+    },
+    {
+      id: "administrative",
+      icon: FileTextIcon,
+      title: "Data Administratif",
+      summary: `${popup.administrative.length} informasi`,
+      visible: popup.administrative.length > 0,
+    },
+    {
+      id: "spatial",
+      icon: MapTrifoldIcon,
+      title: "Data Spasial",
+      summary: `${popup.spatial.length} informasi`,
+      visible: popup.spatial.length > 0,
+    },
+    {
+      id: "tax",
+      icon: ReceiptIcon,
+      title: "Data Pajak",
+      summary: `${popup.tax.length} informasi`,
+      visible: popup.tax.length > 0,
+    },
+    {
+      id: "model",
+      icon: CubeIcon,
+      title: "Model 3D",
+      summary: [popup.model.lod, popup.model.format]
+        .filter(hasPopupValue)
+        .join(" · "),
+      visible: showModel3d && popup.model.available,
+    },
+  ].filter((section) => section.visible);
+  const allExpanded =
+    sections.length > 0 &&
+    sections.every((section) => openSections.has(section.id));
+
+  const toggleSection = (sectionId) => {
+    setOpenSections((current) => {
+      const next = new Set(current);
+      if (next.has(sectionId)) next.delete(sectionId);
+      else next.add(sectionId);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    setOpenSections(
+      allExpanded ? new Set() : new Set(sections.map((section) => section.id)),
+    );
+  };
+
+  const stopHeaderAction = (event) => event.stopPropagation();
 
   return (
     <>
       <header
         {...headerProps}
-        className={`bg-accent px-4 py-3 text-surface ${
+        className={`bg-accent px-3.5 py-2 text-surface ${
           headerProps.className || ""
         } ${isDragging ? "cursor-grabbing" : preview ? "" : "cursor-grab"}`}
       >
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface/15">
-              <BuildingsIcon size={17} weight="fill" />
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface/15">
+              <BuildingsIcon size={15} weight="fill" />
             </span>
-            <div className="min-w-0 flex-1">
-              <h3 className="truncate text-sm font-black leading-tight">
-                {popup.title}
-              </h3>
-              <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[9px] font-semibold text-surface/75">
-                {popup.assetCode && (
-                  <span className="truncate font-mono">{popup.assetCode}</span>
-                )}
-                {popup.assetCode && popup.catalogCode && (
-                  <span aria-hidden="true">·</span>
-                )}
-                {popup.catalogCode && (
-                  <span className="truncate font-mono">{popup.catalogCode}</span>
-                )}
-              </div>
-            </div>
+            <h3 className="min-w-0 flex-1 truncate font-mono text-sm font-black leading-tight">
+              {popup.assetCode || popup.catalogCode || "Tanpa kode"}
+            </h3>
           </div>
+          <button
+            type="button"
+            onPointerDown={stopHeaderAction}
+            onClick={toggleAll}
+            aria-label={allExpanded ? "Tutup semua bagian" : "Buka semua bagian"}
+            title={allExpanded ? "Tutup semua" : "Buka semua"}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface/10 text-surface/85 transition-colors hover:bg-surface/20 hover:text-surface focus-visible:ring-2 focus-visible:ring-surface/70"
+          >
+            {allExpanded ? (
+              <ArrowsInSimpleIcon size={13} weight="bold" />
+            ) : (
+              <ArrowsOutSimpleIcon size={13} weight="bold" />
+            )}
+          </button>
           {onClose && (
             <button
               type="button"
+              onPointerDown={stopHeaderAction}
               onClick={onClose}
               aria-label="Tutup detail aset"
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-surface/80 transition-colors hover:bg-surface/15 hover:text-surface focus-visible:ring-2 focus-visible:ring-surface/70"
@@ -106,131 +309,91 @@ export default function AssetPopupCard({
         </div>
       </header>
 
-      <div className="space-y-3 p-3.5">
-        {popup.model.available && (
-          <section className="rounded-xl border border-violet-200 bg-violet-50/70 p-2.5 dark:border-violet-500/30 dark:bg-violet-500/10">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wide text-violet-700 dark:text-violet-300">
-                <CubeIcon size={13} weight="fill" />
-                Model 3D
-              </span>
-              {popup.model.recordAvailable && (
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[7px] font-black uppercase ${
-                    popup.model.active
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
-                      : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
-                  }`}
-                >
-                  <CheckCircleIcon size={10} weight="fill" />
-                  {modelStatusLabel}
-                </span>
-              )}
-            </div>
-            <div className="grid grid-cols-3 gap-1.5">
-              <ModelMetric label="LOD" value={popup.model.lod} />
-              <ModelMetric
-                label="Versi"
-                value={
-                  hasPopupValue(popup.model.version)
-                    ? `v${popup.model.version}`
-                    : null
-                }
-              />
-              <ModelMetric label="Format" value={popup.model.format} />
-              <ModelMetric
-                label="Tinggi"
-                value={formatNumber(popup.model.height, "m")}
-              />
-              <ModelMetric label="Lantai" value={popup.model.floors} />
-              <ModelMetric label="CRS" value={popup.model.sourceCrs} />
-            </div>
-          </section>
-        )}
-
-        {popup.details.length > 0 && (
-          <dl className="divide-y divide-border/60 rounded-xl bg-surface-secondary px-3">
-            {popup.details.map((item) => (
-              <DetailRow key={item.label} {...item} />
-            ))}
-          </dl>
-        )}
-
-        {popup.location && (
-          <div className="flex items-start gap-2 rounded-xl bg-surface-secondary p-2.5">
-            <MapPinIcon
-              size={13}
-              className="mt-0.5 shrink-0 text-text-muted"
-            />
-            <div className="min-w-0">
-              <p className="text-[8px] font-black uppercase tracking-wide text-text-muted">
-                Lokasi
-              </p>
-              <p className="mt-1 text-[11px] font-semibold leading-relaxed text-text-secondary">
-                {popup.location}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {(hasPopupValue(popup.area) || hasPopupValue(popup.year)) && (
-          <div className="grid grid-cols-2 gap-2">
-            {hasPopupValue(popup.area) && (
-              <div className="rounded-xl bg-surface-secondary p-2.5">
-                <div className="mb-1 flex items-center gap-1.5 text-text-muted">
-                  <RulerIcon size={11} />
-                  <span className="text-[8px] font-bold uppercase tracking-wide">
-                    Luas
-                  </span>
-                </div>
-                <p className="text-xs font-black text-text-primary">
-                  {formatNumber(popup.area, "m²")}
-                </p>
-              </div>
+      <div className="space-y-2 p-3">
+        {sections.map((section) => (
+          <AccordionSection
+            key={section.id}
+            {...section}
+            open={openSections.has(section.id)}
+            onToggle={() => toggleSection(section.id)}
+          >
+            {section.id === "general" && (
+              <>
+                {popup.general.length > 0 && (
+                  <dl>
+                    {popup.general.map((item) => (
+                      <DetailRow key={item.label} {...item} />
+                    ))}
+                  </dl>
+                )}
+                {popup.location && (
+                  <div className="flex items-start gap-2 border-t border-border/50 px-3 py-2.5">
+                    <MapPinIcon
+                      size={13}
+                      className="mt-0.5 shrink-0 text-text-muted"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-[8px] font-black uppercase tracking-wide text-text-muted">
+                        Lokasi
+                      </p>
+                      <p className="mt-1 text-[11px] font-semibold leading-relaxed text-text-secondary">
+                        {popup.location}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {popup.description && (
+                  <div className="flex items-start gap-2 border-t border-border/50 px-3 py-2.5">
+                    <NoteIcon
+                      size={13}
+                      className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-300"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-[8px] font-black uppercase tracking-wide text-text-muted">
+                        Keterangan
+                      </p>
+                      <p className="mt-1 text-[10px] leading-relaxed text-text-secondary">
+                        {popup.description}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-            {hasPopupValue(popup.year) && (
-              <div className="rounded-xl bg-surface-secondary p-2.5">
-                <div className="mb-1 flex items-center gap-1.5 text-text-muted">
-                  <CalendarBlankIcon size={11} />
-                  <span className="text-[8px] font-bold uppercase tracking-wide">
-                    Tahun
-                  </span>
-                </div>
-                <p className="text-xs font-black text-text-primary">
-                  {popup.year}
-                </p>
-              </div>
+            {section.id === "model" && (
+              <ModelDetails
+                model={popup.model}
+                statusLabel={modelStatusLabel}
+              />
             )}
-          </div>
-        )}
+            {[
+              "legal",
+              "physical",
+              "kib",
+              "administrative",
+              "spatial",
+              "tax",
+            ].includes(section.id) && (
+              <dl>
+                {popup[section.id].map((item) => (
+                  <DetailRow key={item.label} {...item} />
+                ))}
+              </dl>
+            )}
+          </AccordionSection>
+        ))}
 
-        {popup.description && (
-          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/60 p-2.5 dark:border-amber-500/30 dark:bg-amber-500/10">
-            <NoteIcon
-              size={13}
-              className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-300"
+        {sections.length === 0 && (
+          <div className="rounded-xl border border-dashed border-border p-4 text-center">
+            <IdentificationCardIcon
+              size={24}
+              className="mx-auto text-text-muted"
             />
-            <p className="text-[10px] leading-relaxed text-amber-800 dark:text-amber-200">
-              {popup.description}
+            <p className="mt-2 text-[10px] font-bold text-text-muted">
+              Belum ada atribut tambahan untuk ditampilkan.
             </p>
           </div>
         )}
-
-        {!popup.model.available &&
-          popup.details.length === 0 &&
-          !popup.location &&
-          !hasPopupValue(popup.area) &&
-          !hasPopupValue(popup.year) && (
-            <div className="rounded-xl border border-dashed border-border p-4 text-center">
-              <IdentificationCardIcon
-                size={24}
-                className="mx-auto text-text-muted"
-              />
-              <p className="mt-2 text-[10px] font-bold text-text-muted">
-                Belum ada atribut tambahan untuk ditampilkan.
-              </p>
-            </div>
-          )}
 
         {onViewDetail && (
           <button

@@ -51,7 +51,7 @@ const EMPTY_FEATURE_COLLECTION = {
 };
 const MAPLIBRE_STYLE_URL =
   "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
-const MAPLIBRE_BASEMAP_ID = DEFAULT_BASEMAP_ID;
+const MAPLIBRE_BASEMAP_ID = "light";
 const BASEMAP_RASTER_SOURCE_ID = "selected-basemap-raster";
 const BASEMAP_RASTER_LAYER_ID = "selected-basemap-raster-layer";
 const DETAILED_MODEL_LAYER_ID = "asset-kmz-models-3d";
@@ -71,7 +71,7 @@ const CUSTOM_OVERLAY_SOURCE_IDS = new Set([
   BASEMAP_RASTER_SOURCE_ID,
   ANALYSIS_SOURCE_ID,
 ]);
-const BASEMAP_STORAGE_KEY = "bhumi-satya-basemap";
+const BASEMAP_STORAGE_KEY = "bhumi-satya-basemap-v2";
 
 function LayerSwitch({
   checked,
@@ -411,6 +411,7 @@ const MapDisplayBPN = ({
 }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
+  const isBaseStyleReadyRef = useRef(false);
   const cesiumMapRef = useRef(null);
   const popupRef = useRef(null);
   const popupDragCleanupRef = useRef(null);
@@ -436,11 +437,11 @@ const MapDisplayBPN = ({
   const [showBelumSertifikatInternal, setShowBelumSertifikatInternal] =
     useState(true);
   const [activeBasemap, setActiveBasemap] = useState(() => {
-    if (typeof window === "undefined") return MAPLIBRE_BASEMAP_ID;
+    if (typeof window === "undefined") return DEFAULT_BASEMAP_ID;
     const storedBasemap = window.localStorage.getItem(BASEMAP_STORAGE_KEY);
     return BASEMAP_OPTIONS.some((option) => option.id === storedBasemap)
       ? storedBasemap
-      : MAPLIBRE_BASEMAP_ID;
+      : DEFAULT_BASEMAP_ID;
   });
   const [basemapError, setBasemapError] = useState("");
   const [isBasemapMenuOpen, setIsBasemapMenuOpen] = useState(false);
@@ -1487,7 +1488,7 @@ const MapDisplayBPN = ({
   };
 
   const captureBaseLayerVisibility = () => {
-    if (!map.current?.isStyleLoaded()) return;
+    if (!map.current || !isBaseStyleReadyRef.current) return;
 
     const style = map.current.getStyle();
     style?.layers?.forEach((layer) => {
@@ -1502,7 +1503,7 @@ const MapDisplayBPN = ({
   };
 
   const hideBaseStyleLabels = () => {
-    if (!map.current?.isStyleLoaded()) return;
+    if (!map.current || !isBaseStyleReadyRef.current) return;
 
     try {
       const style = map.current.getStyle();
@@ -1517,7 +1518,7 @@ const MapDisplayBPN = ({
   };
 
   const setBaseStyleVisibility = (visible) => {
-    if (!map.current?.isStyleLoaded()) return;
+    if (!map.current || !isBaseStyleReadyRef.current) return;
 
     captureBaseLayerVisibility();
 
@@ -1539,7 +1540,7 @@ const MapDisplayBPN = ({
   };
 
   const removeBasemapRaster = () => {
-    if (!map.current?.isStyleLoaded()) return;
+    if (!map.current || !isBaseStyleReadyRef.current) return;
 
     if (map.current.getLayer(BASEMAP_RASTER_LAYER_ID)) {
       map.current.removeLayer(BASEMAP_RASTER_LAYER_ID);
@@ -1555,7 +1556,7 @@ const MapDisplayBPN = ({
       BASEMAP_OPTIONS[0];
     setActiveBasemap(option.id);
     setBasemapError("");
-    if (!map.current?.isStyleLoaded()) return;
+    if (!map.current || !isBaseStyleReadyRef.current) return;
 
     if (option.id === MAPLIBRE_BASEMAP_ID) {
       removeBasemapRaster();
@@ -1572,7 +1573,7 @@ const MapDisplayBPN = ({
     try {
       const tiles = option.tiles;
 
-      if (!tiles?.length || !map.current?.isStyleLoaded()) {
+      if (!tiles?.length || !map.current) {
         setBasemapError("Basemap belum bisa dimuat.");
         return;
       }
@@ -2249,6 +2250,7 @@ const MapDisplayBPN = ({
       .catch((error) => console.warn("Could not load ZNT:", error));
 
     map.current.on("load", () => {
+      isBaseStyleReadyRef.current = true;
       captureBaseLayerVisibility();
       addCustomLayers();
       hideBaseStyleLabels();
@@ -2288,6 +2290,7 @@ const MapDisplayBPN = ({
       }
 
       if (map.current) {
+        isBaseStyleReadyRef.current = false;
         map.current.off("click", handleMapClick);
         map.current.off("mousemove", handleMouseMove);
         map.current.remove();
@@ -2297,6 +2300,14 @@ const MapDisplayBPN = ({
   // Map listeners are intentionally bound once and read current state from refs.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!isMapReady) return;
+    applyBasemap(activeBasemap);
+  // Basemap initialization runs once after the MapLibre style is fully ready.
+  // Subsequent user changes are applied directly by the basemap controls.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMapReady]);
 
   useEffect(() => {
     if (!isMapReady || !map.current || !map.current.isStyleLoaded()) return;
@@ -2498,7 +2509,12 @@ const MapDisplayBPN = ({
   }, [showSudahSertifikat, showBelumSertifikat, isBPKAMode]);
 
   useEffect(() => {
-    if (!highlightAssetId || !map.current || !allAssetsResolved.length) {
+    if (
+      !highlightAssetId ||
+      !map.current ||
+      !isMapReady ||
+      !allAssetsResolved.length
+    ) {
       return;
     }
 
@@ -2520,7 +2536,7 @@ const MapDisplayBPN = ({
     }
 
     const openHighlightedPopup = () => {
-      if (!map.current || !map.current.isStyleLoaded()) return;
+      if (!map.current || !isBaseStyleReadyRef.current) return;
 
       if (isAsset3dMode && cesiumMapRef.current) {
         cesiumMapRef.current.focus({
@@ -2558,6 +2574,7 @@ const MapDisplayBPN = ({
     highlightRequestKey,
     isAsset3dMode,
     isBPKAMode,
+    isMapReady,
     onFeatureClick,
   ]);
 
@@ -2712,10 +2729,6 @@ const MapDisplayBPN = ({
       locations={model3dLocations}
       visibleLocationIds={resolvedVisible3dLocationIds}
       onVisibleLocationIdsChange={setVisible3dLocationIds}
-      showMarkers={showMarkers}
-      onShowMarkersChange={setShowMarkersResolved}
-      showPolygons={showPolygons}
-      onShowPolygonsChange={setShowPolygonsResolved}
       onPerspective={() =>
         cesiumMapRef.current?.setView("perspective")}
       onTopView={() => cesiumMapRef.current?.setView("top")}
@@ -2806,8 +2819,8 @@ const MapDisplayBPN = ({
           }}
           className={`relative flex h-10 w-10 items-center justify-center rounded-lg border backdrop-blur-sm transition-colors ${
             isBasemapMenuOpen
-              ? "border-accent bg-accent/10 text-accent dark:border-sky-400 dark:bg-sky-500 dark:text-white"
-              : "border-white/80 bg-white/95 text-slate-700 hover:bg-white dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200 dark:hover:bg-slate-800"
+              ? "border-slate-900 bg-slate-900 text-white shadow-md hover:bg-slate-800 dark:border-sky-400 dark:bg-sky-500 dark:text-slate-950 dark:hover:bg-sky-400"
+              : "border-slate-300 bg-white text-slate-800 shadow-md hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
           }`}
           title="Layer peta"
           aria-label="Layer peta"

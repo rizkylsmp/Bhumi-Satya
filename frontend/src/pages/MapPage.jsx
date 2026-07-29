@@ -18,6 +18,12 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 
+const TEAM_MEMBERS = [
+  "Fikry Satrio",
+  "M. Zaky Fahlevy",
+  "Rizky Lanang Sadana Mulyono Putra",
+];
+
 function DropdownSection({ id, label, open, onToggle, children }) {
   return (
     <section className="border-b border-border last:border-b-0">
@@ -270,6 +276,33 @@ function MapData2dControls({
           Alat ukur tersedia setelah mode 3D diaktifkan.
         </p>
       </DropdownSection>
+
+      <DropdownSection
+        id="information"
+        label="Informasi"
+        open={openSection === "information"}
+        onToggle={() => toggleSection("information")}
+      >
+        <div className="px-1 py-0.5">
+          <p className="text-[8px] font-extrabold uppercase tracking-[0.14em] text-text-muted">
+            Team
+          </p>
+          <ul className="mt-2 space-y-1.5">
+            {TEAM_MEMBERS.map((member) => (
+              <li
+                key={member}
+                className="flex items-start gap-2 text-[9px] leading-relaxed text-text-secondary"
+              >
+                <span
+                  className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent/60"
+                  aria-hidden="true"
+                />
+                <span>{member}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </DropdownSection>
     </div>
   );
 }
@@ -278,6 +311,7 @@ export default function MapPage({ publicMode = false }) {
   const location = useLocation();
   const navHighlightAssetId = location.state?.highlightAssetId || null;
   const navKecamatanFilter = location.state?.filterKecamatan || "";
+  const initialAsset3dMode = location.state?.mapMode !== "2d";
   const navHighlightRequestKey = `${location.key || "default"}-${navHighlightAssetId || "none"}`;
 
   // Search-triggered flyTo
@@ -293,7 +327,9 @@ export default function MapPage({ publicMode = false }) {
     : navHighlightRequestKey;
 
   const [showFilterPanel, setShowFilterPanel] = useState(true);
-  const [sidePanelMode, setSidePanelMode] = useState("3d");
+  const [sidePanelMode, setSidePanelMode] = useState(
+    initialAsset3dMode ? "3d" : "map",
+  );
   const [asset3dPanelContainer, setAsset3dPanelContainer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [assets, setAssets] = useState([]);
@@ -639,12 +675,13 @@ export default function MapPage({ publicMode = false }) {
         className="flex-1 relative h-full overflow-hidden"
       >
         <AssetMapDisplay
+          key={`digital-twin-${location.key}-${initialAsset3dMode ? "3d" : "2d"}`}
           assets={displayedMapAssets}
           allAssets={mapLookupAssets}
           mode="integrated"
           highlightAssetId={effectiveHighlightId}
           highlightRequestKey={effectiveHighlightKey}
-          initialAsset3dMode
+          initialAsset3dMode={initialAsset3dMode}
           asset3dPanelContainer={asset3dPanelContainer}
           asset3dPanelOpen={showFilterPanel && sidePanelMode === "3d"}
           asset2dPanelContent={
@@ -697,6 +734,7 @@ export default function MapPage({ publicMode = false }) {
             asset={selectedPanelAsset}
             onClose={handleCloseSelectedPanel}
             onViewDetail={handleViewDetail}
+            showModel3d={sidePanelMode === "3d"}
           />
         )}
       </div>

@@ -219,6 +219,16 @@ export const getAll = async (req, res) => {
         { lokasi: { [Op.iLike]: `%${search}%` } },
         { nib: { [Op.iLike]: `%${search}%` } },
         { nibar: { [Op.iLike]: `%${search}%` } },
+        { id_pemda: { [Op.iLike]: `%${search}%` } },
+        { kode_barang: { [Op.iLike]: `%${search}%` } },
+        { no_register: { [Op.iLike]: `%${search}%` } },
+        { penggunaan_kib: { [Op.iLike]: `%${search}%` } },
+        { nop: { [Op.iLike]: `%${search}%` } },
+        { nama_wajib_pajak: { [Op.iLike]: `%${search}%` } },
+        { pajak_status: { [Op.iLike]: `%${search}%` } },
+        Sequelize.where(Sequelize.cast(Sequelize.col("pajak_fid"), "text"), {
+          [Op.iLike]: `%${search}%`,
+        }),
         { nomor_hak: { [Op.iLike]: `%${search}%` } },
         { nomor_sertifikat: { [Op.iLike]: `%${search}%` } },
         { kecamatan: { [Op.iLike]: `%${search}%` } },
@@ -463,6 +473,24 @@ export const getStats = async (req, res) => {
       ],
     };
 
+    const hasKibCondition = {
+      [Op.or]: [
+        nonEmptyField("nibar"),
+        nonEmptyField("id_pemda"),
+        nonEmptyField("kode_barang"),
+        nonEmptyField("no_register"),
+      ],
+    };
+
+    const hasPajakCondition = {
+      [Op.or]: [
+        { pajak_fid: { [Op.not]: null } },
+        nonEmptyField("nop"),
+        nonEmptyField("nama_wajib_pajak"),
+        nonEmptyField("pajak_status"),
+      ],
+    };
+
     const [
       totalAset,
       totalLuas,
@@ -476,6 +504,15 @@ export const getStats = async (req, res) => {
       totalKoordinat,
       totalPolygon,
       totalOpdPengguna,
+      totalKib,
+      totalLuasKib,
+      totalHargaPerolehanKib,
+      totalKibTerplotting,
+      totalPajak,
+      totalPajakTerverifikasi,
+      totalNjopBumiPajak,
+      totalNjopBangunanPajak,
+      totalPbbPemetaan,
       byStatus,
       byJenis,
       byJenisHak,
@@ -534,6 +571,27 @@ export const getStats = async (req, res) => {
         countWhere(hasCoordinateCondition),
         countWhere(hasPolygonCondition),
         countWhere(nonEmptyField("opd_pengguna")),
+        countWhere(hasKibCondition),
+        Aset.sum("luas_kib", { where: baseWhere }).then((v) =>
+          parseFloat(v || 0),
+        ),
+        Aset.sum("harga_perolehan", { where: baseWhere }).then((v) =>
+          parseFloat(v || 0),
+        ),
+        countWhere(nonEmptyField("plotting_status")),
+        countWhere(hasPajakCondition),
+        countWhere({
+          pajak_status: { [Op.iLike]: "terverifikasi" },
+        }),
+        Aset.sum("njop_bumi_pemetaan", { where: baseWhere }).then((v) =>
+          parseFloat(v || 0),
+        ),
+        Aset.sum("njop_bangunan_pemetaan", { where: baseWhere }).then((v) =>
+          parseFloat(v || 0),
+        ),
+        Aset.sum("pbb_pemetaan", { where: baseWhere }).then((v) =>
+          parseFloat(v || 0),
+        ),
         Aset.findAll({
           attributes: ["status", [fn("COUNT", col("status")), "count"]],
           where: baseWhere,
@@ -576,6 +634,15 @@ export const getStats = async (req, res) => {
         totalPolygon,
         totalTanpaPolygon: Math.max(totalAset - totalPolygon, 0),
         totalOpdPengguna,
+        totalKib,
+        totalLuasKib,
+        totalHargaPerolehanKib,
+        totalKibTerplotting,
+        totalPajak,
+        totalPajakTerverifikasi,
+        totalNjopBumiPajak,
+        totalNjopBangunanPajak,
+        totalPbbPemetaan,
         byStatus,
         byJenis,
         byJenisHak,
@@ -741,6 +808,22 @@ export const create = async (req, res) => {
       file_sertifikat,
       notes,
       plotting_status,
+      // Data Pajak
+      pajak_fid,
+      pajak_status,
+      nop,
+      nama_wajib_pajak,
+      nilai_bumi_per_m2,
+      nilai_bangunan_per_m2,
+      luas_bumi_bapenda,
+      luas_bangunan_bapenda,
+      luas_bumi_pemetaan,
+      luas_bangunan_pemetaan,
+      njop_bumi_pemetaan,
+      njop_bangunan_pemetaan,
+      pbb_pemetaan,
+      volume_bangunan,
+      tinggi_bangunan,
       sumber,
       // Data Spasial
       polygon_bidang,
@@ -850,6 +933,22 @@ export const create = async (req, res) => {
       file_sertifikat: file_sertifikat || null,
       notes: notes || null,
       plotting_status: plotting_status || null,
+      // Data Pajak
+      pajak_fid: pajak_fid ?? null,
+      pajak_status: nop ? "Terverifikasi" : pajak_status || null,
+      nop: nop || null,
+      nama_wajib_pajak: nama_wajib_pajak || null,
+      nilai_bumi_per_m2: nilai_bumi_per_m2 ?? null,
+      nilai_bangunan_per_m2: nilai_bangunan_per_m2 ?? null,
+      luas_bumi_bapenda: luas_bumi_bapenda ?? null,
+      luas_bangunan_bapenda: luas_bangunan_bapenda ?? null,
+      luas_bumi_pemetaan: luas_bumi_pemetaan ?? null,
+      luas_bangunan_pemetaan: luas_bangunan_pemetaan ?? null,
+      njop_bumi_pemetaan: njop_bumi_pemetaan ?? null,
+      njop_bangunan_pemetaan: njop_bangunan_pemetaan ?? null,
+      pbb_pemetaan: pbb_pemetaan ?? null,
+      volume_bangunan: volume_bangunan ?? null,
+      tinggi_bangunan: tinggi_bangunan ?? null,
       // Data Spasial
       polygon_bidang: polygon_bidang || null,
       ...asset3dData,
@@ -932,6 +1031,9 @@ export const update = async (req, res) => {
     }
 
     Object.assign(updateData, normalizeAsset3dFields(updateData, { partial: true }));
+    if (Object.prototype.hasOwnProperty.call(updateData, "nop")) {
+      updateData.pajak_status = updateData.nop ? "Terverifikasi" : null;
+    }
 
     // Update timestamp
     if (

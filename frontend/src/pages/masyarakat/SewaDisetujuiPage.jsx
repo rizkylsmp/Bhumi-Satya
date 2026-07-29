@@ -145,15 +145,14 @@ export default function SewaDisetujuiPage() {
     <div className="p-4 md:p-6 space-y-5">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-accent">
+          <p className="text-xs font-semibold text-accent">
             Portal Masyarakat
           </p>
-          <h1 className="text-2xl md:text-3xl font-bold text-text-primary mt-1">
+          <h1 className="mt-0.5 text-xl font-bold text-text-primary md:text-2xl">
             Sewa Aset Disetujui
           </h1>
-          <p className="text-sm text-text-muted mt-2 max-w-2xl">
-            Daftar aset yang status sewanya sudah disetujui dan aktif pada
-            sistem Bhumi Satya.
+          <p className="mt-0.5 text-xs text-text-muted">
+            Sewa yang telah disetujui dan aktif.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-3 min-w-72">
@@ -219,8 +218,8 @@ export default function SewaDisetujuiPage() {
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="bg-surface rounded-2xl border border-border p-4">
+      {totalItems > 0 && (
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
           <Pagination
             currentPage={page}
             totalPages={totalPages}
@@ -231,6 +230,9 @@ export default function SewaDisetujuiPage() {
               setItemsPerPage(value);
               setPage(1);
             }}
+            pageSizeOptions={[6, 12, 24, 48]}
+            embedded
+            itemLabel="penyewaan"
           />
         </div>
       )}

@@ -125,7 +125,7 @@ export default function DataAdministratifPage() {
   return (
     <SubstansiAssetPage
       title="Keuangan"
-      subtitle="Kodefikasi BMD, nilai perolehan, NJOP, dan informasi pengelolaan"
+      subtitle="Keuangan dan pengelolaan aset."
       icon={CurrencyDollarIcon}
       iconColor="from-violet-500 to-violet-600"
       columns={columns}

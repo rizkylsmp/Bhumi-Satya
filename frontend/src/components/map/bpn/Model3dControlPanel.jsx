@@ -13,35 +13,20 @@ import {
   TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import Switch from "../../ui/Switch";
-
 const TABS = [
   { id: "data3d", label: "Level of Detail" },
   { id: "data2d", label: "Layer Controls" },
-  { id: "selection", label: "Selection Mode" },
   { id: "tampilan", label: "Navigation" },
   { id: "status", label: "Node Status" },
   { id: "analisis", label: "Tools" },
+  { id: "information", label: "Informasi" },
 ];
 
-const ANALYSIS_TOOL_COPY = {
-  distance: {
-    title: "Ukur jarak",
-    instruction: "Klik minimal dua titik pada peta. Setiap titik berikutnya menambah segmen jarak.",
-  },
-  volume: {
-    title: "Estimasi volume",
-    instruction: "Klik model 3D. Volume dihitung dari metadata kotak batas model.",
-  },
-  height: {
-    title: "Ukur tinggi",
-    instruction: "Klik bangunan 3D untuk membaca tinggi yang tersimpan pada model atau metadata aset.",
-  },
-  coordinate: {
-    title: "Baca koordinat",
-    instruction: "Klik satu titik pada peta untuk membaca longitude dan latitude.",
-  },
-};
+const TEAM_MEMBERS = [
+  "Fikry Satrio",
+  "M. Zaky Fahlevy",
+  "Rizky Lanang Sadana Mulyono Putra",
+];
 
 const LOD_OPTIONS = [
   { id: "lod1", shortLabel: "LoD 1", label: "LoD 1 – Block Model" },
@@ -76,6 +61,7 @@ function ToolButton({
   onClick,
   disabled = false,
   active = false,
+  compact = false,
 }) {
   return (
     <button
@@ -83,7 +69,11 @@ function ToolButton({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={active || undefined}
-      className={`group relative min-h-24 rounded-xl border p-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-border ${
+      className={`group relative rounded-xl border text-left transition-colors focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-border ${
+        compact
+          ? "flex h-12 items-center gap-2 px-2.5"
+          : "min-h-24 p-3"
+      } ${
         active
           ? "border-accent bg-surface-tertiary"
           : "border-border bg-surface hover:border-text-muted"
@@ -94,15 +84,27 @@ function ToolButton({
           Segera
         </span>
       )}
-      <span className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors group-hover:bg-accent group-hover:text-surface ${
+      <span className={`flex shrink-0 items-center justify-center rounded-lg transition-colors group-hover:bg-accent group-hover:text-surface ${
+        compact ? "h-7 w-7" : "h-9 w-9"
+      } ${
         active
           ? "bg-accent text-surface"
           : "bg-surface-tertiary text-text-secondary"
       }`}>
-        {createElement(icon, { size: 19, weight: "duotone" })}
+        {createElement(icon, { size: compact ? 15 : 19, weight: "duotone" })}
       </span>
-      <span className="mt-2 block text-[11px] font-extrabold uppercase tracking-wide text-text-primary">{label}</span>
-      <span className="mt-0.5 block text-[9px] leading-snug text-text-muted">{description}</span>
+      <span
+        className={`block font-extrabold uppercase tracking-wide text-text-primary ${
+          compact ? "text-[9px]" : "mt-2 text-[11px]"
+        }`}
+      >
+        {label}
+      </span>
+      {!compact && description && (
+        <span className="mt-0.5 block text-[9px] leading-snug text-text-muted">
+          {description}
+        </span>
+      )}
     </button>
   );
 }
@@ -161,17 +163,12 @@ export default function Model3dControlPanel({
   locations = [],
   visibleLocationIds = null,
   onVisibleLocationIdsChange,
-  showMarkers = true,
-  onShowMarkersChange,
-  showPolygons = true,
-  onShowPolygonsChange,
   onPerspective,
   onTopView,
   onNorthView,
   onFocusModels,
   analysisTool = null,
   analysisResult = null,
-  analysisPointCount = 0,
   onAnalysisToolChange,
   onClearAnalysis,
 }) {
@@ -215,11 +212,11 @@ export default function Model3dControlPanel({
   return (
     <aside
       className={embedded
-        ? "flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden bg-surface/95 backdrop-blur-xl"
+        ? "flex max-h-[calc(100vh-5.75rem)] min-h-0 w-full flex-col overflow-hidden bg-surface/95 backdrop-blur-xl"
         : "motion-panel-enter mt-1.5 flex max-h-[calc(100vh-5rem)] w-[min(19rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-surface/95 shadow-xl shadow-black/15 backdrop-blur-xl"}
       aria-label="Menu peta 3D"
     >
-      <header className="flex h-11 items-center gap-2 border-b border-border bg-surface px-3">
+      <header className="flex h-11 shrink-0 items-center gap-2 border-b border-border bg-surface px-3">
         <CubeIcon size={15} weight="fill" className="text-accent" />
         <h2 className="min-w-0 flex-1 text-[10px] font-black uppercase tracking-[0.12em] text-text-primary">
           Menu Peta 3D
@@ -234,7 +231,7 @@ export default function Model3dControlPanel({
         </button>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
       <div className="contents" role="tablist" aria-label="Menu peta 3D">
         {TABS.map((tab, index) => (
           <button
@@ -246,7 +243,7 @@ export default function Model3dControlPanel({
             aria-controls={`panel-3d-${tab.id}`}
             onClick={() => setActiveTab((current) => current === tab.id ? null : tab.id)}
             style={{ order: index * 2 }}
-            className={`flex min-h-11 w-full items-center justify-between gap-3 border-b border-border px-3.5 py-2.5 text-left text-[10px] font-extrabold uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${
+            className={`flex min-h-11 w-full shrink-0 items-center justify-between gap-3 border-b border-border px-3.5 py-2.5 text-left text-[10px] font-extrabold uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${
               activeTab === tab.id
                 ? "bg-accent text-surface"
                 : "bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
@@ -486,57 +483,12 @@ export default function Model3dControlPanel({
 
         {activeTab === "tampilan" && (
           <section id="panel-3d-tampilan" role="tabpanel">
-            <p className="mb-3 text-[10px] leading-relaxed text-text-muted">Gunakan preset kamera untuk memeriksa bentuk dan posisi model.</p>
-            <div className="grid grid-cols-2 gap-2">
-              <ToolButton icon={EyeIcon} label="Perspektif" description="Sudut miring untuk membaca volume." onClick={onPerspective} />
-              <ToolButton icon={MapTrifoldIcon} label="Tampak atas" description="Kembali ke sudut peta tegak." onClick={onTopView} />
-              <ToolButton icon={CrosshairIcon} label="Fokus model" description="Pusatkan kamera pada model aktif." onClick={() => onFocusModels?.()} />
-              <ToolButton icon={ArrowsOutIcon} label="Arah utara" description="Luruskan orientasi peta ke utara." onClick={onNorthView} />
+            <div className="grid grid-cols-2 gap-1.5">
+              <ToolButton compact icon={EyeIcon} label="Perspektif" onClick={onPerspective} />
+              <ToolButton compact icon={MapTrifoldIcon} label="Tampak atas" onClick={onTopView} />
+              <ToolButton compact icon={CrosshairIcon} label="Fokus model" onClick={() => onFocusModels?.()} />
+              <ToolButton compact icon={ArrowsOutIcon} label="Arah utara" onClick={onNorthView} />
             </div>
-          </section>
-        )}
-
-        {activeTab === "selection" && (
-          <section id="panel-3d-selection" role="tabpanel" className="space-y-3">
-            <p className="text-[10px] leading-relaxed text-text-muted">
-              Atur objek yang dapat dipilih dan ditampilkan pada peta.
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => updateSelection(allIds)}
-                className="rounded-lg border border-accent bg-accent px-2 py-2 text-[9px] font-extrabold text-surface focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                Pilih semua 3D
-              </button>
-              <button
-                type="button"
-                onClick={() => updateSelection([])}
-                className="rounded-lg border border-border bg-surface px-2 py-2 text-[9px] font-extrabold text-text-secondary focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                Kosongkan
-              </button>
-            </div>
-            <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-[10px] font-bold text-text-secondary">
-              Marker aset
-              <Switch
-                size="sm"
-                tone="accent"
-                checked={showMarkers}
-                onCheckedChange={onShowMarkersChange}
-                aria-label="Tampilkan marker aset"
-              />
-            </label>
-            <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-[10px] font-bold text-text-secondary">
-              Polygon aset
-              <Switch
-                size="sm"
-                tone="accent"
-                checked={showPolygons}
-                onCheckedChange={onShowPolygonsChange}
-                aria-label="Tampilkan polygon aset"
-              />
-            </label>
           </section>
         )}
 
@@ -560,50 +512,33 @@ export default function Model3dControlPanel({
         )}
 
         {activeTab === "analisis" && (
-          <section id="panel-3d-analisis" role="tabpanel" className="space-y-3">
-            <div className="rounded-xl border border-border bg-surface p-3 text-[10px] leading-relaxed text-text-secondary">
-              <p className="font-extrabold">
-                {analysisTool
-                  ? ANALYSIS_TOOL_COPY[analysisTool]?.title
-                  : "Pilih jenis pengukuran"}
-              </p>
-              <p className="mt-1 font-medium">
-                {analysisTool
-                  ? ANALYSIS_TOOL_COPY[analysisTool]?.instruction
-                  : "Aktifkan alat, lalu klik titik atau bangunan pada peta 3D."}
-              </p>
-              {analysisTool === "distance" && analysisPointCount > 0 && (
-                <p className="mt-2 font-bold text-text-primary">
-                  {analysisPointCount} titik pengukuran dipilih
-                </p>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
+          <section id="panel-3d-analisis" role="tabpanel" className="space-y-2">
+            <div className="grid grid-cols-2 gap-1.5">
               <ToolButton
                 icon={RulerIcon}
                 label="Jarak"
-                description="Jarak kumulatif antartitik."
+                compact
                 active={analysisTool === "distance"}
                 onClick={() => onAnalysisToolChange?.("distance")}
               />
               <ToolButton
                 icon={CubeIcon}
                 label="Volume"
-                description="Estimasi volume bangunan."
+                compact
                 active={analysisTool === "volume"}
                 onClick={() => onAnalysisToolChange?.("volume")}
               />
               <ToolButton
                 icon={BuildingsIcon}
                 label="Tinggi"
-                description="Tinggi dari metadata 3D."
+                compact
                 active={analysisTool === "height"}
                 onClick={() => onAnalysisToolChange?.("height")}
               />
               <ToolButton
                 icon={MapPinIcon}
                 label="Koordinat"
-                description="Longitude dan latitude titik."
+                compact
                 active={analysisTool === "coordinate"}
                 onClick={() => onAnalysisToolChange?.("coordinate")}
               />
@@ -648,16 +583,34 @@ export default function Model3dControlPanel({
                 Hapus hasil dan nonaktifkan alat
               </button>
             )}
+          </section>
+        )}
 
-            <p className="text-[8px] leading-relaxed text-text-muted">
-              Hasil simulasi bersifat indikatif dan bukan pengganti pengukuran survei atau dokumen legal.
+        {activeTab === "information" && (
+          <section id="panel-3d-information" role="tabpanel">
+            <p className="text-[8px] font-extrabold uppercase tracking-[0.14em] text-text-muted">
+              Team
             </p>
+            <ul className="mt-2 space-y-1.5">
+              {TEAM_MEMBERS.map((member) => (
+                <li
+                  key={member}
+                  className="flex items-start gap-2 text-[9px] leading-relaxed text-text-secondary"
+                >
+                  <span
+                    className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent/60"
+                    aria-hidden="true"
+                  />
+                  <span>{member}</span>
+                </li>
+              ))}
+            </ul>
           </section>
         )}
       </div>}
       </div>
 
-      <footer className="flex items-center justify-between gap-3 bg-surface px-4 py-2.5">
+      <footer className="flex shrink-0 items-center justify-between gap-3 bg-surface px-4 py-2.5">
         <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-300">
           <span className="h-2 w-2 rounded-full bg-emerald-500" /> Mode 3D aktif
         </span>

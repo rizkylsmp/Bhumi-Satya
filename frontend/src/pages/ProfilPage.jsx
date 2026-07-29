@@ -29,6 +29,20 @@ import {
   CopyIcon,
   ShieldWarningIcon,
 } from "@phosphor-icons/react";
+import SortableTableHeader from "../components/shared/SortableTableHeader";
+import Pagination from "../components/asset/Pagination";
+import useColumnResize from "../hooks/useColumnResize";
+import useTableSort from "../hooks/useTableSort";
+
+const PROFILE_ACTIVITY_COLUMN_WIDTHS = {
+  no: 70,
+  aksi: 240,
+  waktu: 190,
+  ip: 180,
+};
+
+const getProfileActivitySortValue = (activity, key) =>
+  key === "waktu" ? new Date(activity.timestamp).getTime() : activity?.[key];
 
 export default function ProfilPage() {
   const user = useAuthStore((s) => s.user);
@@ -60,6 +74,33 @@ export default function ProfilPage() {
   const [createdAt, setCreatedAt] = useState(null);
   const [statusAkun, setStatusAkun] = useState("Aktif");
   const [recentActivities, setRecentActivities] = useState([]);
+  const [activityPage, setActivityPage] = useState(1);
+  const [activityPageSize, setActivityPageSize] = useState(10);
+  const {
+    columnWidths,
+    onResizeStart,
+    resizeColumn,
+    resetColumnWidth,
+  } = useColumnResize(PROFILE_ACTIVITY_COLUMN_WIDTHS);
+  const {
+    sortedRows: sortedRecentActivities,
+    sortKey,
+    sortDirection,
+    requestSort,
+  } = useTableSort(recentActivities, {
+    initialKey: "waktu",
+    initialDirection: "desc",
+    getValue: getProfileActivitySortValue,
+  });
+  const activityTotalPages = Math.max(
+    1,
+    Math.ceil(sortedRecentActivities.length / activityPageSize),
+  );
+  const safeActivityPage = Math.min(activityPage, activityTotalPages);
+  const paginatedActivities = sortedRecentActivities.slice(
+    (safeActivityPage - 1) * activityPageSize,
+    safeActivityPage * activityPageSize,
+  );
 
   // Security data
   const [securityData, setSecurityData] = useState({
@@ -127,6 +168,7 @@ export default function ProfilPage() {
           id: a.id,
           aksi: a.aksi,
           waktu: formatDate(a.waktu),
+          timestamp: a.waktu,
           ip: a.ip || "-",
         })),
       );
@@ -948,7 +990,7 @@ export default function ProfilPage() {
                 <>
                   {/* Mobile view - Cards */}
                   <div className="sm:hidden space-y-2.5">
-                    {recentActivities.map((activity, idx) => (
+                    {paginatedActivities.map((activity, idx) => (
                       <div
                         key={activity.id}
                         className="bg-surface-secondary/50 border border-border rounded-xl p-3.5 flex items-start gap-3"
@@ -985,31 +1027,67 @@ export default function ProfilPage() {
 
                   {/* Desktop view - Table */}
                   <div className="hidden sm:block border border-border rounded-xl overflow-hidden">
-                    <table className="w-full">
+                    <table className="w-full min-w-[680px] table-fixed">
                       <thead>
                         <tr className="bg-surface-secondary/50">
-                          <th className="text-left px-5 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                          <SortableTableHeader
+                            columnKey="no"
+                            sortable={false}
+                            width={columnWidths.no}
+                            onResizeStart={onResizeStart}
+                            onResizeBy={resizeColumn}
+                            onResetWidth={resetColumnWidth}
+                          >
                             No
-                          </th>
-                          <th className="text-left px-5 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                          </SortableTableHeader>
+                          <SortableTableHeader
+                            columnKey="aksi"
+                            sortKey={sortKey}
+                            sortDirection={sortDirection}
+                            onSort={requestSort}
+                            width={columnWidths.aksi}
+                            onResizeStart={onResizeStart}
+                            onResizeBy={resizeColumn}
+                            onResetWidth={resetColumnWidth}
+                          >
                             Aksi
-                          </th>
-                          <th className="text-left px-5 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                          </SortableTableHeader>
+                          <SortableTableHeader
+                            columnKey="waktu"
+                            sortKey={sortKey}
+                            sortDirection={sortDirection}
+                            onSort={requestSort}
+                            width={columnWidths.waktu}
+                            onResizeStart={onResizeStart}
+                            onResizeBy={resizeColumn}
+                            onResetWidth={resetColumnWidth}
+                          >
                             Waktu
-                          </th>
-                          <th className="text-left px-5 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                          </SortableTableHeader>
+                          <SortableTableHeader
+                            columnKey="ip"
+                            sortKey={sortKey}
+                            sortDirection={sortDirection}
+                            onSort={requestSort}
+                            width={columnWidths.ip}
+                            onResizeStart={onResizeStart}
+                            onResizeBy={resizeColumn}
+                            onResetWidth={resetColumnWidth}
+                          >
                             IP Address
-                          </th>
+                          </SortableTableHeader>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
-                        {recentActivities.map((activity, idx) => (
+                        {paginatedActivities.map((activity, idx) => (
                           <tr
                             key={activity.id}
                             className="hover:bg-surface-secondary/30 transition-colors"
                           >
                             <td className="px-5 py-3.5 text-xs text-text-muted font-medium">
-                              {idx + 1}
+                              {(safeActivityPage - 1) * activityPageSize +
+                                idx +
+                                1}
                             </td>
                             <td className="px-5 py-3.5">
                               <span className="text-sm font-medium text-text-primary">
@@ -1028,6 +1106,25 @@ export default function ProfilPage() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                  <div className="overflow-hidden rounded-xl border border-border bg-surface">
+                    <Pagination
+                      pagination={{
+                        page: safeActivityPage,
+                        totalPages: activityTotalPages,
+                        totalItems: sortedRecentActivities.length,
+                        itemsPerPage: activityPageSize,
+                      }}
+                      onChange={setActivityPage}
+                      pageSize={activityPageSize}
+                      pageSizeOptions={[10, 20, 50]}
+                      onPageSizeChange={(nextSize) => {
+                        setActivityPageSize(nextSize);
+                        setActivityPage(1);
+                      }}
+                      embedded
+                      itemLabel="aktivitas"
+                    />
                   </div>
                 </>
               )}

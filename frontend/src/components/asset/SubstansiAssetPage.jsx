@@ -125,6 +125,11 @@ const formatDate = (dateString) => {
   });
 };
 
+const resolveMinWidth = (value) => {
+  if (!value) return undefined;
+  return /^\d+(\.\d+)?$/.test(value) ? `${Number(value) * 4}px` : value;
+};
+
 // ==================== CELL RENDERER ====================
 
 const renderCell = (value, column, asset) => {
@@ -243,8 +248,12 @@ export default function SubstansiAssetPage({
   columns = [],
   statsCards,
   substansi = null,
+  renderRowActions = null,
 }) {
   const navigate = useNavigate();
+  const actionColumnClass = renderRowActions
+    ? "w-60 min-w-60"
+    : "w-36 min-w-36";
 
   // Data state
   const [assets, setAssets] = useState([]);
@@ -252,6 +261,7 @@ export default function SubstansiAssetPage({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [assetStats, setAssetStats] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({});
@@ -269,7 +279,7 @@ export default function SubstansiAssetPage({
     try {
       const params = {
         page: currentPage,
-        limit: 10,
+        limit: itemsPerPage,
         ...(searchTerm && { search: searchTerm }),
         ...filters,
       };
@@ -277,7 +287,12 @@ export default function SubstansiAssetPage({
       const { data, pagination } = response.data;
       setAssets(data || []);
       setTotalPages(pagination?.totalPages || 1);
-      setTotalItems(pagination?.total || 0);
+      setTotalItems(
+        pagination?.totalItems ??
+          pagination?.total ??
+          pagination?.totalData ??
+          0,
+      );
     } catch (error) {
       console.error("Error fetching assets:", error);
       toast.error("Gagal memuat data aset");
@@ -285,7 +300,7 @@ export default function SubstansiAssetPage({
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchTerm, filters]);
+  }, [currentPage, searchTerm, filters, itemsPerPage]);
 
   const fetchAssetStats = useCallback(async () => {
     try {
@@ -334,7 +349,7 @@ export default function SubstansiAssetPage({
     const query = substansi
       ? `?bagian=${encodeURIComponent(substansi)}`
       : "";
-    navigate(`/aset/${assetId}/edit${query}`);
+    navigate(`/aset/${assetId}/kelola${query}`);
   };
 
   // ==================== SORTED DATA ====================
@@ -404,6 +419,7 @@ export default function SubstansiAssetPage({
     column,
     className = "",
     colKey,
+    minWidth,
   }) => {
     const key = colKey || column || children?.toString();
     return (
@@ -413,7 +429,10 @@ export default function SubstansiAssetPage({
             ? "cursor-pointer select-none hover:text-text-secondary transition-colors"
             : ""
         } ${className}`}
-        style={columnWidths[key] ? { width: columnWidths[key] } : undefined}
+        style={{
+          minWidth: resolveMinWidth(minWidth),
+          ...(columnWidths[key] ? { width: columnWidths[key] } : {}),
+        }}
         onClick={sortable ? () => handleSort(column) : undefined}
       >
         <span className="flex items-center gap-1">
@@ -485,20 +504,20 @@ export default function SubstansiAssetPage({
   // ==================== RENDER ====================
 
   return (
-    <div className="p-4 lg:p-6 space-y-6 min-h-screen">
+    <div className="p-4 lg:p-6 space-y-5 min-h-screen">
       {/* Page Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-3">
           <div
-            className={`w-12 h-12 bg-linear-to-br ${iconColor} rounded-xl flex items-center justify-center`}
+            className={`h-10 w-10 shrink-0 bg-linear-to-br ${iconColor} rounded-lg flex items-center justify-center`}
           >
-            <Icon size={24} weight="fill" className="text-surface" />
+            <Icon size={21} weight="fill" className="text-surface" />
           </div>
-          <div>
-            <h1 className="text-xl lg:text-2xl font-bold text-text-primary">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-text-primary">
               {title}
             </h1>
-            <p className="text-text-muted text-sm">{subtitle}</p>
+            <p className="mt-0.5 truncate text-xs text-text-muted">{subtitle}</p>
           </div>
         </div>
 
@@ -543,16 +562,14 @@ export default function SubstansiAssetPage({
         })}
       </div>
 
-      {/* Search & Filter */}
-      <div className="bg-surface rounded-2xl border border-border p-4 lg:p-5">
+      {/* Data Table */}
+      <div className="bg-surface rounded-2xl border border-border overflow-hidden">
         <AssetSearch
           onSearch={handleSearch}
           onFilterChange={handleFilterChange}
+          embedded
         />
-      </div>
 
-      {/* Data Table */}
-      <div className="bg-surface rounded-2xl border border-border overflow-hidden">
         {/* Table Info Header */}
         <div className="px-4 lg:px-6 py-4 border-b border-border flex items-center justify-between bg-surface-secondary/50">
           <div className="flex items-center gap-3">
@@ -603,12 +620,14 @@ export default function SubstansiAssetPage({
                         key={col.key}
                         sortable={col.sortable}
                         column={col.key}
-                        className={col.minWidth ? `min-w-${col.minWidth}` : ""}
+                        minWidth={col.minWidth}
                       >
                         {col.label}
                       </TableHeader>
                     ))}
-                    <TableHeader className="sticky right-0 z-30 w-36 min-w-36 border-l border-border bg-surface-secondary text-right">
+                    <TableHeader
+                      className={`sticky right-0 z-30 border-l border-border bg-surface-secondary text-center [&>span]:justify-center ${actionColumnClass}`}
+                    >
                       Aksi
                     </TableHeader>
                   </tr>
@@ -661,13 +680,14 @@ export default function SubstansiAssetPage({
 
                         {/* Actions */}
                         <td
-                          className={`sticky right-0 z-20 w-36 min-w-36 border-l border-border px-3 py-4 transition-colors ${
+                          className={`sticky right-0 z-20 border-l border-border px-3 py-4 transition-colors ${actionColumnClass} ${
                             isHovered
                               ? "bg-accent/5 dark:bg-accent/10"
                               : "bg-surface"
                           }`}
                         >
-                          <div className="flex justify-end">
+                          <div className="flex items-center justify-center gap-2">
+                            {renderRowActions?.(asset)}
                             <button
                               type="button"
                               onClick={() => handleManageAsset(asset.id_aset)}
@@ -707,15 +727,18 @@ export default function SubstansiAssetPage({
                           {asset.nama_aset}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleManageAsset(asset.id_aset)}
-                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent"
-                        aria-label={`Kelola ${title.toLowerCase()} ${asset.nama_aset}`}
-                      >
-                        <span>Kelola</span>
-                        <ArrowRightIcon size={12} weight="bold" />
-                      </button>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {renderRowActions?.(asset)}
+                        <button
+                          type="button"
+                          onClick={() => handleManageAsset(asset.id_aset)}
+                          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent"
+                          aria-label={`Kelola ${title.toLowerCase()} ${asset.nama_aset}`}
+                        >
+                          <span>Kelola</span>
+                          <ArrowRightIcon size={12} weight="bold" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Substansi Fields - show first 4 columns */}
@@ -737,20 +760,23 @@ export default function SubstansiAssetPage({
             </div>
           </>
         )}
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center">
+        {totalItems > 0 && (
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={totalItems}
-            itemsPerPage={10}
+            itemsPerPage={itemsPerPage}
             onPageChange={handlePageChange}
+            onItemsPerPageChange={(value) => {
+              setItemsPerPage(value);
+              setCurrentPage(1);
+            }}
+            pageSizeOptions={[10, 20, 50]}
+            embedded
+            itemLabel="aset"
           />
-        </div>
-      )}
+        )}
+      </div>
 
     </div>
   );

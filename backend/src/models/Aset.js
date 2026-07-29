@@ -273,6 +273,83 @@ const Aset = sequelize.define(
       comment: "OPD Pengguna aset",
     },
 
+    // ========== DATA PAJAK ==========
+    pajak_fid: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: "FID objek pajak dari sumber data Bapenda",
+    },
+    pajak_status: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      comment: "Status verifikasi objek pajak",
+    },
+    nop: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      comment: "Nomor Objek Pajak (NOP)",
+    },
+    nama_wajib_pajak: {
+      type: DataTypes.STRING(200),
+      allowNull: true,
+      comment: "Nama wajib pajak",
+    },
+    nilai_bumi_per_m2: {
+      type: DataTypes.DECIMAL(20, 2),
+      allowNull: true,
+      comment: "Nilai bumi atau tanah per meter persegi (rupiah)",
+    },
+    nilai_bangunan_per_m2: {
+      type: DataTypes.DECIMAL(20, 2),
+      allowNull: true,
+      comment: "Nilai bangunan per meter persegi (rupiah)",
+    },
+    luas_bumi_bapenda: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
+      comment: "Luas bumi atau tanah menurut Bapenda (m²)",
+    },
+    luas_bangunan_bapenda: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
+      comment: "Luas bangunan menurut Bapenda (m²)",
+    },
+    luas_bumi_pemetaan: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
+      comment: "Luas bumi atau tanah hasil pemetaan (m²)",
+    },
+    luas_bangunan_pemetaan: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
+      comment: "Luas bangunan hasil pemetaan (m²)",
+    },
+    njop_bumi_pemetaan: {
+      type: DataTypes.DECIMAL(20, 2),
+      allowNull: true,
+      comment: "NJOP bumi hasil pemetaan (rupiah)",
+    },
+    njop_bangunan_pemetaan: {
+      type: DataTypes.DECIMAL(20, 2),
+      allowNull: true,
+      comment: "NJOP bangunan hasil pemetaan (rupiah)",
+    },
+    pbb_pemetaan: {
+      type: DataTypes.DECIMAL(20, 2),
+      allowNull: true,
+      comment: "Pajak Bumi dan Bangunan hasil pemetaan (rupiah)",
+    },
+    volume_bangunan: {
+      type: DataTypes.DECIMAL(18, 2),
+      allowNull: true,
+      comment: "Volume bangunan (m³)",
+    },
+    tinggi_bangunan: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      comment: "Tinggi bangunan untuk data pajak (meter)",
+    },
+
     // ========== DATA SPASIAL ==========
     polygon_bidang: {
       type: DataTypes.JSON,

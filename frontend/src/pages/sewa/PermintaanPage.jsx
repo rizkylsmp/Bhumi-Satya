@@ -9,8 +9,6 @@ import {
   PhoneIcon,
   UserIcon,
   TrashIcon,
-  CaretLeftIcon,
-  CaretRightIcon,
   PencilSimpleIcon,
   XIcon,
   CircleNotchIcon,
@@ -24,7 +22,23 @@ import {
   UploadSimpleIcon,
 } from "@phosphor-icons/react";
 import { permintaanService, uploadService } from "../../services/api";
+import Pagination from "../../components/asset/Pagination";
+import SortableTableHeader from "../../components/shared/SortableTableHeader";
+import useColumnResize from "../../hooks/useColumnResize";
+import useTableSort from "../../hooks/useTableSort";
 import toast from "react-hot-toast";
+
+const REQUEST_COLUMN_WIDTHS = {
+  nama_pemohon: 210,
+  nama_aset: 210,
+  tujuan_sewa: 280,
+  status: 170,
+  created_at: 150,
+  actions: 110,
+};
+
+const getRequestSortValue = (item, key) =>
+  key === "created_at" ? new Date(item.created_at).getTime() : item?.[key];
 
 // Status config
 const STATUS_OPTIONS = [
@@ -529,14 +543,31 @@ export default function PermintaanPage() {
   const [status, setStatus] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [pagination, setPagination] = useState({});
   const [selectedItem, setSelectedItem] = useState(null);
+  const {
+    columnWidths,
+    onResizeStart,
+    resizeColumn,
+    resetColumnWidth,
+  } = useColumnResize(REQUEST_COLUMN_WIDTHS);
+  const {
+    sortedRows: sortedRequests,
+    sortKey,
+    sortDirection,
+    requestSort,
+  } = useTableSort(data, {
+    initialKey: "created_at",
+    initialDirection: "desc",
+    getValue: getRequestSortValue,
+  });
 
   const fetchData = useCallback(() => {
     setLoading(true);
     const params = {
       page,
-      limit: 10,
+      limit,
       sortOrder,
     };
     if (debouncedSearch) params.search = debouncedSearch;
@@ -553,7 +584,7 @@ export default function PermintaanPage() {
         setPagination({});
       })
       .finally(() => setLoading(false));
-  }, [page, debouncedSearch, status, sortOrder]);
+  }, [page, limit, debouncedSearch, status, sortOrder]);
 
   useEffect(() => {
     // Fetching is the external synchronization performed by this effect.
@@ -585,8 +616,8 @@ export default function PermintaanPage() {
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-text-primary">Permintaan Sewa</h1>
-        <p className="text-sm text-text-muted mt-1">
-          Kelola permintaan sewa aset dari masyarakat
+        <p className="mt-0.5 text-xs text-text-muted">
+          Permintaan sewa dari masyarakat.
         </p>
       </div>
 
@@ -707,31 +738,84 @@ export default function PermintaanPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[1030px] table-fixed text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-secondary/50">
-                  <th className="text-left px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wider">
+                  <SortableTableHeader
+                    columnKey="nama_pemohon"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={requestSort}
+                    width={columnWidths.nama_pemohon}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     Pemohon
-                  </th>
-                  <th className="text-left px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="nama_aset"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={requestSort}
+                    width={columnWidths.nama_aset}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     Aset
-                  </th>
-                  <th className="text-left px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="tujuan_sewa"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={requestSort}
+                    width={columnWidths.tujuan_sewa}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     Tujuan
-                  </th>
-                  <th className="text-left px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="status"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={requestSort}
+                    width={columnWidths.status}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     Status
-                  </th>
-                  <th className="text-left px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="created_at"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={requestSort}
+                    width={columnWidths.created_at}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     Tanggal
-                  </th>
-                  <th className="text-center px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="actions"
+                    sortable={false}
+                    className="text-center"
+                    width={columnWidths.actions}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     Aksi
-                  </th>
+                  </SortableTableHeader>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {data.map((item) => {
+                {sortedRequests.map((item) => {
                   const sc = getStatusConfig(item.status);
                   const StatusIcon = sc.icon;
                   return (
@@ -808,30 +892,22 @@ export default function PermintaanPage() {
       </div>
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-text-muted">
-            Halaman {pagination.page} dari {pagination.totalPages} (
-            {pagination.total} permintaan)
-          </p>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="p-2 rounded-lg border border-border text-text-muted hover:text-text-primary hover:bg-surface-secondary disabled:opacity-40 transition-colors"
-            >
-              <CaretLeftIcon size={16} weight="bold" />
-            </button>
-            <button
-              onClick={() =>
-                setPage((p) => Math.min(pagination.totalPages, p + 1))
-              }
-              disabled={page >= pagination.totalPages}
-              className="p-2 rounded-lg border border-border text-text-muted hover:text-text-primary hover:bg-surface-secondary disabled:opacity-40 transition-colors"
-            >
-              <CaretRightIcon size={16} weight="bold" />
-            </button>
-          </div>
+      {(pagination.total || 0) > 0 && (
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+          <Pagination
+            currentPage={page}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.total || 0}
+            itemsPerPage={limit}
+            onPageChange={setPage}
+            onItemsPerPageChange={(value) => {
+              setLimit(value);
+              setPage(1);
+            }}
+            pageSizeOptions={[10, 20, 50]}
+            embedded
+            itemLabel="permintaan"
+          />
         </div>
       )}
 

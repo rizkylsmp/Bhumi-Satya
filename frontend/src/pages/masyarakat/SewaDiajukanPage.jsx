@@ -97,13 +97,12 @@ export default function SewaDiajukanPage() {
     <div className="p-4 md:p-6 space-y-5">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-accent">Portal Masyarakat</p>
-          <h1 className="text-2xl md:text-3xl font-bold text-text-primary mt-1">
+          <p className="text-xs font-semibold text-accent">Portal Masyarakat</p>
+          <h1 className="mt-0.5 text-xl font-bold text-text-primary md:text-2xl">
             Sewa yang Diajukan
           </h1>
-          <p className="text-sm text-text-muted mt-2 max-w-2xl">
-            Riwayat pengajuan sewa aset berdasarkan username akun masyarakat
-            yang sedang login.
+          <p className="mt-0.5 text-xs text-text-muted">
+            Status pengajuan sewa Anda.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3 min-w-72">
@@ -153,8 +152,8 @@ export default function SewaDiajukanPage() {
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="bg-surface rounded-2xl border border-border p-4">
+      {totalItems > 0 && (
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
           <Pagination
             currentPage={page}
             totalPages={totalPages}
@@ -165,6 +164,9 @@ export default function SewaDiajukanPage() {
               setItemsPerPage(value);
               setPage(1);
             }}
+            pageSizeOptions={[10, 20, 50]}
+            embedded
+            itemLabel="pengajuan"
           />
         </div>
       )}

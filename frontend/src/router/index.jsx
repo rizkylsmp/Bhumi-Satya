@@ -54,6 +54,8 @@ const AssetPage = lazyWithRetry(() => import("../pages/aset/AssetPage"));
 const AssetFormPage = lazyWithRetry(() => import("../pages/aset/AssetFormPage"));
 const DataLegalPage = lazyWithRetry(() => import("../pages/aset/DataLegalPage"));
 const DataFisikPage = lazyWithRetry(() => import("../pages/aset/DataFisikPage"));
+const DataKibPage = lazyWithRetry(() => import("../pages/aset/DataKibPage"));
+const DataPajakPage = lazyWithRetry(() => import("../pages/aset/DataPajakPage"));
 const DataAdministratifPage = lazyWithRetry(
   () => import("../pages/aset/DataAdministratifPage"),
 );
@@ -209,6 +211,16 @@ const router = createHashRouter([
         ),
       },
       {
+        path: "aset/:id/kelola",
+        element: (
+          <RoleGuard menuId="aset">
+            <LazyPage>
+              <AssetFormPage />
+            </LazyPage>
+          </RoleGuard>
+        ),
+      },
+      {
         path: "aset/legal",
         element: (
           <RoleGuard menuId="aset">
@@ -224,6 +236,26 @@ const router = createHashRouter([
           <RoleGuard menuId="aset">
             <LazyPage>
               <DataFisikPage />
+            </LazyPage>
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "aset/kib",
+        element: (
+          <RoleGuard menuId="aset">
+            <LazyPage>
+              <DataKibPage />
+            </LazyPage>
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "aset/pajak",
+        element: (
+          <RoleGuard menuId="aset">
+            <LazyPage>
+              <DataPajakPage />
             </LazyPage>
           </RoleGuard>
         ),

@@ -1,173 +1,175 @@
 import {
   CaretLeftIcon,
   CaretRightIcon,
-  DotsThreeIcon,
   CaretUpIcon,
+  DotsThreeIcon,
 } from "@phosphor-icons/react";
-import { useState, useRef, useEffect } from "react";
 
-const PER_PAGE_OPTIONS = [10, 25, 50, 100];
+const DEFAULT_PAGE_SIZES = [10, 25, 50, 100];
+
+const getPageNumbers = (currentPage, totalPages) => {
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages = [1];
+  if (currentPage > 3) pages.push("start-ellipsis");
+
+  for (
+    let page = Math.max(2, currentPage - 1);
+    page <= Math.min(totalPages - 1, currentPage + 1);
+    page += 1
+  ) {
+    pages.push(page);
+  }
+
+  if (currentPage < totalPages - 2) pages.push("end-ellipsis");
+  pages.push(totalPages);
+  return pages;
+};
 
 export default function Pagination({
-  currentPage = 1,
-  totalPages = 10,
-  onPageChange,
-  totalItems = 0,
-  itemsPerPage = 10,
-  onItemsPerPageChange,
+  pagination = null,
+  currentPage: currentPageProp,
+  totalPages: totalPagesProp,
+  totalItems: totalItemsProp,
+  itemsPerPage: itemsPerPageProp,
+  onPageChange: onPageChangeProp,
+  onItemsPerPageChange: onItemsPerPageChangeProp,
+  onChange,
+  pageSize,
+  onPageSizeChange,
+  pageSizeOptions = DEFAULT_PAGE_SIZES,
+  embedded = false,
+  itemLabel = "data",
 }) {
-  const [showPerPage, setShowPerPage] = useState(false);
-  const perPageRef = useRef(null);
+  const currentPage =
+    currentPageProp ??
+    pagination?.currentPage ??
+    pagination?.page ??
+    1;
+  const totalPages = Math.max(
+    1,
+    totalPagesProp ?? pagination?.totalPages ?? 1,
+  );
+  const totalItems =
+    totalItemsProp ??
+    pagination?.totalItems ??
+    pagination?.total ??
+    pagination?.totalData ??
+    0;
+  const itemsPerPage =
+    pageSize ??
+    itemsPerPageProp ??
+    pagination?.itemsPerPage ??
+    pagination?.limit ??
+    10;
+  const onPageChange = onChange || onPageChangeProp;
+  const onItemsPerPageChange =
+    onPageSizeChange || onItemsPerPageChangeProp;
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (perPageRef.current && !perPageRef.current.contains(e.target)) {
-        setShowPerPage(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-  const getPageNumbers = () => {
-    const pages = [];
-    const maxVisible = 5;
+  if (!totalItems && !onItemsPerPageChange) return null;
 
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      pages.push(1);
-
-      if (currentPage > 3) {
-        pages.push("...");
-      }
-
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
-
-      for (let i = start; i <= end; i++) {
-        if (!pages.includes(i)) {
-          pages.push(i);
-        }
-      }
-
-      if (currentPage < totalPages - 2) {
-        pages.push("...");
-      }
-
-      if (!pages.includes(totalPages)) {
-        pages.push(totalPages);
-      }
-    }
-
-    return pages;
-  };
-
-  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const startItem =
+    totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
-
-  if (totalPages <= 1 && !onItemsPerPageChange) return null;
+  const pages = getPageNumbers(currentPage, totalPages);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-      {/* Info + Per Page */}
-      <div className="flex items-center gap-4 order-2 sm:order-1">
-        {totalItems > 0 && (
-          <p className="text-sm text-text-tertiary">
-            Menampilkan{" "}
-            <span className="font-medium text-text-primary">
-              {startItem}-{endItem}
-            </span>{" "}
-            dari{" "}
-            <span className="font-medium text-text-primary">{totalItems}</span>{" "}
-            data
-          </p>
-        )}
+    <div
+      className={`flex flex-col items-center justify-between gap-3 sm:flex-row ${
+        embedded ? "border-t border-border px-4 py-3" : ""
+      }`}
+    >
+      <div className="order-2 flex flex-wrap items-center justify-center gap-3 sm:order-1 sm:justify-start">
+        <p className="text-[10px] font-semibold text-text-muted">
+          Menampilkan{" "}
+          <span className="font-black text-text-primary">
+            {startItem}–{endItem}
+          </span>{" "}
+          dari{" "}
+          <span className="font-black text-text-primary">{totalItems}</span>{" "}
+          {itemLabel}
+        </p>
 
-        {/* Per Page Dropup */}
         {onItemsPerPageChange && (
-          <div className="relative" ref={perPageRef}>
-            <button
-              onClick={() => setShowPerPage(!showPerPage)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary border border-border rounded-lg hover:bg-surface-tertiary hover:text-text-primary transition-all cursor-pointer"
+          <div className="relative">
+            <select
+              value={itemsPerPage}
+              onChange={(event) =>
+                onItemsPerPageChange(Number(event.target.value))
+              }
+              className="h-9 cursor-pointer appearance-none rounded-lg border border-border bg-surface py-0 pl-3 pr-8 text-[9px] font-bold text-text-secondary outline-none transition hover:border-accent hover:text-accent focus:border-accent focus:ring-2 focus:ring-accent/15"
+              aria-label="Pilih jumlah baris per halaman"
             >
-              <span>{itemsPerPage} / hal</span>
-              <CaretUpIcon
-                size={12}
-                weight="bold"
-                className={`transition-transform duration-200 ${showPerPage ? "" : "rotate-180"}`}
-              />
-            </button>
-            {showPerPage && (
-              <div className="absolute bottom-full left-0 mb-1 bg-surface border border-border rounded-lg overflow-hidden z-50 min-w-[100px]">
-                {PER_PAGE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => {
-                      onItemsPerPageChange(opt);
-                      setShowPerPage(false);
-                    }}
-                    className={`w-full px-4 py-2 text-sm text-left transition-colors cursor-pointer ${
-                      opt === itemsPerPage
-                        ? "bg-accent/10 text-accent font-medium"
-                        : "text-text-secondary hover:bg-surface-tertiary hover:text-text-primary"
-                    }`}
-                  >
-                    {opt} data
-                  </button>
-                ))}
-              </div>
-            )}
+              {pageSizeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option} / hal
+                </option>
+              ))}
+            </select>
+            <CaretUpIcon
+              size={11}
+              weight="bold"
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rotate-180 text-text-muted"
+            />
           </div>
         )}
       </div>
 
-      {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="flex items-center gap-1.5 order-1 sm:order-2">
-          {/* Previous Button */}
+        <nav
+          className="order-1 flex items-center gap-1.5 sm:order-2"
+          aria-label="Navigasi halaman"
+        >
           <button
-            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="w-9 h-9 flex items-center justify-center border border-border rounded-lg text-text-secondary hover:bg-surface-tertiary hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
-            aria-label="Previous page"
+            type="button"
+            onClick={() => onPageChange?.(Math.max(1, currentPage - 1))}
+            disabled={currentPage <= 1}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-secondary transition hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Halaman sebelumnya"
           >
-            <CaretLeftIcon size={16} weight="bold" />
+            <CaretLeftIcon size={14} weight="bold" />
           </button>
 
-          {/* Page Numbers */}
-          {getPageNumbers().map((page, idx) => (
-            <button
-              key={idx}
-              onClick={() => typeof page === "number" && onPageChange(page)}
-              disabled={page === "..."}
-              className={`min-w-9 h-9 px-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                page === currentPage
-                  ? "bg-accent text-surface"
-                  : page === "..."
-                    ? "cursor-default text-text-muted"
-                    : "border border-border text-text-secondary hover:bg-surface-tertiary hover:text-text-primary"
-              }`}
-            >
-              {page === "..." ? (
-                <DotsThreeIcon size={16} weight="bold" />
-              ) : (
-                page
-              )}
-            </button>
-          ))}
+          {pages.map((page) =>
+            typeof page === "number" ? (
+              <button
+                key={page}
+                type="button"
+                onClick={() => onPageChange?.(page)}
+                aria-current={page === currentPage ? "page" : undefined}
+                className={`h-9 min-w-9 rounded-lg px-2 text-[10px] font-bold transition ${
+                  page === currentPage
+                    ? "bg-accent text-surface"
+                    : "border border-border text-text-secondary hover:border-accent hover:text-accent"
+                }`}
+              >
+                {page}
+              </button>
+            ) : (
+              <span
+                key={page}
+                className="flex h-9 w-7 items-center justify-center text-text-muted"
+                aria-hidden="true"
+              >
+                <DotsThreeIcon size={15} weight="bold" />
+              </span>
+            ),
+          )}
 
-          {/* Next Button */}
           <button
-            onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            className="w-9 h-9 flex items-center justify-center border border-border rounded-lg text-text-secondary hover:bg-surface-tertiary hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
-            aria-label="Next page"
+            type="button"
+            onClick={() =>
+              onPageChange?.(Math.min(totalPages, currentPage + 1))
+            }
+            disabled={currentPage >= totalPages}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-secondary transition hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Halaman berikutnya"
           >
-            <CaretRightIcon size={16} weight="bold" />
+            <CaretRightIcon size={14} weight="bold" />
           </button>
-        </div>
+        </nav>
       )}
     </div>
   );

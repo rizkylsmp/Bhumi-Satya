@@ -1,4 +1,8 @@
-import { ArrowUpIcon, ArrowDownIcon } from "@phosphor-icons/react";
+import {
+  CaretDownIcon,
+  CaretUpDownIcon,
+  CaretUpIcon,
+} from "@phosphor-icons/react";
 
 /**
  * Reusable sort icon component
@@ -7,24 +11,27 @@ import { ArrowUpIcon, ArrowDownIcon } from "@phosphor-icons/react";
  * @returns {JSX.Element} Sort icon
  */
 export function SortIcon({ direction }) {
-  if (!direction) {
-    return (
-      <ArrowUpIcon
-        size={14}
-        className="text-gray-400 dark:text-gray-600"
-      />
-    );
-  }
+  const Icon =
+    direction === "asc"
+      ? CaretUpIcon
+      : direction === "desc"
+        ? CaretDownIcon
+        : CaretUpDownIcon;
 
-  return direction === "asc" ? (
-    <ArrowUpIcon
-      size={14}
-      className="text-blue-600 dark:text-blue-400"
-    />
-  ) : (
-    <ArrowDownIcon
-      size={14}
-      className="text-blue-600 dark:text-blue-400"
-    />
+  return (
+    <span
+      aria-hidden="true"
+      className="flex h-4 w-4 shrink-0 items-center justify-center"
+    >
+      <Icon
+        size={14}
+        weight={direction ? "bold" : "regular"}
+        className={
+          direction
+            ? "text-accent"
+            : "text-text-muted opacity-50"
+        }
+      />
+    </span>
   );
 }

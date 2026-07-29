@@ -164,6 +164,7 @@ export default function AssetPage() {
       state: {
         highlightAssetId: targetAssetId,
         openWebgisPopup: true,
+        mapMode: "2d",
       },
     });
   };
@@ -332,17 +333,16 @@ export default function AssetPage() {
     <div className="p-4 lg:p-6 space-y-6">
       {/* Page Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-            <DatabaseIcon size={24} weight="fill" className="text-surface" />
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+            <DatabaseIcon size={21} weight="fill" className="text-surface" />
           </div>
           <div>
-            <h1 className="text-xl lg:text-2xl font-bold text-text-primary">
+            <h1 className="text-xl font-bold text-text-primary">
               Pusat Data
             </h1>
-            <p className="text-text-muted text-sm">
-              Master data terpadu. Data legal, fisik, keuangan, dan spasial
-              selalu merujuk ke objek yang sama.
+            <p className="mt-0.5 truncate text-xs text-text-muted">
+              Master data aset terpadu.
             </p>
           </div>
         </div>
@@ -373,17 +373,15 @@ export default function AssetPage() {
         </div>
       </div>
 
-      {/* Search & Filter */}
-      <div className="bg-surface rounded-2xl border border-border p-4 lg:p-5">
+      {/* Data Table */}
+      <div className="bg-surface rounded-2xl border border-border overflow-hidden">
         <AssetSearch
           onSearch={handleSearch}
           onFilterChange={handleFilterChange}
           filterOptions={filterOptions}
+          embedded
         />
-      </div>
 
-      {/* Data Table */}
-      <div className="bg-surface rounded-2xl border border-border overflow-hidden">
         {/* Table Info Header */}
         <div className="px-4 lg:px-6 py-4 border-b border-border flex items-center justify-between bg-surface-secondary/50">
           <div className="flex items-center gap-3">
@@ -476,7 +474,7 @@ export default function AssetPage() {
                         <TableHeader
                           sortable
                           column="kode_aset"
-                          className="min-w-[110px]"
+                          className="min-w-[170px]"
                         >
                           Kode Aset
                         </TableHeader>
@@ -504,7 +502,7 @@ export default function AssetPage() {
                         <TableHeader
                           sortable
                           column="nomor_sertifikat"
-                          className="min-w-[120px]"
+                          className="min-w-[150px]"
                         >
                           No Sertifikat
                         </TableHeader>
@@ -514,7 +512,7 @@ export default function AssetPage() {
                         <TableHeader
                           sortable
                           column="luas"
-                          className="min-w-[90px]"
+                          className="min-w-[120px]"
                         >
                           Luas (m²)
                         </TableHeader>
@@ -610,14 +608,14 @@ export default function AssetPage() {
                         <TableHeader
                           sortable
                           column="kode_aset"
-                          className="min-w-[110px]"
+                          className="min-w-[170px]"
                         >
                           Kode Aset
                         </TableHeader>
                         <TableHeader
                           sortable
                           column="nama_aset"
-                          className="min-w-[180px]"
+                          className="min-w-[220px]"
                         >
                           Nama Aset
                         </TableHeader>
@@ -642,7 +640,7 @@ export default function AssetPage() {
                         <TableHeader
                           sortable
                           column="luas"
-                          className="min-w-[90px]"
+                          className="min-w-[120px]"
                         >
                           Luas (m²)
                         </TableHeader>
@@ -658,7 +656,7 @@ export default function AssetPage() {
                           sortable
                           column="nomor_sertifikat"
                           colKey="nosert_bpn"
-                          className="min-w-[120px]"
+                          className="min-w-[150px]"
                         >
                           No Sertifikat
                         </TableHeader>
@@ -1170,11 +1168,7 @@ export default function AssetPage() {
             </div>
           </>
         )}
-      </div>
-
-      {/* Pagination */}
-      {totalItems > 0 && (
-        <div className="bg-surface rounded-2xl border border-border px-4 lg:px-6 py-4">
+        {totalItems > 0 && (
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -1182,9 +1176,12 @@ export default function AssetPage() {
             itemsPerPage={itemsPerPage}
             onPageChange={handlePageChange}
             onItemsPerPageChange={handleItemsPerPageChange}
+            pageSizeOptions={[10, 20, 50]}
+            embedded
+            itemLabel="aset"
           />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* View Modal */}
       <AssetViewModal

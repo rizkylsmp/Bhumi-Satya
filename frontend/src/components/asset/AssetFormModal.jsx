@@ -22,6 +22,7 @@ import {
   UploadSimpleIcon,
   FileTextIcon,
   CheckCircleIcon,
+  ReceiptIcon,
 } from "@phosphor-icons/react";
 
 // Section Header component - moved outside to prevent re-creation on every render
@@ -163,6 +164,203 @@ const Building3dFields = ({
   );
 };
 
+const TaxFields = ({ formData, onChange }) => (
+  <div className="space-y-5">
+    <SectionHeader icon={ReceiptIcon} title="Data Pajak" />
+
+    <div className="space-y-3">
+      <p className="text-xs font-bold uppercase tracking-wide text-text-muted">
+        Identitas Objek Pajak
+      </p>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <FormInput
+          label="FID"
+          name="pajak_fid"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="FID objek pajak"
+          value={formData.pajak_fid}
+          onChange={onChange}
+          size="lg"
+        />
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-text-primary">
+            Status Objek Pajak
+          </p>
+          <div
+            className={`flex min-h-12 items-center rounded-xl border-2 px-4 text-sm font-semibold ${
+              formData.nop
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+                : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+            }`}
+          >
+            {formData.nop
+              ? "Terverifikasi"
+              : "Belum Terdata"}
+          </div>
+        </div>
+        <FormInput
+          label="Nomor Objek Pajak (NOP)"
+          name="nop"
+          placeholder="Belum terdata/bukan objek pajak"
+          value={formData.nop}
+          onChange={onChange}
+          size="lg"
+        />
+        <FormInput
+          label="Nama Wajib Pajak"
+          name="nama_wajib_pajak"
+          placeholder="Belum terdata/bukan objek pajak"
+          value={formData.nama_wajib_pajak}
+          onChange={onChange}
+          size="lg"
+        />
+      </div>
+    </div>
+
+    <div className="space-y-3">
+      <p className="text-xs font-bold uppercase tracking-wide text-text-muted">
+        Data Bapenda
+      </p>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <FormInput
+          label="Nilai Bumi/Tanah per m² (Rp)"
+          name="nilai_bumi_per_m2"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0"
+          value={formData.nilai_bumi_per_m2}
+          onChange={onChange}
+          size="lg"
+        />
+        <FormInput
+          label="Nilai Bangunan per m² (Rp)"
+          name="nilai_bangunan_per_m2"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0"
+          value={formData.nilai_bangunan_per_m2}
+          onChange={onChange}
+          size="lg"
+        />
+        <FormInput
+          label="Luas Bumi/Tanah Bapenda (m²)"
+          name="luas_bumi_bapenda"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0"
+          value={formData.luas_bumi_bapenda}
+          onChange={onChange}
+          size="lg"
+        />
+        <FormInput
+          label="Luas Bangunan Bapenda (m²)"
+          name="luas_bangunan_bapenda"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0"
+          value={formData.luas_bangunan_bapenda}
+          onChange={onChange}
+          size="lg"
+        />
+      </div>
+    </div>
+
+    <div className="space-y-3">
+      <p className="text-xs font-bold uppercase tracking-wide text-text-muted">
+        Hasil Pemetaan
+      </p>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <FormInput
+          label="Luas Bumi/Tanah Pemetaan (m²)"
+          name="luas_bumi_pemetaan"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0"
+          value={formData.luas_bumi_pemetaan}
+          onChange={onChange}
+          size="lg"
+        />
+        <FormInput
+          label="Luas Bangunan Pemetaan (m²)"
+          name="luas_bangunan_pemetaan"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0"
+          value={formData.luas_bangunan_pemetaan}
+          onChange={onChange}
+          size="lg"
+        />
+        <FormInput
+          label="NJOP Bumi Pemetaan (Rp)"
+          name="njop_bumi_pemetaan"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0"
+          value={formData.njop_bumi_pemetaan}
+          onChange={onChange}
+          size="lg"
+        />
+        <FormInput
+          label="NJOP Bangunan Pemetaan (Rp)"
+          name="njop_bangunan_pemetaan"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0"
+          value={formData.njop_bangunan_pemetaan}
+          onChange={onChange}
+          size="lg"
+        />
+        <FormInput
+          label="Pajak Bumi & Bangunan Pemetaan (Rp)"
+          name="pbb_pemetaan"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0"
+          value={formData.pbb_pemetaan}
+          onChange={onChange}
+          size="lg"
+        />
+        <FormInput
+          label="Volume Bangunan (m³)"
+          name="volume_bangunan"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0"
+          value={formData.volume_bangunan}
+          onChange={onChange}
+          size="lg"
+        />
+        <FormInput
+          label="Tinggi Bangunan (meter)"
+          name="tinggi_bangunan"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0"
+          value={formData.tinggi_bangunan}
+          onChange={onChange}
+          size="lg"
+        />
+      </div>
+    </div>
+  </div>
+);
+
+const toNullableNumber = (value) =>
+  value === "" || value === null || value === undefined ? null : Number(value);
+
 const initialFormData = {
   kode_aset: "",
   nama_aset: "",
@@ -212,6 +410,22 @@ const initialFormData = {
   tanggal_scan: "",
   notes: "",
   plotting_status: "",
+  // Data Pajak
+  pajak_fid: "",
+  pajak_status: "",
+  nop: "",
+  nama_wajib_pajak: "",
+  nilai_bumi_per_m2: "",
+  nilai_bangunan_per_m2: "",
+  luas_bumi_bapenda: "",
+  luas_bangunan_bapenda: "",
+  luas_bumi_pemetaan: "",
+  luas_bangunan_pemetaan: "",
+  njop_bumi_pemetaan: "",
+  njop_bangunan_pemetaan: "",
+  pbb_pemetaan: "",
+  volume_bangunan: "",
+  tinggi_bangunan: "",
   // Data Spasial
   polygon_bidang: null,
   building_height_m: "",
@@ -358,6 +572,22 @@ export default function AssetFormModal({
         tanggal_scan: assetData.tanggal_scan || "",
         notes: assetData.notes || "",
         plotting_status: assetData.plotting_status || "",
+        // Data Pajak
+        pajak_fid: assetData.pajak_fid ?? "",
+        pajak_status: assetData.pajak_status || "",
+        nop: assetData.nop || "",
+        nama_wajib_pajak: assetData.nama_wajib_pajak || "",
+        nilai_bumi_per_m2: assetData.nilai_bumi_per_m2 ?? "",
+        nilai_bangunan_per_m2: assetData.nilai_bangunan_per_m2 ?? "",
+        luas_bumi_bapenda: assetData.luas_bumi_bapenda ?? "",
+        luas_bangunan_bapenda: assetData.luas_bangunan_bapenda ?? "",
+        luas_bumi_pemetaan: assetData.luas_bumi_pemetaan ?? "",
+        luas_bangunan_pemetaan: assetData.luas_bangunan_pemetaan ?? "",
+        njop_bumi_pemetaan: assetData.njop_bumi_pemetaan ?? "",
+        njop_bangunan_pemetaan: assetData.njop_bangunan_pemetaan ?? "",
+        pbb_pemetaan: assetData.pbb_pemetaan ?? "",
+        volume_bangunan: assetData.volume_bangunan ?? "",
+        tinggi_bangunan: assetData.tinggi_bangunan ?? "",
         // Data Spasial
         polygon_bidang: assetData.polygon_bidang || null,
         building_height_m: assetData.building_height_m || "",
@@ -604,6 +834,26 @@ export default function AssetFormModal({
         nilai_njop: parseFloat(formData.nilai_njop) || null,
         luas_kib: parseFloat(formData.luas_kib) || null,
         harga_perolehan: parseFloat(formData.harga_perolehan) || null,
+        pajak_fid: toNullableNumber(formData.pajak_fid),
+        nilai_bumi_per_m2: toNullableNumber(formData.nilai_bumi_per_m2),
+        nilai_bangunan_per_m2: toNullableNumber(
+          formData.nilai_bangunan_per_m2,
+        ),
+        luas_bumi_bapenda: toNullableNumber(formData.luas_bumi_bapenda),
+        luas_bangunan_bapenda: toNullableNumber(
+          formData.luas_bangunan_bapenda,
+        ),
+        luas_bumi_pemetaan: toNullableNumber(formData.luas_bumi_pemetaan),
+        luas_bangunan_pemetaan: toNullableNumber(
+          formData.luas_bangunan_pemetaan,
+        ),
+        njop_bumi_pemetaan: toNullableNumber(formData.njop_bumi_pemetaan),
+        njop_bangunan_pemetaan: toNullableNumber(
+          formData.njop_bangunan_pemetaan,
+        ),
+        pbb_pemetaan: toNullableNumber(formData.pbb_pemetaan),
+        volume_bangunan: toNullableNumber(formData.volume_bangunan),
+        tinggi_bangunan: toNullableNumber(formData.tinggi_bangunan),
         building_height_m: parseFloat(formData.building_height_m) || null,
         building_base_elevation_m:
           formData.building_base_elevation_m === ""
@@ -706,6 +956,16 @@ export default function AssetFormModal({
       title: "Edit Data Fisik",
       subtitle: "Perbarui informasi lokasi dan kondisi fisik aset",
       icon: MapPinIcon,
+    },
+    kib: {
+      title: "Kelola Data KIB",
+      subtitle: "Perbarui identitas barang dan informasi Kartu Inventaris Barang",
+      icon: ClipboardTextIcon,
+    },
+    pajak: {
+      title: "Kelola Data Pajak",
+      subtitle: "Perbarui identitas objek pajak, data Bapenda, NJOP, dan PBB",
+      icon: ReceiptIcon,
     },
     administratif: {
       title: "Edit Keuangan",
@@ -1566,6 +1826,110 @@ export default function AssetFormModal({
                 </div>
               )}
 
+              {/* ========== DATA KIB ========== */}
+              {!isLegacyCompactForm &&
+                (isFullForm || activeSubstansi === "kib") && (
+                  <div
+                    id="kib"
+                    role="tabpanel"
+                    aria-labelledby="form-tab-kib"
+                    hidden={isPage && activeSection !== "kib"}
+                    data-form-section="kib"
+                    className="space-y-5 rounded-xl border border-border bg-surface-secondary p-5"
+                  >
+                    <SectionHeader
+                      icon={ClipboardTextIcon}
+                      title="Data Kartu Inventaris Barang"
+                    />
+
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+                      <FormInput
+                        label="NIBAR"
+                        name="nibar"
+                        placeholder="Nomor Identifikasi Barang"
+                        value={formData.nibar}
+                        onChange={handleInputChange}
+                        size="lg"
+                      />
+                      <FormInput
+                        label="ID Pemda"
+                        name="id_pemda"
+                        placeholder="ID barang pemerintah daerah"
+                        value={formData.id_pemda}
+                        onChange={handleInputChange}
+                        size="lg"
+                      />
+                      <FormInput
+                        label="Kode Barang"
+                        name="kode_barang"
+                        placeholder="Kode barang KIB"
+                        value={formData.kode_barang}
+                        onChange={handleInputChange}
+                        size="lg"
+                      />
+                      <FormInput
+                        label="No. Register"
+                        name="no_register"
+                        placeholder="Nomor register barang"
+                        value={formData.no_register}
+                        onChange={handleInputChange}
+                        size="lg"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                      <FormInput
+                        label="Luas KIB (m²)"
+                        name="luas_kib"
+                        type="number"
+                        placeholder="0.00"
+                        value={formData.luas_kib}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        size="lg"
+                      />
+                      <FormInput
+                        label="Harga Perolehan (Rp)"
+                        name="harga_perolehan"
+                        type="number"
+                        placeholder="0"
+                        value={formData.harga_perolehan}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        size="lg"
+                      />
+                      <FormInput
+                        label="Status Plotting"
+                        name="plotting_status"
+                        placeholder="Contoh: Sudah terplotting"
+                        value={formData.plotting_status}
+                        onChange={handleInputChange}
+                        size="lg"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                      <FormInput
+                        label="Penggunaan KIB"
+                        name="penggunaan_kib"
+                        placeholder="Penggunaan menurut KIB"
+                        value={formData.penggunaan_kib}
+                        onChange={handleInputChange}
+                        size="lg"
+                      />
+                      <FormTextarea
+                        label="Catatan KIB"
+                        name="notes"
+                        placeholder="Catatan tambahan dari dokumen KIB"
+                        value={formData.notes}
+                        onChange={handleInputChange}
+                        rows={2}
+                        size="lg"
+                      />
+                    </div>
+                  </div>
+                )}
+
               {/* ========== DATA KEUANGAN ========== */}
               {!isLegacyCompactForm && isFullForm && (
                 <div id="administratif" role="tabpanel" aria-labelledby="form-tab-administratif" hidden={isPage && activeSection !== "administratif"} data-form-section="administratif" className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
@@ -1688,6 +2052,24 @@ export default function AssetFormModal({
                   />
                 </div>
               )}
+
+              {/* ========== DATA PAJAK ========== */}
+              {!isLegacyCompactForm &&
+                (isFullForm || activeSubstansi === "pajak") && (
+                  <div
+                    id="pajak"
+                    role="tabpanel"
+                    aria-labelledby="form-tab-pajak"
+                    hidden={isPage && activeSection !== "pajak"}
+                    data-form-section="pajak"
+                    className="space-y-5 rounded-xl border border-border bg-surface-secondary p-5"
+                  >
+                    <TaxFields
+                      formData={formData}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                )}
 
               {/* ========== LOKASI DASAR (create mode only) ========== */}
               {isCreateMode && !isLegacyCompactForm && !isFullForm && (

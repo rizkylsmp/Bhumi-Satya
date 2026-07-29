@@ -12,6 +12,7 @@
     "install:all": "npm install --prefix backend && npm install --prefix frontend && npm install",
     "db:migrate": "npm run db:migrate --prefix backend",
     "db:seed": "npm run db:seed --prefix backend",
+    "db:seed:pajak": "npm run db:seed:pajak --prefix backend",
     "seed": "npm run seed --prefix backend"
   },
   "devDependencies": {

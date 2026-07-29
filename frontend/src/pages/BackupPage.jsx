@@ -27,6 +27,7 @@ import {
   InfoIcon,
   ArrowClockwiseIcon,
 } from "@phosphor-icons/react";
+import Pagination from "../components/asset/Pagination";
 
 export default function BackupPage() {
   // Auth & Permissions
@@ -53,6 +54,18 @@ export default function BackupPage() {
 
   // Backup history
   const [backupHistory, setBackupHistory] = useState([]);
+  const [backupPage, setBackupPage] = useState(1);
+  const [backupPageSize, setBackupPageSize] = useState(10);
+
+  const backupTotalPages = Math.max(
+    1,
+    Math.ceil(backupHistory.length / backupPageSize),
+  );
+  const safeBackupPage = Math.min(backupPage, backupTotalPages);
+  const paginatedBackupHistory = backupHistory.slice(
+    (safeBackupPage - 1) * backupPageSize,
+    safeBackupPage * backupPageSize,
+  );
 
   // Fetch backup list
   const loadBackups = useCallback(async () => {
@@ -406,8 +419,8 @@ export default function BackupPage() {
             <h1 className="text-xl sm:text-2xl font-bold text-text-primary">
               Backup & Restore
             </h1>
-            <p className="text-text-tertiary text-xs sm:text-sm mt-0.5">
-              Kelola backup dan restore database sistem
+            <p className="mt-0.5 text-xs text-text-tertiary">
+              Cadangkan atau pulihkan data sistem.
             </p>
           </div>
         </div>
@@ -799,7 +812,7 @@ export default function BackupPage() {
           </div>
         ) : (
           <div className="divide-y divide-border max-h-105 overflow-y-auto">
-            {backupHistory.map((backup) => (
+            {paginatedBackupHistory.map((backup) => (
               <div
                 key={backup.id}
                 className="px-5 py-3.5 flex items-center gap-4 hover:bg-surface-secondary/50 transition-colors group"
@@ -897,6 +910,22 @@ export default function BackupPage() {
               </div>
             ))}
           </div>
+        )}
+        {backupHistory.length > 0 && (
+          <Pagination
+            currentPage={safeBackupPage}
+            totalPages={backupTotalPages}
+            totalItems={backupHistory.length}
+            itemsPerPage={backupPageSize}
+            onPageChange={setBackupPage}
+            onItemsPerPageChange={(value) => {
+              setBackupPageSize(value);
+              setBackupPage(1);
+            }}
+            pageSizeOptions={[10, 20, 50]}
+            embedded
+            itemLabel="backup"
+          />
         )}
       </div>
     </div>

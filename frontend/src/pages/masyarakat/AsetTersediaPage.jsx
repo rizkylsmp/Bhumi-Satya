@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import { permintaanService, sewaService } from "../../services/api";
 import { useAuthStore } from "../../stores/authStore";
+import Pagination from "../../components/asset/Pagination";
 
 function formatCurrency(num) {
   if (num === null || num === undefined || num === "") return "-";
@@ -43,6 +44,8 @@ export default function AsetTersediaPage() {
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(6);
   const [selected, setSelected] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -66,9 +69,19 @@ export default function AsetTersediaPage() {
   }, [fetchData]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setSearch(searchInput), 400);
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 400);
     return () => clearTimeout(timer);
   }, [searchInput]);
+
+  const totalPages = Math.max(1, Math.ceil(data.length / itemsPerPage));
+  const safePage = Math.min(page, totalPages);
+  const paginatedData = data.slice(
+    (safePage - 1) * itemsPerPage,
+    safePage * itemsPerPage,
+  );
 
   const openRequest = (item) => {
     setSelected(item);
@@ -104,13 +117,12 @@ export default function AsetTersediaPage() {
     <div className="p-4 md:p-6 space-y-5">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-accent">Portal Masyarakat</p>
-          <h1 className="text-2xl md:text-3xl font-bold text-text-primary mt-1">
+          <p className="text-xs font-semibold text-accent">Portal Masyarakat</p>
+          <h1 className="mt-0.5 text-xl font-bold text-text-primary md:text-2xl">
             Aset Tersedia
           </h1>
-          <p className="text-sm text-text-muted mt-2 max-w-2xl">
-            Pilih aset yang siap disewakan, lalu kirim pengajuan memakai akun
-            masyarakat yang sedang login.
+          <p className="mt-0.5 text-xs text-text-muted">
+            Aset yang siap diajukan untuk disewa.
           </p>
         </div>
         <div className="bg-surface border border-border rounded-2xl p-4 min-w-52">
@@ -161,9 +173,28 @@ export default function AsetTersediaPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {data.map((item) => (
+          {paginatedData.map((item) => (
             <AvailableCard key={item.id_sewa} item={item} onRequest={openRequest} />
           ))}
+        </div>
+      )}
+
+      {data.length > 0 && (
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+          <Pagination
+            currentPage={safePage}
+            totalPages={totalPages}
+            totalItems={data.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setPage}
+            onItemsPerPageChange={(value) => {
+              setItemsPerPage(value);
+              setPage(1);
+            }}
+            pageSizeOptions={[6, 12, 24, 48]}
+            embedded
+            itemLabel="aset"
+          />
         </div>
       )}
 

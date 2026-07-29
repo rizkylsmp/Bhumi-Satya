@@ -9,6 +9,10 @@ import {
   getRoleBadgeColor,
 } from "../utils/permissions";
 import { useConfirm } from "../components/ui/confirmContext";
+import Pagination from "../components/asset/Pagination";
+import SortableTableHeader from "../components/shared/SortableTableHeader";
+import useColumnResize from "../hooks/useColumnResize";
+import useTableSort from "../hooks/useTableSort";
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -20,6 +24,18 @@ import {
   PencilSimpleIcon,
   ArrowLeftIcon,
 } from "@phosphor-icons/react";
+
+const USER_COLUMN_WIDTHS = {
+  no: 72,
+  nama_lengkap: 220,
+  username: 160,
+  email: 220,
+  role: 170,
+  actions: 120,
+};
+
+const getUserSortValue = (user, key) =>
+  key === "role" ? getRoleDisplayName(user.role) : user?.[key];
 
 export default function UserManagementPage() {
   // Auth & Permissions
@@ -38,9 +54,32 @@ export default function UserManagementPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("");
   const [showRoleFilter, setShowRoleFilter] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10,
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    columnWidths,
+    onResizeStart,
+    resizeColumn,
+    resetColumnWidth,
+  } = useColumnResize(USER_COLUMN_WIDTHS);
+  const {
+    sortedRows: sortedUsers,
+    sortKey,
+    sortDirection,
+    requestSort,
+  } = useTableSort(users, {
+    initialKey: "nama_lengkap",
+    getValue: getUserSortValue,
+  });
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -62,11 +101,19 @@ export default function UserManagementPage() {
     setLoading(true);
     try {
       const params = {
+        page,
+        limit,
         ...(searchTerm && { search: searchTerm }),
         ...(filterRole && { role: filterRole }),
       };
       const response = await userService.getAll(params);
       setUsers(response.data.data || []);
+      setPagination(response.data.pagination || {
+        currentPage: page,
+        totalPages: 1,
+        totalItems: response.data.data?.length || 0,
+        itemsPerPage: limit,
+      });
     } catch (error) {
       console.error("Error fetching users:", error);
       toast.error("Gagal memuat data user");
@@ -74,7 +121,7 @@ export default function UserManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, filterRole]);
+  }, [searchTerm, filterRole, page, limit]);
 
   // Fetch stats
   const fetchStats = useCallback(async () => {
@@ -231,8 +278,8 @@ export default function UserManagementPage() {
           <h1 className="text-xl md:text-2xl font-bold text-text-primary">
             Manajemen User
           </h1>
-          <p className="text-text-tertiary text-sm mt-1">
-            Kelola akun pengguna sistem ({stats.totalUsers} total)
+          <p className="mt-0.5 text-xs text-text-tertiary">
+            {stats.totalUsers} akun pengguna terdaftar.
           </p>
         </div>
         {canCreate && (
@@ -430,32 +477,37 @@ export default function UserManagementPage() {
         </div>
       )}
 
-      {/* Search & Filter */}
-      <div className="bg-surface rounded-xl border border-border p-4">
+      {/* Users Table */}
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         <form
           onSubmit={handleSearch}
-          className="flex flex-col sm:flex-row gap-4"
+          className="flex flex-col gap-2 border-b border-border p-3 sm:flex-row"
         >
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Cari nama atau username..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full border border-border bg-surface text-text-primary rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-accent focus:border-accent transition-all"
+          <label className="relative flex-1">
+            <span className="sr-only">Cari pengguna</span>
+            <MagnifyingGlassIcon
+              size={16}
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted"
             />
-          </div>
+            <input
+              type="search"
+              placeholder="Cari nama, username, atau email…"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
+              className="h-10 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-3 text-[11px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
+            />
+          </label>
           <button
             type="submit"
-            className="bg-accent text-surface px-6 py-2.5 rounded-lg hover:bg-accent-hover transition-all text-sm font-medium"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-[10px] font-bold text-white transition hover:bg-accent-hover"
           >
-            <MagnifyingGlassIcon size={14} className="inline" /> Cari
+            <MagnifyingGlassIcon size={14} weight="bold" />
+            Cari
           </button>
         </form>
-      </div>
-
-      {/* Users Table */}
-      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         {loading ? (
           <div className="p-6">
             <div className="flex items-center justify-center gap-3 py-6">
@@ -500,22 +552,63 @@ export default function UserManagementPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[960px] table-fixed">
               <thead className="bg-surface-secondary border-b border-border">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  <SortableTableHeader
+                    columnKey="no"
+                    sortable={false}
+                    width={columnWidths.no}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     No
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="nama_lengkap"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={requestSort}
+                    width={columnWidths.nama_lengkap}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     Nama
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="username"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={requestSort}
+                    width={columnWidths.username}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     Username
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="email"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={requestSort}
+                    width={columnWidths.email}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     Email
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="role"
+                    sortable={false}
+                    width={columnWidths.role}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     <div className="relative inline-flex items-center gap-2" ref={roleFilterRef}>
                       <span>Role</span>
                       <button
@@ -548,6 +641,7 @@ export default function UserManagementPage() {
                             type="button"
                             onClick={() => {
                               setFilterRole("");
+                              setPage(1);
                               setShowRoleFilter(false);
                             }}
                             className={`flex w-full items-center justify-between px-3 py-2 text-left text-xs font-semibold transition-colors ${
@@ -568,6 +662,7 @@ export default function UserManagementPage() {
                               type="button"
                               onClick={() => {
                                 setFilterRole(role);
+                                setPage(1);
                                 setShowRoleFilter(false);
                               }}
                               className={`flex w-full items-center justify-between px-3 py-2 text-left text-xs font-semibold transition-colors ${
@@ -585,20 +680,28 @@ export default function UserManagementPage() {
                         </div>
                       )}
                     </div>
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="actions"
+                    sortable={false}
+                    className="text-center"
+                    width={columnWidths.actions}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     Aksi
-                  </th>
+                  </SortableTableHeader>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {users.map((user, idx) => (
+                {sortedUsers.map((user, idx) => (
                   <tr
                     key={user.id_user}
                     className="hover:bg-surface-secondary transition-colors"
                   >
                     <td className="px-4 py-3 text-sm text-text-secondary">
-                      {idx + 1}
+                      {(page - 1) * limit + idx + 1}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -657,6 +760,20 @@ export default function UserManagementPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {pagination.totalItems > 0 && (
+          <Pagination
+            pagination={pagination}
+            onChange={setPage}
+            pageSize={limit}
+            pageSizeOptions={[10, 20, 50]}
+            onPageSizeChange={(value) => {
+              setLimit(value);
+              setPage(1);
+            }}
+            embedded
+            itemLabel="pengguna"
+          />
         )}
       </div>
     </div>

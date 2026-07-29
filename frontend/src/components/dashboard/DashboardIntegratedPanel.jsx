@@ -251,14 +251,16 @@ export default function DashboardIntegratedPanel({
       value: formatNumber(totalDigitalTwin),
       detail: `${getPercentage(totalDigitalTwin, total)}% dari ${formatNumber(total)} bidang`,
       icon: CubeIcon,
-      iconClass: "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400",
+      iconClass:
+        "from-sky-400 via-blue-500 to-blue-700 dark:from-sky-400 dark:via-blue-500 dark:to-indigo-600",
     },
     {
       label: "Memiliki Koordinat",
       value: formatNumber(coordinated),
       detail: `${getPercentage(coordinated, total)}% dari total bidang`,
       icon: MapPinIcon,
-      iconClass: "bg-cyan-50 text-cyan-600 dark:bg-cyan-950/50 dark:text-cyan-400",
+      iconClass:
+        "from-cyan-400 via-sky-500 to-blue-700 dark:from-cyan-400 dark:via-sky-500 dark:to-blue-600",
     },
     {
       label: "Bidang Terpetakan",
@@ -266,7 +268,7 @@ export default function DashboardIntegratedPanel({
       detail: `${getPercentage(polygonized, total)}% siap dipetakan`,
       icon: MapTrifoldIcon,
       iconClass:
-        "bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400",
+        "from-blue-400 via-blue-600 to-indigo-700 dark:from-blue-400 dark:via-blue-500 dark:to-indigo-600",
     },
     {
       label: "Tersedia Disewa",
@@ -274,7 +276,7 @@ export default function DashboardIntegratedPanel({
       detail: `${formatNumber(totalRentals)} unit dalam portofolio sewa`,
       icon: BuildingsIcon,
       iconClass:
-        "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
+        "from-sky-400 via-blue-500 to-indigo-700 dark:from-sky-400 dark:via-blue-500 dark:to-indigo-600",
     },
     {
       label: "Sewa Aktif",
@@ -282,7 +284,7 @@ export default function DashboardIntegratedPanel({
       detail: `${formatNumber(sewaStats?.akanBerakhir)} akan berakhir`,
       icon: HandshakeIcon,
       iconClass:
-        "bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
+        "from-cyan-400 via-blue-600 to-indigo-700 dark:from-cyan-400 dark:via-blue-500 dark:to-indigo-600",
     },
   ];
 
@@ -314,7 +316,7 @@ export default function DashboardIntegratedPanel({
                 <>
                   <div className="flex items-start justify-between gap-3">
                     <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${stat.iconClass}`}
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-linear-to-br text-white shadow-md shadow-blue-500/20 ring-1 ring-inset ring-white/30 dark:shadow-blue-950/60 dark:ring-blue-200/25 ${stat.iconClass}`}
                     >
                       <Icon size={18} weight="fill" />
                     </span>

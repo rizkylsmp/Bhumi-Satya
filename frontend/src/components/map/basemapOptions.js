@@ -1,4 +1,4 @@
-export const DEFAULT_BASEMAP_ID = "light";
+export const DEFAULT_BASEMAP_ID = "satellite";
 
 export const BASEMAP_OPTIONS = [
   {
@@ -15,7 +15,7 @@ export const BASEMAP_OPTIONS = [
       "Esri, Maxar, Earthstar Geographics, and the GIS User Community",
   },
   {
-    id: DEFAULT_BASEMAP_ID,
+    id: "light",
     label: "Peta Terang",
     tiles: ["https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"],
     cesiumUrl: "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",

@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
   BuildingsIcon,
   CaretDownIcon,
   CheckCircleIcon,
@@ -17,9 +15,8 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import BrandMark from "../components/shared/BrandMark";
+import Pagination from "../components/asset/Pagination";
 import { sewaService } from "../services/api";
-
-const PAGE_SIZE_OPTIONS = [6, 9, 12];
 
 function getPhotos(item) {
   const source = item.foto_sewa || item.aset?.foto_aset;
@@ -43,23 +40,6 @@ function formatCurrency(value) {
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(amount);
-}
-
-function getPageNumbers(currentPage, totalPages) {
-  if (totalPages <= 5) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
-  }
-
-  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
-  const sorted = [...pages]
-    .filter((page) => page >= 1 && page <= totalPages)
-    .sort((a, b) => a - b);
-
-  return sorted.reduce((result, page, index) => {
-    if (index > 0 && page - sorted[index - 1] > 1) result.push("ellipsis");
-    result.push(page);
-    return result;
-  }, []);
 }
 
 export default function PublicSewaPage() {
@@ -274,74 +254,21 @@ export default function PublicSewaPage() {
           </div>
 
           {!loading && !loadError && filteredItems.length > 0 && (
-            <div className="mt-8 flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3 text-sm text-text-secondary">
-                <label htmlFor="page-size">Tampilkan</label>
-                <div className="relative">
-                  <select
-                    id="page-size"
-                    value={pageSize}
-                    onChange={(event) => {
-                      setPageSize(Number(event.target.value));
-                      setPage(1);
-                    }}
-                    className="h-10 appearance-none rounded-lg border border-border bg-surface py-0 pl-3 pr-9 font-semibold text-text-primary outline-none focus:border-accent focus:ring-3 focus:ring-accent/10"
-                  >
-                    {PAGE_SIZE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  <CaretDownIcon
-                    size={14}
-                    weight="bold"
-                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-muted"
-                  />
-                </div>
-                <span>
-                  {startIndex + 1}–{Math.min(startIndex + pageSize, filteredItems.length)}{" "}
-                  dari {filteredItems.length}
-                </span>
-              </div>
-
-              <nav className="flex items-center gap-1.5" aria-label="Navigasi halaman">
-                <PaginationButton
-                  label="Halaman sebelumnya"
-                  disabled={safePage === 1}
-                  onClick={() => setPage((current) => Math.max(1, current - 1))}
-                >
-                  <ArrowLeftIcon size={16} weight="bold" />
-                </PaginationButton>
-                {getPageNumbers(safePage, totalPages).map((pageNumber, index) =>
-                  pageNumber === "ellipsis" ? (
-                    <span
-                      key={`ellipsis-${index}`}
-                      className="flex h-10 min-w-8 items-center justify-center text-text-muted"
-                    >
-                      …
-                    </span>
-                  ) : (
-                    <PaginationButton
-                      key={pageNumber}
-                      label={`Halaman ${pageNumber}`}
-                      active={pageNumber === safePage}
-                      onClick={() => setPage(pageNumber)}
-                    >
-                      {pageNumber}
-                    </PaginationButton>
-                  ),
-                )}
-                <PaginationButton
-                  label="Halaman berikutnya"
-                  disabled={safePage === totalPages}
-                  onClick={() =>
-                    setPage((current) => Math.min(totalPages, current + 1))
-                  }
-                >
-                  <ArrowRightIcon size={16} weight="bold" />
-                </PaginationButton>
-              </nav>
+            <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-surface">
+              <Pagination
+                currentPage={safePage}
+                totalPages={totalPages}
+                totalItems={filteredItems.length}
+                itemsPerPage={pageSize}
+                onPageChange={setPage}
+                onItemsPerPageChange={(value) => {
+                  setPageSize(value);
+                  setPage(1);
+                }}
+                pageSizeOptions={[6, 9, 12]}
+                embedded
+                itemLabel="aset"
+              />
             </div>
           )}
         </section>
@@ -621,25 +548,6 @@ function DetailItem({ label, value }) {
       </p>
       <p className="mt-1 text-sm font-bold text-text-primary">{value}</p>
     </div>
-  );
-}
-
-function PaginationButton({ children, label, active = false, disabled = false, onClick }) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      aria-current={active ? "page" : undefined}
-      disabled={disabled}
-      onClick={onClick}
-      className={`flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-35 ${
-        active
-          ? "border-accent bg-accent text-surface"
-          : "border-border bg-surface text-text-secondary hover:border-accent/40 hover:text-accent"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 

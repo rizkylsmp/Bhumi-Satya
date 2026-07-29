@@ -91,7 +91,7 @@ export default function DataLegalPage() {
   return (
     <SubstansiAssetPage
       title="Data Legal"
-      subtitle="Informasi sertifikat, kepemilikan, dan status hukum aset"
+      subtitle="Legalitas dan status hukum aset."
       icon={ScalesIcon}
       iconColor="from-indigo-500 to-indigo-600"
       columns={columns}

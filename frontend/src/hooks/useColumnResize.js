@@ -11,8 +11,8 @@ import { useState, useCallback, useRef } from "react";
  *     <div onMouseDown={onResizeStart(colKey)} className="resize-handle" />
  *   </th>
  */
-export default function useColumnResize() {
-  const [columnWidths, setColumnWidths] = useState({});
+export default function useColumnResize(initialWidths = {}) {
+  const [columnWidths, setColumnWidths] = useState(initialWidths);
   const resizing = useRef(null);
 
   const onResizeStart = useCallback(
@@ -51,5 +51,32 @@ export default function useColumnResize() {
     [],
   );
 
-  return { columnWidths, onResizeStart };
+  const resizeColumn = useCallback((colKey, delta, fallbackWidth = 120) => {
+    setColumnWidths((prev) => ({
+      ...prev,
+      [colKey]: Math.max(60, (prev[colKey] || fallbackWidth) + delta),
+    }));
+  }, []);
+
+  const resetColumnWidth = useCallback(
+    (colKey) => {
+      setColumnWidths((prev) => {
+        const next = { ...prev };
+        if (initialWidths[colKey]) {
+          next[colKey] = initialWidths[colKey];
+        } else {
+          delete next[colKey];
+        }
+        return next;
+      });
+    },
+    [initialWidths],
+  );
+
+  return {
+    columnWidths,
+    onResizeStart,
+    resizeColumn,
+    resetColumnWidth,
+  };
 }

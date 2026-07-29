@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, Fragment } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import toast from "react-hot-toast";
 import { riwayatService } from "../services/api";
 import {
@@ -11,9 +11,6 @@ import {
   ClipboardTextIcon,
   CaretUpIcon,
   CaretDownIcon,
-  CaretLeftIcon,
-  CaretRightIcon,
-  FunnelIcon,
   FunnelSimpleIcon,
   ClockIcon,
   UserIcon,
@@ -24,11 +21,30 @@ import {
   SignOutIcon,
   ArrowSquareOutIcon,
   XIcon,
-  CalendarBlankIcon,
   InfoIcon,
   ClockCounterClockwiseIcon,
   FileTextIcon,
 } from "@phosphor-icons/react";
+import Pagination from "../components/asset/Pagination";
+import SortableTableHeader from "../components/shared/SortableTableHeader";
+import useColumnResize from "../hooks/useColumnResize";
+import useTableSort from "../hooks/useTableSort";
+
+const HISTORY_COLUMN_WIDTHS = {
+  no: 72,
+  created_at: 180,
+  user: 180,
+  aksi: 130,
+  tabel: 150,
+  keterangan: 320,
+  detail: 100,
+};
+
+const getHistorySortValue = (item, key) => {
+  if (key === "created_at") return new Date(item.created_at).getTime();
+  if (key === "user") return item.user?.username || item.user_id;
+  return item?.[key];
+};
 
 export default function RiwayatPage() {
   const [loading, setLoading] = useState(true);
@@ -44,15 +60,26 @@ export default function RiwayatPage() {
   const [filters, setFilters] = useState({
     tanggalMulai: "",
     tanggalAkhir: "",
-    user: "",
     jenis: "",
-    deskripsi: "",
   });
 
   const [expandedRow, setExpandedRow] = useState(null);
-  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-  const [showFilterSection, setShowFilterSection] = useState(true);
-  const filterDropdownRef = useRef(null);
+  const {
+    columnWidths,
+    onResizeStart,
+    resizeColumn,
+    resetColumnWidth,
+  } = useColumnResize(HISTORY_COLUMN_WIDTHS);
+  const {
+    sortedRows: sortedActivities,
+    sortKey,
+    sortDirection,
+    requestSort,
+  } = useTableSort(activities, {
+    initialKey: "created_at",
+    initialDirection: "desc",
+    getValue: getHistorySortValue,
+  });
 
   // Fetch activities
   const fetchActivities = useCallback(async () => {
@@ -74,8 +101,20 @@ export default function RiwayatPage() {
       if (paginationData) {
         setPagination((prev) => ({
           ...prev,
-          totalPages: paginationData.totalPages,
-          totalData: paginationData.totalData,
+          page:
+            paginationData.currentPage ??
+            paginationData.page ??
+            prev.page,
+          limit:
+            paginationData.itemsPerPage ??
+            paginationData.limit ??
+            prev.limit,
+          totalPages: paginationData.totalPages || 1,
+          totalData:
+            paginationData.totalItems ??
+            paginationData.total ??
+            paginationData.totalData ??
+            0,
         }));
       }
     } catch (error) {
@@ -107,13 +146,6 @@ export default function RiwayatPage() {
     fetchStats();
   }, [fetchActivities, fetchStats]);
 
-  // User list for filter
-  const userList = [
-    "admin01",
-    "bpka01",
-    "bpn_user01",
-  ];
-
   // Activity types with icons
   const jenisAktivitas = [
     { value: "", label: "Semua Jenis", icon: FunnelSimpleIcon },
@@ -133,9 +165,7 @@ export default function RiwayatPage() {
     setFilters({
       tanggalMulai: "",
       tanggalAkhir: "",
-      user: "",
       jenis: "",
-      deskripsi: "",
     });
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
@@ -191,23 +221,8 @@ export default function RiwayatPage() {
     return date.toLocaleDateString("id-ID");
   };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        filterDropdownRef.current &&
-        !filterDropdownRef.current.contains(event.target)
-      ) {
-        setShowFilterDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   // Count active filters
   const activeFilterCount = [
-    filters.user,
     filters.jenis,
     filters.tanggalMulai,
     filters.tanggalAkhir,
@@ -338,8 +353,8 @@ export default function RiwayatPage() {
             <h1 className="text-xl sm:text-2xl font-bold text-text-primary">
               Riwayat Aktivitas
             </h1>
-            <p className="text-text-tertiary text-sm">
-              Monitor semua aktivitas pengguna
+            <p className="mt-0.5 text-xs text-text-tertiary">
+              Aktivitas pengguna dan sistem.
             </p>
           </div>
         </div>
@@ -387,120 +402,58 @@ export default function RiwayatPage() {
         ))}
       </div>
 
-      {/* Filter Section */}
-      <div className="bg-surface rounded-xl border border-border overflow-hidden shadow-sm">
-        <button
-          onClick={() => setShowFilterSection(!showFilterSection)}
-          className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-surface-secondary/50 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
-              <FunnelIcon size={16} weight="duotone" className="text-accent" />
-            </div>
-            <div className="text-left">
-              <h3 className="font-semibold text-text-primary text-sm sm:text-base">
-                Filter & Pencarian
-              </h3>
-              {activeFilterCount > 0 && (
-                <span className="text-xs text-accent">
-                  {activeFilterCount} filter aktif
-                </span>
-              )}
-            </div>
-          </div>
-          <CaretDownIcon
-            size={18}
-            weight="bold"
-            className={`text-text-muted transition-transform duration-200 ${
-              showFilterSection ? "rotate-180" : ""
-            }`}
+      {/* Compact Filter Toolbar */}
+      <div className="rounded-xl border border-border bg-surface p-2">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_auto_auto]">
+          <input
+            type="date"
+            aria-label="Tanggal mulai"
+            value={filters.tanggalMulai}
+            onChange={(event) =>
+              handleFilterChange("tanggalMulai", event.target.value)
+            }
+            className="h-9 min-w-0 rounded-lg border border-border bg-surface px-2.5 text-[11px] text-text-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 scheme-light dark:scheme-dark"
           />
-        </button>
-        {showFilterSection && (
-          <div className="p-4 sm:p-6 border-t border-border bg-surface-secondary/30">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-text-secondary mb-2">
-                  <CalendarBlankIcon size={12} className="inline mr-1" />
-                  Tanggal Mulai
-                </label>
-                <input
-                  type="date"
-                  value={filters.tanggalMulai}
-                  onChange={(e) =>
-                    handleFilterChange("tanggalMulai", e.target.value)
-                  }
-                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-surface text-text-primary focus:ring-2 focus:ring-accent focus:border-accent transition-all scheme-light dark:scheme-dark"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-text-secondary mb-2">
-                  <CalendarBlankIcon size={12} className="inline mr-1" />
-                  Tanggal Akhir
-                </label>
-                <input
-                  type="date"
-                  value={filters.tanggalAkhir}
-                  onChange={(e) =>
-                    handleFilterChange("tanggalAkhir", e.target.value)
-                  }
-                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-surface text-text-primary focus:ring-2 focus:ring-accent focus:border-accent transition-all scheme-light dark:scheme-dark"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-text-secondary mb-2">
-                  <UserIcon size={12} className="inline mr-1" />
-                  User
-                </label>
-                <select
-                  value={filters.user}
-                  onChange={(e) => handleFilterChange("user", e.target.value)}
-                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-surface text-text-primary focus:ring-2 focus:ring-accent focus:border-accent transition-all"
-                >
-                  <option value="">Semua User</option>
-                  {userList.map((u) => (
-                    <option key={u} value={u}>
-                      {u}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-text-secondary mb-2">
-                  <FunnelSimpleIcon size={12} className="inline mr-1" />
-                  Jenis Aktivitas
-                </label>
-                <select
-                  value={filters.jenis}
-                  onChange={(e) => handleFilterChange("jenis", e.target.value)}
-                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-surface text-text-primary focus:ring-2 focus:ring-accent focus:border-accent transition-all"
-                >
-                  {jenisAktivitas.map((j) => (
-                    <option key={j.value} value={j.value}>
-                      {j.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-end gap-2">
-                <button
-                  onClick={handleApplyFilter}
-                  className="flex-1 flex items-center justify-center gap-2 bg-accent text-surface px-4 py-2.5 rounded-lg hover:bg-accent-hover transition-all text-sm font-medium shadow-sm"
-                >
-                  <MagnifyingGlassIcon size={16} weight="bold" />
-                  Cari
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="px-3 py-2.5 border border-border rounded-lg hover:bg-surface-secondary text-text-secondary transition-all text-sm"
-                  title="Reset Filter"
-                >
-                  <XIcon size={16} weight="bold" />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+          <input
+            type="date"
+            aria-label="Tanggal akhir"
+            value={filters.tanggalAkhir}
+            onChange={(event) =>
+              handleFilterChange("tanggalAkhir", event.target.value)
+            }
+            className="h-9 min-w-0 rounded-lg border border-border bg-surface px-2.5 text-[11px] text-text-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 scheme-light dark:scheme-dark"
+          />
+          <select
+            value={filters.jenis}
+            onChange={(event) => handleFilterChange("jenis", event.target.value)}
+            className="h-9 min-w-0 rounded-lg border border-border bg-surface px-2.5 text-[11px] text-text-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
+            aria-label="Filter jenis aktivitas"
+          >
+            {jenisAktivitas.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleApplyFilter}
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 text-[11px] font-semibold text-white transition hover:bg-accent-hover"
+          >
+            <MagnifyingGlassIcon size={14} weight="bold" />
+            Terapkan
+          </button>
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={handleReset}
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border px-3 text-[11px] font-semibold text-text-secondary transition hover:bg-surface-secondary"
+            >
+              <XIcon size={13} weight="bold" />
+              Reset
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Activity Table */}
@@ -518,135 +471,6 @@ export default function RiwayatPage() {
             </div>
           </div>
 
-          {/* Quick Filter Dropdown */}
-          <div className="relative" ref={filterDropdownRef}>
-            <button
-              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
-                activeFilterCount > 0
-                  ? "bg-accent text-surface border-accent"
-                  : "bg-surface border-border text-text-secondary hover:bg-surface-secondary"
-              }`}
-            >
-              <FunnelIcon
-                size={16}
-                weight={activeFilterCount > 0 ? "fill" : "regular"}
-              />
-              <span className="hidden sm:inline">Filter Cepat</span>
-              {activeFilterCount > 0 && (
-                <span className="bg-surface/20 text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-
-            {showFilterDropdown && (
-              <div className="absolute right-0 mt-2 w-72 bg-surface rounded-xl border border-border z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="bg-surface-secondary px-4 py-3 border-b border-border flex items-center justify-between">
-                  <span className="font-semibold text-sm text-text-primary flex items-center gap-2">
-                    <FunnelIcon size={14} />
-                    Filter Aktivitas
-                  </span>
-                  <button
-                    onClick={() => {
-                      handleReset();
-                      setShowFilterDropdown(false);
-                    }}
-                    className="text-xs text-text-muted hover:text-text-secondary flex items-center gap-1"
-                  >
-                    <XIcon size={12} />
-                    Reset
-                  </button>
-                </div>
-                <div className="p-4 space-y-4">
-                  {/* User Filter */}
-                  <div>
-                    <label className="block text-xs font-medium text-text-tertiary mb-2">
-                      <UserIcon size={12} className="inline mr-1" />
-                      User
-                    </label>
-                    <select
-                      value={filters.user}
-                      onChange={(e) =>
-                        handleFilterChange("user", e.target.value)
-                      }
-                      className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-surface text-text-primary focus:ring-2 focus:ring-accent focus:border-accent transition-all"
-                    >
-                      <option value="">Semua User</option>
-                      {userList.map((u) => (
-                        <option key={u} value={u}>
-                          {u}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Jenis Filter */}
-                  <div>
-                    <label className="block text-xs font-medium text-text-tertiary mb-2">
-                      <FunnelSimpleIcon size={12} className="inline mr-1" />
-                      Jenis Aktivitas
-                    </label>
-                    <select
-                      value={filters.jenis}
-                      onChange={(e) =>
-                        handleFilterChange("jenis", e.target.value)
-                      }
-                      className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-surface text-text-primary focus:ring-2 focus:ring-accent focus:border-accent transition-all"
-                    >
-                      {jenisAktivitas.map((j) => (
-                        <option key={j.value} value={j.value}>
-                          {j.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Date Range */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-xs font-medium text-text-tertiary mb-2">
-                        Dari
-                      </label>
-                      <input
-                        type="date"
-                        value={filters.tanggalMulai}
-                        onChange={(e) =>
-                          handleFilterChange("tanggalMulai", e.target.value)
-                        }
-                        className="w-full border border-border rounded-lg px-2 py-2 text-sm bg-surface text-text-primary focus:ring-2 focus:ring-accent focus:border-accent transition-all scheme-light dark:scheme-dark"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-text-tertiary mb-2">
-                        Sampai
-                      </label>
-                      <input
-                        type="date"
-                        value={filters.tanggalAkhir}
-                        onChange={(e) =>
-                          handleFilterChange("tanggalAkhir", e.target.value)
-                        }
-                        className="w-full border border-border rounded-lg px-2 py-2 text-sm bg-surface text-text-primary focus:ring-2 focus:ring-accent focus:border-accent transition-all scheme-light dark:scheme-dark"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Apply Button */}
-                  <button
-                    onClick={() => {
-                      handleApplyFilter();
-                      setShowFilterDropdown(false);
-                    }}
-                    className="w-full flex items-center justify-center gap-2 bg-accent text-surface py-2.5 rounded-lg text-sm font-medium hover:bg-accent-hover transition-all"
-                  >
-                    <MagnifyingGlassIcon size={16} weight="bold" />
-                    Terapkan Filter
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Desktop Table View */}
@@ -673,37 +497,97 @@ export default function RiwayatPage() {
               </p>
             </div>
           ) : (
-            <table className="w-full">
+            <table className="w-full min-w-[1130px] table-fixed">
               <thead className="bg-surface-secondary/50 border-b border-border">
                 <tr>
-                  <th className="text-left px-6 py-3.5 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  <SortableTableHeader
+                    columnKey="no"
+                    sortable={false}
+                    width={columnWidths.no}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     No
-                  </th>
-                  <th className="text-left px-6 py-3.5 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="created_at"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={requestSort}
+                    width={columnWidths.created_at}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     <ClockIcon size={12} className="inline mr-1" />
                     Waktu
-                  </th>
-                  <th className="text-left px-6 py-3.5 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="user"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={requestSort}
+                    width={columnWidths.user}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     <UserIcon size={12} className="inline mr-1" />
                     User
-                  </th>
-                  <th className="text-left px-6 py-3.5 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="aksi"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={requestSort}
+                    width={columnWidths.aksi}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     Aksi
-                  </th>
-                  <th className="text-left px-6 py-3.5 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="tabel"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={requestSort}
+                    width={columnWidths.tabel}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     <DatabaseIcon size={12} className="inline mr-1" />
                     Tabel
-                  </th>
-                  <th className="text-left px-6 py-3.5 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="keterangan"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={requestSort}
+                    width={columnWidths.keterangan}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     Keterangan
-                  </th>
-                  <th className="text-center px-6 py-3.5 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  </SortableTableHeader>
+                  <SortableTableHeader
+                    columnKey="detail"
+                    sortable={false}
+                    className="text-center"
+                    width={columnWidths.detail}
+                    onResizeStart={onResizeStart}
+                    onResizeBy={resizeColumn}
+                    onResetWidth={resetColumnWidth}
+                  >
                     Detail
-                  </th>
+                  </SortableTableHeader>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {activities.map((item, index) => {
+                {sortedActivities.map((item, index) => {
                   const aksiConfig = getAksiConfig(item.aksi);
                   const AksiIcon = aksiConfig.icon;
                   return (
@@ -949,77 +833,19 @@ export default function RiwayatPage() {
 
         {/* Pagination */}
         {!loading && activities.length > 0 && (
-          <div className="px-4 sm:px-6 py-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 bg-surface-secondary/30">
-            <div className="text-sm text-text-tertiary">
-              Menampilkan{" "}
-              <span className="font-medium text-text-secondary">
-                {activities.length > 0
-                  ? (pagination.page - 1) * pagination.limit + 1
-                  : 0}
-              </span>
-              -
-              <span className="font-medium text-text-secondary">
-                {Math.min(
-                  pagination.page * pagination.limit,
-                  pagination.totalData || 0,
-                )}
-              </span>{" "}
-              dari{" "}
-              <span className="font-medium text-text-secondary">
-                {(pagination.totalData || 0).toLocaleString()}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page <= 1}
-                className="flex items-center gap-1 px-3 py-2 border border-border rounded-lg text-sm text-text-secondary hover:bg-surface-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <CaretLeftIcon size={16} weight="bold" />
-                <span className="hidden sm:inline">Prev</span>
-              </button>
-
-              {(pagination.totalPages || 1) > 0 &&
-                Array.from(
-                  { length: Math.min(5, pagination.totalPages || 1) },
-                  (_, i) => {
-                    let pageNum;
-                    const totalPages = pagination.totalPages || 1;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (pagination.page <= 3) {
-                      pageNum = i + 1;
-                    } else if (pagination.page >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = pagination.page - 2 + i;
-                    }
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`min-w-9 h-9 rounded-lg text-sm font-medium transition-all ${
-                          pagination.page === pageNum
-                            ? "bg-accent text-surface"
-                            : "border border-border text-text-secondary hover:bg-surface-secondary"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  },
-                )}
-
-              <button
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page >= (pagination.totalPages || 1)}
-                className="flex items-center gap-1 px-3 py-2 border border-border rounded-lg text-sm text-text-secondary hover:bg-surface-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span className="hidden sm:inline">Next</span>
-                <CaretRightIcon size={16} weight="bold" />
-              </button>
-            </div>
-          </div>
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages || 1}
+            totalItems={pagination.totalData || 0}
+            itemsPerPage={pagination.limit}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={(value) =>
+              setPagination((prev) => ({ ...prev, page: 1, limit: value }))
+            }
+            pageSizeOptions={[10, 20, 50, 100]}
+            embedded
+            itemLabel="aktivitas"
+          />
         )}
       </div>
     </div>

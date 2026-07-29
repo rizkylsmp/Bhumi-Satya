@@ -1,7 +1,12 @@
 import { useRef, useState } from "react";
 import AssetPopupCard from "./AssetPopupCard";
 
-export default function AssetDetailPanel({ asset, onClose, onViewDetail }) {
+export default function AssetDetailPanel({
+  asset,
+  onClose,
+  onViewDetail,
+  showModel3d = false,
+}) {
   const panelRef = useRef(null);
   const dragRef = useRef(null);
   const offsetRef = useRef({ x: 0, y: 0 });
@@ -81,6 +86,7 @@ export default function AssetDetailPanel({ asset, onClose, onViewDetail }) {
         asset={asset}
         onClose={onClose}
         onViewDetail={onViewDetail}
+        showModel3d={showModel3d}
         isDragging={isDragging}
         headerProps={{
           title: "Tahan dan geser untuk memindahkan popup",

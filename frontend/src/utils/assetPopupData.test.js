@@ -21,7 +21,10 @@ describe("asset popup data", () => {
     expect(result.location).toBe("Jl. Tata Bumi");
     expect(result.area).toBe("1250.5");
     expect(result.details).toEqual([
+      { label: "Kode Aset", value: "AST-001" },
+      { label: "Nama Aset", value: "Gedung Utama" },
       { label: "Jenis Aset", value: "Bangunan" },
+      { label: "Luas Terdata", value: "1250.5", format: "area" },
     ]);
   });
 
@@ -50,5 +53,66 @@ describe("asset popup data", () => {
       floors: 5,
       active: false,
     });
+  });
+
+  it("creates the tax section only from available tax values", () => {
+    const result = buildAssetPopupData({
+      pajak_status: "Terverifikasi",
+      nop: "35.75.010.001.001-0001.0",
+      nama_wajib_pajak: "",
+      njop_bumi_pemetaan: "250000000",
+      pbb_pemetaan: null,
+    });
+
+    expect(result.tax).toEqual([
+      { label: "Status Objek Pajak", value: "Terverifikasi" },
+      {
+        label: "NOP",
+        value: "35.75.010.001.001-0001.0",
+      },
+      {
+        label: "NJOP Bumi Pemetaan",
+        value: "250000000",
+        format: "currency",
+      },
+    ]);
+  });
+
+  it("groups physical, KIB, administrative, and spatial data", () => {
+    const result = buildAssetPopupData({
+      kecamatan: "Mantrijeron",
+      batas_utara: "Jalan lingkungan",
+      nibar: "NBR-12",
+      harga_perolehan: "150000000",
+      kode_bmd: "01.03.04",
+      nilai_buku: "120000000",
+      koordinat_lat: "-7.8101",
+      koordinat_long: "110.3612",
+      polygon_bidang: { type: "Polygon", coordinates: [] },
+      kw: "KW1",
+    });
+
+    expect(result.physical).toEqual([
+      { label: "Kecamatan", value: "Mantrijeron" },
+      { label: "Batas Utara", value: "Jalan lingkungan" },
+    ]);
+    expect(result.kib).toEqual([
+      { label: "NIBAR", value: "NBR-12" },
+      {
+        label: "Harga Perolehan",
+        value: "150000000",
+        format: "currency",
+      },
+    ]);
+    expect(result.administrative).toEqual([
+      { label: "Kode BMD", value: "01.03.04" },
+      { label: "Nilai Buku", value: "120000000", format: "currency" },
+    ]);
+    expect(result.spatial).toEqual([
+      { label: "Kode Wilayah (KW)", value: "KW1" },
+      { label: "Latitude", value: "-7.8101", format: "coordinate" },
+      { label: "Longitude", value: "110.3612", format: "coordinate" },
+      { label: "Polygon Bidang", value: "Tersedia" },
+    ]);
   });
 });
