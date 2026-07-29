@@ -1193,6 +1193,7 @@ export default function AssetPage() {
         asset={viewingAsset}
         onEdit={canUpdate ? handleOpenEditForm : null}
         canEdit={canUpdate}
+        canDelete={canDelete}
         onDownloadPdf={handleDownloadAssetPdf}
         onDownloadGeojson={handleDownloadAssetGeojson}
       />

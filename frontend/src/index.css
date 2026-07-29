@@ -3,6 +3,11 @@
 /* Dark Mode Theme Configuration */
 @custom-variant dark (&:where(.dark, .dark *));
 
+:root {
+  --font-bhumi-sans: "Segoe UI Variable", "Segoe UI", Inter, ui-sans-serif,
+    system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
 @theme {
   /* Light Mode Colors (default) */
   --color-surface: #ffffff;
@@ -47,6 +52,7 @@ html {
 
 body {
   @apply bg-surface-secondary text-text-primary;
+  font-family: var(--font-bhumi-sans);
 }
 
 /*
@@ -162,6 +168,17 @@ textarea:disabled,
 /* Crosshair cursor for map drawing/picking mode */
 .map-cursor-crosshair .maplibregl-canvas {
   cursor: crosshair !important;
+}
+
+/*
+ * MapLibre ships with Helvetica Neue/Arial. The map surface and every control
+ * inherit Bhumi Satya's UI font while keeping each component's font weight.
+ */
+.digital-twin-map,
+.digital-twin-map .maplibregl-map,
+.digital-twin-map .maplibregl-popup,
+.digital-twin-map .maplibregl-ctrl {
+  font-family: var(--font-bhumi-sans);
 }
 
 /* Shared cartographic scale for every MapLibre surface */
@@ -342,6 +359,122 @@ body,
 
 .animate-scale-in {
   animation: scaleIn 0.2s ease-out forwards;
+}
+
+/* Shared lightweight motion */
+@keyframes routeContentIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes backdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes popoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.route-content-enter {
+  animation: routeContentIn 180ms ease-out backwards;
+}
+
+.motion-backdrop {
+  animation: backdropIn 160ms ease-out both;
+}
+
+.motion-dialog-enter {
+  animation: dialogIn 190ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.motion-popover-enter {
+  transform-origin: top right;
+  animation: popoverIn 150ms ease-out both;
+}
+
+.motion-panel-enter {
+  animation: panelIn 180ms ease-out both;
+}
+
+.motion-tab-enter {
+  animation: routeContentIn 170ms ease-out backwards;
+}
+
+:where(button:not(:disabled), [role="button"]:not([aria-disabled="true"])):active {
+  transform: scale(0.98);
+}
+
+/* Lightweight sidebar entrance */
+@keyframes sidebarItemIn {
+  from {
+    opacity: 0;
+    transform: translateX(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sidebar-menu-item {
+  animation: sidebarItemIn 180ms ease-out both;
+  animation-delay: calc(var(--sidebar-item-index, 0) * 18ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-menu-item,
+  .route-content-enter,
+  .motion-backdrop,
+  .motion-dialog-enter,
+  .motion-popover-enter,
+  .motion-panel-enter,
+  .motion-tab-enter {
+    animation: none;
+  }
+
+  :where(button:not(:disabled), [role="button"]:not([aria-disabled="true"])):active {
+    transform: none;
+  }
 }
 
 /* Pulse dot animation */

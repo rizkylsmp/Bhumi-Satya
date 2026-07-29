@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { Op } from "sequelize";
 import {
   Aset,
   Aset3dCatalog,
@@ -743,68 +744,6 @@ export const updateMetadata = async (req, res) => {
   }
 };
 
-export const archive = async (req, res) => {
-  try {
-    const model = await AsetModel3d.findOne({
-      where: {
-        id_model_3d: req.params.modelId,
-        id_aset: req.params.id,
-        archived_at: null,
-      },
-    });
-    if (!model) {
-      return res.status(404).json({ success: false, error: "Versi model 3D tidak ditemukan" });
-    }
-
-    const oldData = serializeModel(model);
-    let replacement = null;
-    await sequelize.transaction(async (transaction) => {
-      const wasActive = model.is_active;
-      await model.update({
-        is_active: false,
-        status: "archived",
-        archived_at: new Date(),
-        updated_at: new Date(),
-      }, { transaction });
-
-      if (wasActive) {
-        replacement = await AsetModel3d.findOne({
-          where: {
-            id_aset: model.id_aset,
-            lod: model.lod,
-            archived_at: null,
-          },
-          order: [["version", "DESC"]],
-          transaction,
-        });
-        if (replacement) {
-          await replacement.update({ is_active: true, updated_at: new Date() }, { transaction });
-        }
-      }
-    });
-
-    await AuditService.logUpdate({
-      tabel: "aset_model_3d",
-      id_referensi: model.id_model_3d,
-      data_lama: oldData,
-      data_baru: serializeModel(model),
-      keterangan: `Mengarsipkan model 3D aset ${model.id_aset} versi ${model.version}`,
-      user_id: req.user.id_user,
-      req,
-    });
-
-    return res.json({
-      success: true,
-      message: `Model versi ${model.version} berhasil diarsipkan`,
-      data: serializeModel(model),
-      activated_model_id: replacement?.id_model_3d || null,
-    });
-  } catch (error) {
-    console.error("Error archiving asset 3D model:", error);
-    return res.status(500).json({ success: false, error: error.message });
-  }
-};
-
 export const restore = async (req, res) => {
   try {
     const model = await AsetModel3d.findOne({
@@ -865,19 +804,18 @@ export const restore = async (req, res) => {
   }
 };
 
-export const removeArchived = async (req, res) => {
+export const removePermanent = async (req, res) => {
   try {
     const model = await AsetModel3d.findOne({
       where: {
         id_model_3d: req.params.modelId,
         id_aset: req.params.id,
-        status: "archived",
       },
     });
-    if (!model || !model.archived_at) {
+    if (!model) {
       return res.status(404).json({
         success: false,
-        error: "Versi model 3D yang diarsipkan tidak ditemukan",
+        error: "Versi model 3D tidak ditemukan",
       });
     }
 
@@ -892,7 +830,33 @@ export const removeArchived = async (req, res) => {
         : []),
     ].filter(Boolean))];
 
-    await model.destroy();
+    let replacement = null;
+    await sequelize.transaction(async (transaction) => {
+      if (model.is_active && !model.archived_at) {
+        replacement = await AsetModel3d.findOne({
+          where: {
+            id_model_3d: { [Op.ne]: model.id_model_3d },
+            id_aset: model.id_aset,
+            lod: model.lod,
+            archived_at: null,
+            conversion_status: "ready",
+            converted_public_url: { [Op.ne]: null },
+          },
+          order: [["version", "DESC"]],
+          transaction,
+        });
+      }
+
+      await model.destroy({ transaction });
+
+      if (replacement) {
+        await replacement.update({
+          is_active: true,
+          review_status: "active",
+          updated_at: new Date(),
+        }, { transaction });
+      }
+    });
 
     const cleanupResults = await Promise.allSettled(
       storagePaths.map((storagePath) => deleteFromSupabase(storagePath)),
@@ -906,7 +870,7 @@ export const removeArchived = async (req, res) => {
         tabel: "aset_model_3d",
         id_referensi: model.id_model_3d,
         data_lama: oldData,
-        keterangan: `Menghapus permanen model 3D aset ${model.id_aset} versi ${model.version} dari arsip`,
+        keterangan: `Menghapus permanen model 3D aset ${model.id_aset} versi ${model.version}`,
         user_id: req.user.id_user,
         req,
       });
@@ -915,7 +879,7 @@ export const removeArchived = async (req, res) => {
     }
 
     if (failedStoragePaths.length > 0) {
-      console.error("Failed deleting archived 3D storage objects:", failedStoragePaths);
+      console.error("Failed deleting 3D storage objects:", failedStoragePaths);
     }
 
     return res.json({
@@ -928,9 +892,10 @@ export const removeArchived = async (req, res) => {
         deleted_file_count: storagePaths.length - failedStoragePaths.length,
         failed_file_count: failedStoragePaths.length,
       },
+      activated_model_id: replacement?.id_model_3d || null,
     });
   } catch (error) {
-    console.error("Error permanently deleting archived asset 3D model:", error);
+    console.error("Error permanently deleting asset 3D model:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
 };

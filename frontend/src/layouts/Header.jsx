@@ -192,14 +192,23 @@ export default function Header({
         {/* Mobile Menu Button */}
         <button
           onClick={onMenuClick}
-          className="lg:hidden w-10 h-10 rounded-xl flex items-center justify-center text-text-secondary hover:bg-surface-tertiary hover:text-text-primary transition-all duration-200 mr-2"
+          className={`mr-2 flex h-10 w-10 items-center justify-center rounded-xl text-text-secondary transition-[color,background-color,transform] duration-200 hover:bg-surface-tertiary hover:text-text-primary active:scale-95 motion-reduce:transition-none lg:hidden ${
+            sidebarOpen ? "bg-surface-tertiary text-text-primary" : ""
+          }`}
           aria-label="Toggle menu"
+          aria-expanded={sidebarOpen}
         >
-          {sidebarOpen ? (
-            <XIcon size={22} weight="bold" />
-          ) : (
-            <ListIcon size={22} weight="bold" />
-          )}
+          <span
+            className={`transition-transform duration-200 motion-reduce:transition-none ${
+              sidebarOpen ? "rotate-90" : "rotate-0"
+            }`}
+          >
+            {sidebarOpen ? (
+              <XIcon size={22} weight="bold" />
+            ) : (
+              <ListIcon size={22} weight="bold" />
+            )}
+          </span>
         </button>
 
         {/* Logo */}
@@ -282,7 +291,7 @@ export default function Header({
             </button>
 
             {showNotifDropdown && (
-              <div className="absolute -right-18 sm:right-0 mt-2 w-72 sm:w-80 bg-surface rounded-xl border border-border z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="motion-popover-enter absolute -right-18 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-border bg-surface sm:right-0 sm:w-80">
                 <div className="bg-linear-to-r from-accent to-accent/90 text-surface px-4 py-3 flex items-center justify-between">
                   <span className="font-semibold text-sm">Notifikasi</span>
                   {unreadCount > 0 && (
@@ -403,7 +412,7 @@ export default function Header({
             </button>
 
             {showProfileDropdown && (
-              <div className="absolute right-0 mt-2 w-64 bg-surface rounded-xl border border-border z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="motion-popover-enter absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-border bg-surface">
                 <div className="px-4 py-4 bg-linear-to-br from-surface-secondary to-surface border-b border-border">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">

@@ -9,13 +9,17 @@ import {
   Math as CesiumMath,
   Matrix4,
   Model,
-  OpenStreetMapImageryProvider,
   Transforms,
+  UrlTemplateImageryProvider,
   Viewer,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import { resolveModelOffsetLocation } from "../../utils/model3dTransform";
 import { DEFAULT_MAP_CENTER } from "./mapDefaults";
+import {
+  DEFAULT_BASEMAP_ID,
+  getBasemapOption,
+} from "./basemapOptions";
 
 const assetLocation = (asset = {}) => ({
   longitude: Number(
@@ -38,6 +42,30 @@ const getModelUrl = (model = {}) =>
 
 const getModelFormat = (model = {}) =>
   String(model.format || model.model_type || "").toUpperCase();
+
+const createBasemapProvider = (basemapId) => {
+  const option = getBasemapOption(basemapId);
+  if (!option?.cesiumUrl) return null;
+  return new UrlTemplateImageryProvider({
+    url: option.cesiumUrl,
+    credit: option.attribution,
+    maximumLevel: option.maxzoom || 20,
+  });
+};
+
+const applyBasemap = (viewer, basemapId) => {
+  if (!viewer || viewer.isDestroyed()) return;
+  const option = getBasemapOption(basemapId);
+  viewer.imageryLayers.removeAll(true);
+  const provider = createBasemapProvider(option.id);
+  if (provider) viewer.imageryLayers.addImageryProvider(provider);
+  const background = Color.fromCssColorString(
+    option.backgroundColor || "#cbd5e1",
+  );
+  viewer.scene.backgroundColor = background;
+  viewer.scene.globe.baseColor = background;
+  viewer.scene.requestRender();
+};
 
 const createModelMatrix = (model, location) => {
   const origin = Cartesian3.fromDegrees(
@@ -102,6 +130,7 @@ export default function CesiumModelPreview({
   model,
   focusRequestKey,
   onStatusChange,
+  basemapId = DEFAULT_BASEMAP_ID,
 }) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
@@ -109,6 +138,7 @@ export default function CesiumModelPreview({
   const modelRef = useRef(model);
   const assetRef = useRef(asset);
   const onStatusChangeRef = useRef(onStatusChange);
+  const basemapIdRef = useRef(basemapId);
   const modelLoadKey = [
     model?.id_model_3d || "no-model",
     getModelUrl(model || {}) || "no-url",
@@ -121,6 +151,11 @@ export default function CesiumModelPreview({
     assetRef.current = asset;
     onStatusChangeRef.current = onStatusChange;
   }, [asset, model, onStatusChange]);
+
+  useEffect(() => {
+    basemapIdRef.current = basemapId;
+    applyBasemap(viewerRef.current, basemapId);
+  }, [basemapId]);
 
   useEffect(() => {
     if (!containerRef.current) return undefined;
@@ -156,14 +191,9 @@ export default function CesiumModelPreview({
         terrainProvider: new EllipsoidTerrainProvider(),
       });
       viewerRef.current = viewer;
-      viewer.scene.backgroundColor = Color.fromCssColorString("#e8edf3");
       viewer.scene.globe.depthTestAgainstTerrain = false;
       viewer.scene.globe.showGroundAtmosphere = false;
-      viewer.imageryLayers.addImageryProvider(
-        new OpenStreetMapImageryProvider({
-          url: "https://tile.openstreetmap.org/",
-        }),
-      );
+      applyBasemap(viewer, basemapIdRef.current);
 
       resizeObserver = new ResizeObserver(() => {
         if (!viewer.isDestroyed()) viewer.resize();

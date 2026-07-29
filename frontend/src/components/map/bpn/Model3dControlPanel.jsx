@@ -216,7 +216,7 @@ export default function Model3dControlPanel({
     <aside
       className={embedded
         ? "flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden bg-surface/95 backdrop-blur-xl"
-        : "mt-1.5 flex max-h-[calc(100vh-5rem)] w-[min(19rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-surface/95 shadow-xl shadow-black/15 backdrop-blur-xl"}
+        : "motion-panel-enter mt-1.5 flex max-h-[calc(100vh-5rem)] w-[min(19rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-surface/95 shadow-xl shadow-black/15 backdrop-blur-xl"}
       aria-label="Menu peta 3D"
     >
       <header className="flex h-11 items-center gap-2 border-b border-border bg-surface px-3">

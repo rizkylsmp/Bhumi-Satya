@@ -215,6 +215,7 @@ export default function AssetViewModal({
   asset,
   onEdit,
   canEdit = true,
+  canDelete = false,
   publicMode = false,
   onDownloadPdf,
   onDownloadGeojson,
@@ -226,7 +227,7 @@ export default function AssetViewModal({
   const [model3dCatalog, setModel3dCatalog] = useState({ assetId: null, versions: [] });
   const [convertingModelId, setConvertingModelId] = useState(null);
   const [downloadingModel, setDownloadingModel] = useState(null);
-  const [archivingModelId, setArchivingModelId] = useState(null);
+  const [deletingModelId, setDeletingModelId] = useState(null);
   const downloadMenuRef = useRef(null);
 
   useEffect(() => {
@@ -399,37 +400,36 @@ export default function AssetViewModal({
     }
   };
 
-  const handleArchiveModel3d = async (model) => {
+  const handleDeleteModel3d = async (model) => {
     const confirmed = await confirm({
-      title: `Arsipkan model versi ${model.version}?`,
-      message: "Model tidak akan tampil di peta, tetapi KMZ, GLB, metadata, dan riwayat audit tetap disimpan.",
-      confirmText: "Arsipkan",
+      title: `Hapus permanen model versi ${model.version}?`,
+      message: "KMZ, GLB, LOD turunan, metadata, dan daftar ruang akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.",
+      confirmText: "Hapus Permanen",
       cancelText: "Batal",
-      type: "warning",
+      type: "danger",
     });
     if (!confirmed) return;
 
-    setArchivingModelId(model.id_model_3d);
+    setDeletingModelId(model.id_model_3d);
     try {
-      const response = await assetModel3dService.archive(asset.id_aset, model.id_model_3d);
-      const archivedModel = response.data?.data;
+      const response = await assetModel3dService.remove(asset.id_aset, model.id_model_3d);
       const activatedModelId = response.data?.activated_model_id;
       setModel3dCatalog((catalog) => ({
         ...catalog,
-        versions: catalog.versions.map((version) => {
-          if (version.id_model_3d === model.id_model_3d) return archivedModel;
-          if (activatedModelId) {
-            return { ...version, is_active: version.id_model_3d === activatedModelId };
-          }
-          return version;
-        }),
+        versions: catalog.versions
+          .filter((version) => version.id_model_3d !== model.id_model_3d)
+          .map((version) => (
+            activatedModelId
+              ? { ...version, is_active: version.id_model_3d === activatedModelId }
+              : version
+          )),
       }));
-      toast.success(`Model versi ${model.version} telah diarsipkan`);
+      toast.success(response.data?.message || `Model versi ${model.version} dihapus permanen`);
     } catch (error) {
       const message = error.response?.data?.error || error.message;
-      toast.error(`Gagal mengarsipkan model: ${message}`);
+      toast.error(`Gagal menghapus permanen model: ${message}`);
     } finally {
-      setArchivingModelId(null);
+      setDeletingModelId(null);
     }
   };
 
@@ -448,12 +448,12 @@ export default function AssetViewModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4">
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-accent/60 backdrop-blur-sm"
+        className="motion-backdrop fixed inset-0 bg-accent/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal Container */}
-      <div className="relative flex h-full w-full max-w-[96rem] flex-col overflow-hidden border-border bg-surface shadow-2xl md:h-auto md:max-h-[calc(100vh-32px)] md:rounded-2xl md:border">
+      <div className="motion-dialog-enter relative flex h-full w-full max-w-[96rem] flex-col overflow-hidden border-border bg-surface shadow-2xl md:h-auto md:max-h-[calc(100vh-32px)] md:rounded-2xl md:border">
         {/* Header */}
         <div className="shrink-0 border-b border-border bg-surface px-4 py-4 md:px-6">
           <div className="flex items-start justify-between gap-4">
@@ -1037,19 +1037,19 @@ export default function AssetViewModal({
                                   {model.conversion_status === "failed" ? "Coba Lagi" : "Konversi GLB"}
                                 </button>
                               )}
-                              {canEdit && !model.archived_at && (
+                              {canDelete && !model.archived_at && (
                                 <button
                                   type="button"
-                                  onClick={() => handleArchiveModel3d(model)}
-                                  disabled={archivingModelId === model.id_model_3d}
-                                  aria-describedby={`archive-model-${model.id_model_3d}`}
-                                  className="inline-flex w-fit rounded-lg border border-amber-200 px-2.5 py-1.5 text-[10px] font-bold text-amber-700 hover:bg-amber-50 focus-visible:ring-2 focus-visible:ring-amber-500 disabled:cursor-wait disabled:opacity-60 dark:border-amber-500/30 dark:text-amber-300 dark:hover:bg-amber-500/10"
+                                  onClick={() => handleDeleteModel3d(model)}
+                                  disabled={deletingModelId === model.id_model_3d}
+                                  aria-describedby={`delete-model-${model.id_model_3d}`}
+                                  className="inline-flex w-fit rounded-lg border border-red-200 px-2.5 py-1.5 text-[10px] font-bold text-red-700 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-wait disabled:opacity-60 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10"
                                 >
-                                  {archivingModelId === model.id_model_3d ? "Mengarsipkan…" : "Arsipkan"}
+                                  {deletingModelId === model.id_model_3d ? "Menghapus…" : "Hapus Permanen"}
                                 </button>
                               )}
-                              <span id={`archive-model-${model.id_model_3d}`} className="sr-only">
-                                Pengarsipan tidak menghapus file atau riwayat audit model.
+                              <span id={`delete-model-${model.id_model_3d}`} className="sr-only">
+                                Penghapusan permanen tidak dapat dibatalkan.
                               </span>
                             </div>
                           </div>

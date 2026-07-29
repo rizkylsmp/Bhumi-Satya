@@ -248,7 +248,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`bg-surface flex flex-col border-r border-border h-full transition-all duration-300 ease-in-out ${
+      className={`sidebar-shell bg-surface flex h-full flex-col border-r border-border transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
         collapsed ? "w-16 overflow-visible" : "w-60 overflow-hidden"
       }`}
     >
@@ -288,7 +288,11 @@ export default function Sidebar({
           const isActive = !hasChildren && isActivePath(item.path);
 
           return (
-            <div key={item.label} className="relative group/menu">
+            <div
+              key={item.label}
+              className="sidebar-menu-item relative group/menu"
+              style={{ "--sidebar-item-index": index }}
+            >
               {/* Main menu button */}
               <button
                 aria-expanded={hasChildren ? expanded : undefined}
@@ -305,7 +309,6 @@ export default function Sidebar({
                     ? "bg-linear-to-r from-accent to-accent/90 text-surface"
                     : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
                 } ${collapsed ? "justify-center !px-2 !gap-0" : ""}`}
-                style={{ animationDelay: `${index * 50}ms` }}
                 title={collapsed && !hasChildren ? item.label : undefined}
               >
                 <div
@@ -362,7 +365,7 @@ export default function Sidebar({
 
               {/* Collapsed mode: hover flyout for parent with children */}
               {collapsed && hasChildren && (
-                <div className="invisible opacity-0 group-hover/menu:visible group-hover/menu:opacity-100 transition-all duration-200 absolute left-full top-0 ml-2 z-50">
+                <div className="invisible absolute left-full top-0 z-50 ml-2 -translate-x-1 opacity-0 transition-[opacity,transform,visibility] duration-150 ease-out group-hover/menu:visible group-hover/menu:translate-x-0 group-hover/menu:opacity-100 motion-reduce:transition-none">
                   <div className="min-w-44 rounded-lg border border-border bg-surface px-1 py-1.5">
                     {/* Flyout header */}
                     <div className="mb-1 border-b border-border px-2.5 pb-1.5">
@@ -412,8 +415,8 @@ export default function Sidebar({
                 <div
                   className={`overflow-hidden transition-all duration-200 ease-in-out ${
                     expanded
-                      ? "mt-0.5 max-h-80 opacity-100"
-                      : "max-h-0 opacity-0"
+                      ? "mt-0.5 max-h-80 translate-y-0 opacity-100"
+                      : "max-h-0 -translate-y-1 opacity-0"
                   }`}
                 >
                   <div className="ml-3 space-y-0.5 border-l-2 border-border py-0.5 pl-3">

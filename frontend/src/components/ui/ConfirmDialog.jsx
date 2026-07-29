@@ -74,12 +74,12 @@ export function ConfirmProvider({ children }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-accent/50 backdrop-blur-sm"
+            className="motion-backdrop absolute inset-0 bg-accent/50 backdrop-blur-sm"
             onClick={handleCancel}
           />
 
           {/* Dialog */}
-          <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-title" className="relative bg-surface border border-border rounded-xl shadow-2xl w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
+          <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-title" className="motion-dialog-enter relative mx-4 w-full max-w-sm rounded-xl border border-border bg-surface shadow-2xl">
             <div className="p-6 text-center">
               {/* Icon */}
               <div

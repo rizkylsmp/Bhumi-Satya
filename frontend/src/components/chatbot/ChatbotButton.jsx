@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowUpIcon, ChatCircleIcon } from "@phosphor-icons/react";
 
 const ChatbotButton = ({ onClick }) => {
@@ -20,7 +21,7 @@ const ChatbotButton = ({ onClick }) => {
     window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
   };
 
-  return (
+  return createPortal(
     <>
       <button
         type="button"
@@ -58,7 +59,8 @@ const ChatbotButton = ({ onClick }) => {
           Butuh bantuan?
         </span>
       </button>
-    </>
+    </>,
+    document.body,
   );
 };
 

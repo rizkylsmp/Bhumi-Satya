@@ -730,14 +730,14 @@ export default function AssetFormModal({
       {/* Overlay */}
       {!isPage && (
         <div
-          className="fixed inset-0 bg-accent/60 backdrop-blur-sm"
+          className="motion-backdrop fixed inset-0 bg-accent/60 backdrop-blur-sm"
           onClick={onClose}
         />
       )}
 
       {/* Modal Container */}
       <div className={`min-h-full flex items-start justify-center ${isPage ? "" : "p-4 py-8"}`}>
-        <div className={`relative w-full ${isPage ? "bg-transparent" : "max-w-5xl overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl"}`}>
+        <div className={`relative w-full ${isPage ? "bg-transparent" : "motion-dialog-enter max-w-5xl overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl"}`}>
           {/* Header */}
           {!isPage && (
           <div className="bg-linear-to-r from-accent to-accent/90 px-6 py-5 text-surface">

@@ -121,7 +121,7 @@ export const assetModel3dService = {
       params: { variant },
       responseType: "blob",
     }),
-  archive: (assetId, modelId) =>
+  remove: (assetId, modelId) =>
     api.delete(`/aset/${assetId}/models-3d/${modelId}`),
   restore: (assetId, modelId) =>
     api.put(`/aset/${assetId}/models-3d/${modelId}/restore`),

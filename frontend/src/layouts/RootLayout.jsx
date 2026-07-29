@@ -173,24 +173,29 @@ export default function RootLayout() {
         </div>
 
         {/* Mobile Sidebar with Overlay */}
-        {sidebarOpen && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-accent/50 z-40 lg:hidden"
-              onClick={closeSidebar}
-              role="presentation"
-              aria-hidden="true"
-            />
-            {/* Sidebar */}
-            <div className="fixed inset-y-0 left-0 z-50 lg:hidden">
-              <Sidebar
-                onNavigate={closeSidebar}
-                unreadNotifCount={unreadCount}
-              />
-            </div>
-          </>
-        )}
+        <div
+          className={`fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[1px] transition-opacity duration-200 ease-out motion-reduce:transition-none lg:hidden ${
+            sidebarOpen
+              ? "pointer-events-auto opacity-100"
+              : "pointer-events-none opacity-0"
+          }`}
+          onClick={closeSidebar}
+          role="presentation"
+          aria-hidden="true"
+        />
+        <div
+          className={`fixed inset-y-0 left-0 z-50 transform-gpu transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none lg:hidden ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+          aria-hidden={!sidebarOpen}
+          inert={!sidebarOpen}
+        >
+          <Sidebar
+            key={sidebarOpen ? "mobile-sidebar-open" : "mobile-sidebar-closed"}
+            onNavigate={closeSidebar}
+            unreadNotifCount={unreadCount}
+          />
+        </div>
 
         {/* Main Content */}
         <main
@@ -198,13 +203,14 @@ export default function RootLayout() {
             isMapPage ? "overflow-hidden" : "overflow-y-auto"
           }`}
         >
-          {useCompactPageDensity ? (
-            <div className="admin-density-compact">
-              <Outlet context={{ refreshNotifications: fetchNotifications }} />
-            </div>
-          ) : (
+          <div
+            key={location.pathname}
+            className={`${useCompactPageDensity ? "admin-density-compact" : ""} route-content-enter ${
+              isMapPage ? "h-full" : ""
+            }`}
+          >
             <Outlet context={{ refreshNotifications: fetchNotifications }} />
-          )}
+          </div>
         </main>
       </div>
     </div>

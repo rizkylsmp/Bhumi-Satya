@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import CesiumModelPreview from "../components/map/CesiumModelPreview";
+import {
+  BASEMAP_OPTIONS,
+  DEFAULT_BASEMAP_ID,
+} from "../components/map/basemapOptions";
 import Model3dObjectsPanel from "../components/asset/Model3dObjectsPanel";
 import { useConfirm } from "../components/ui/confirmContext";
 import {
@@ -16,6 +20,7 @@ import {
   ArrowCounterClockwiseIcon,
   ArrowsClockwiseIcon,
   BuildingsIcon,
+  CaretDownIcon,
   CaretRightIcon,
   CheckCircleIcon,
   CrosshairIcon,
@@ -54,6 +59,8 @@ const DETAIL_SECTIONS = [
     disabled: true,
   },
 ];
+
+const PREVIEW_BASEMAP_STORAGE_KEY = "bhumi-satya-3d-preview-basemap";
 
 const ENABLED_DETAIL_SECTIONS = DETAIL_SECTIONS.filter(
   (section) => !section.disabled,
@@ -318,12 +325,14 @@ export default function Kelola3dDetailPage() {
   const [importLod, setImportLod] = useState("LOD1");
   const [activeModelLod, setActiveModelLod] = useState("LOD1");
   const [uploading, setUploading] = useState(false);
+  const [isDraggingModelFile, setIsDraggingModelFile] = useState(false);
   const [savingAsset3dMetadata, setSavingAsset3dMetadata] = useState(false);
   const [savingMetadata, setSavingMetadata] = useState(false);
   const [savingRooms, setSavingRooms] = useState(false);
   const [savingReview, setSavingReview] = useState(false);
   const [reviewDraft, setReviewDraft] = useState({ review_status: "draft", review_notes: "" });
   const [convertingModelId, setConvertingModelId] = useState(null);
+  const [activatingModelId, setActivatingModelId] = useState(null);
   const [deletingModelId, setDeletingModelId] = useState(null);
   const [restoringModelId, setRestoringModelId] = useState(null);
   const [removingArchivedModelId, setRemovingArchivedModelId] = useState(null);
@@ -337,9 +346,26 @@ export default function Kelola3dDetailPage() {
     failed: 0,
   });
   const [activePreviewTab, setActivePreviewTab] = useState("map");
+  const [previewBasemap, setPreviewBasemap] = useState(() => {
+    if (typeof window === "undefined") return DEFAULT_BASEMAP_ID;
+    const storedBasemap = window.localStorage.getItem(
+      PREVIEW_BASEMAP_STORAGE_KEY,
+    );
+    return BASEMAP_OPTIONS.some((option) => option.id === storedBasemap)
+      ? storedBasemap
+      : DEFAULT_BASEMAP_ID;
+  });
+  const [isPreviewBasemapOpen, setIsPreviewBasemapOpen] = useState(false);
   const [activePageSection, setActivePageSection] = useState(
     DETAIL_SECTIONS[0].id,
   );
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      PREVIEW_BASEMAP_STORAGE_KEY,
+      previewBasemap,
+    );
+  }, [previewBasemap]);
 
   const selectedAsset = catalog?.asset || null;
   const selectedAssetId = selectedAsset?.id_aset || null;
@@ -601,7 +627,7 @@ export default function Kelola3dDetailPage() {
   }, [selectedModel]);
 
   const handleUpload = async (file) => {
-    if (!file || !selectedAssetId || !canUpdate) return;
+    if (!file || !selectedAssetId || !canUpdate || uploading) return;
     if (!importLod) {
       toast.error("Pilih Level of Detail sebelum mengimpor model");
       return;
@@ -671,12 +697,21 @@ export default function Kelola3dDetailPage() {
   };
 
   const handleActivate = async (modelId) => {
+    setActivatingModelId(modelId);
     try {
       await assetModel3dService.activate(selectedAssetId, modelId);
-      toast.success("Versi model 3D berhasil diaktifkan");
+      toast.success(`Versi ${activeModelLod} aktif dan ditampilkan di peta`);
       await fetchModels(selectedAssetId, modelId);
+      setActivePreviewTab("map");
+      setPreviewRevision((revision) => revision + 1);
+      setFlyToRequest({
+        assetId: selectedAssetId,
+        token: `${selectedAssetId}-${modelId}-${Date.now()}`,
+      });
     } catch (error) {
       toast.error(errorMessage(error, "Gagal mengaktifkan model"));
+    } finally {
+      setActivatingModelId(null);
     }
   };
 
@@ -765,30 +800,30 @@ export default function Kelola3dDetailPage() {
     }
   };
 
-  const handleArchive = async (model) => {
-    if (!canUpdate) return;
+  const handleDeleteModel = async (model) => {
+    if (!canDelete) return;
     const modelName =
       model.manifest?.display_name ||
       model.original_name ||
       `versi ${model.version}`;
     const confirmed = await confirm({
-      title: "Arsipkan Model 3D",
-      message: `Model "${modelName}" akan dihapus dari katalog aktif. Riwayat dan audit tetap tersimpan.`,
-      confirmText: "Arsipkan",
+      title: "Hapus Permanen Model 3D?",
+      message: `Model "${modelName}" akan dihapus permanen beserta file sumber, GLB, LOD turunan, metadata, dan daftar ruang. Tindakan ini tidak dapat dibatalkan.`,
+      confirmText: "Hapus Permanen",
       type: "danger",
     });
     if (!confirmed) return;
 
     setDeletingModelId(model.id_model_3d);
     try {
-      const response = await assetModel3dService.archive(
+      const response = await assetModel3dService.remove(
         selectedAssetId,
         model.id_model_3d,
       );
-      toast.success(response.data?.message || "Model 3D berhasil diarsipkan");
+      toast.success(response.data?.message || "Model 3D berhasil dihapus permanen");
       await fetchModels(selectedAssetId, response.data?.activated_model_id);
     } catch (error) {
-      toast.error(errorMessage(error, "Gagal mengarsipkan model 3D"));
+      toast.error(errorMessage(error, "Gagal menghapus permanen model 3D"));
     } finally {
       setDeletingModelId(null);
     }
@@ -1326,7 +1361,7 @@ export default function Kelola3dDetailPage() {
                 role="tabpanel"
                 aria-labelledby="detail-nav-data-model-3d"
                 hidden={activePageSection !== "data-model-3d"}
-                className="animate-fade-in scroll-mt-20 overflow-hidden rounded-2xl border border-violet-200 bg-violet-50/60 shadow-sm dark:border-violet-500/30 dark:bg-violet-500/5"
+                className="motion-tab-enter scroll-mt-20 overflow-hidden rounded-2xl border border-violet-200 bg-violet-50/60 shadow-sm dark:border-violet-500/30 dark:bg-violet-500/5"
               >
                 <SectionTitle
                   icon={BuildingsIcon}
@@ -1348,15 +1383,8 @@ export default function Kelola3dDetailPage() {
                         handleUpload(event.target.files?.[0])
                       }
                     />
-                    <div
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={(event) => {
-                        event.preventDefault();
-                        handleUpload(event.dataTransfer.files?.[0]);
-                      }}
-                      className="rounded-xl border border-violet-200 bg-surface p-3 dark:border-violet-500/30"
-                    >
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className="rounded-xl border border-violet-200 bg-surface p-3 dark:border-violet-500/30">
+                      <div className="flex items-center gap-2.5">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
                           <CubeIcon size={17} weight="duotone" />
                         </span>
@@ -1379,46 +1407,124 @@ export default function Kelola3dDetailPage() {
                               : "KMZ, GLB, atau ZIP 3D Tiles · maks. 100 MB"}
                           </p>
                         </div>
-                        <label className="w-full sm:w-44">
-                          <span className="sr-only">
-                            Level of Detail model yang akan diimpor
-                          </span>
-                          <select
-                            value={importLod}
-                            disabled={!selectedAsset || !canUpdate || uploading}
-                            onChange={(event) =>
-                              void handleModelLodChange(event.target.value)
-                            }
-                            className="h-9 w-full rounded-lg border border-border bg-surface-secondary px-2.5 text-[9px] font-extrabold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-60"
-                            aria-label="Pilih Level of Detail untuk model"
-                          >
-                            {LOD_OPTIONS.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label} · {option.description}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <button
-                          type="button"
-                          disabled={
-                            !selectedAsset || !canUpdate || uploading || !importLod
-                          }
-                          onClick={() => fileInputRef.current?.click()}
-                          className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-3 text-[9px] font-extrabold text-white transition hover:bg-violet-700 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {uploading ? (
-                            <ArrowsClockwiseIcon
-                              size={13}
-                              className="animate-spin"
-                            />
-                          ) : (
-                            <FileArrowUpIcon size={13} weight="bold" />
-                          )}
-                          {uploading ? "Mengunggah…" : "Impor Model"}
-                        </button>
                       </div>
 
+                      <div
+                        onDragEnter={(event) => {
+                          event.preventDefault();
+                          if (!uploading) setIsDraggingModelFile(true);
+                        }}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDragLeave={(event) => {
+                          if (!event.currentTarget.contains(event.relatedTarget)) {
+                            setIsDraggingModelFile(false);
+                          }
+                        }}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          setIsDraggingModelFile(false);
+                          handleUpload(event.dataTransfer.files?.[0]);
+                        }}
+                        className={`mt-3 rounded-xl border border-dashed p-3 transition-colors ${
+                          isDraggingModelFile
+                            ? "border-violet-500 bg-violet-100/70 dark:border-violet-400 dark:bg-violet-500/15"
+                            : "border-violet-300 bg-violet-50/60 dark:border-violet-500/40 dark:bg-violet-500/5"
+                        }`}
+                        aria-label="Area impor file model 3D"
+                      >
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10px] font-black text-text-primary">
+                              Tambahkan versi model 3D
+                            </p>
+                            <p className="mt-0.5 text-[8px] leading-relaxed text-text-muted">
+                              Tarik file ke area ini atau pilih file dari perangkat.
+                              Sistem akan mengunggah dan mengonversinya otomatis.
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-1.5" aria-label="Format file yang didukung">
+                              {["KMZ", "GLB", "3D TILES ZIP"].map((format) => (
+                                <span
+                                  key={format}
+                                  className="rounded-md border border-violet-200 bg-surface px-2 py-0.5 text-[7px] font-extrabold tracking-wide text-violet-700 dark:border-violet-500/30 dark:bg-surface-secondary dark:text-violet-300"
+                                >
+                                  {format}
+                                </span>
+                              ))}
+                              <span className="rounded-md border border-border bg-surface px-2 py-0.5 text-[7px] font-bold text-text-muted dark:bg-surface-secondary">
+                                MAKS. 100 MB
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="grid w-full gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,1.25fr)] lg:w-[25rem]">
+                            <label className="block">
+                              <span className="mb-1 block text-[7px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
+                                Tujuan Level of Detail
+                              </span>
+                              <select
+                                value={importLod}
+                                disabled={!selectedAsset || !canUpdate || uploading}
+                                onChange={(event) =>
+                                  void handleModelLodChange(event.target.value)
+                                }
+                                className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-[9px] font-extrabold text-text-primary outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+                                aria-label="Pilih Level of Detail untuk model"
+                              >
+                                {LOD_OPTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label} · {option.description}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+
+                            <div>
+                              <span className="mb-1 block text-[7px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
+                                File model
+                              </span>
+                              <button
+                                type="button"
+                                disabled={
+                                  !selectedAsset || !canUpdate || uploading || !importLod
+                                }
+                                onClick={() => fileInputRef.current?.click()}
+                                className="group inline-flex h-11 w-full items-center gap-2 rounded-xl bg-violet-600 px-2.5 text-left text-white transition-colors hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-violet-500 dark:hover:bg-violet-400"
+                                aria-busy={uploading}
+                              >
+                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/15">
+                                  {uploading ? (
+                                    <ArrowsClockwiseIcon
+                                      size={14}
+                                      className="animate-spin"
+                                    />
+                                  ) : (
+                                    <FileArrowUpIcon size={14} weight="bold" />
+                                  )}
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block truncate text-[9px] font-black">
+                                    {uploading
+                                      ? "Memproses model..."
+                                      : "Impor File 3D"}
+                                  </span>
+                                  <span className="block truncate text-[7px] font-semibold text-white/75">
+                                    {uploading
+                                      ? "Unggah dan konversi otomatis"
+                                      : `Tambahkan sebagai ${importLod}`}
+                                  </span>
+                                </span>
+                                {!uploading && (
+                                  <CaretRightIcon
+                                    size={12}
+                                    weight="bold"
+                                    className="shrink-0 transition-transform group-hover:translate-x-0.5"
+                                  />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                     {!canUpdate && (
                       <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[8px] font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
@@ -1472,21 +1578,26 @@ export default function Kelola3dDetailPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-violet-800 dark:text-violet-300">
-                          Versi file {activeModelLod}
-                        </p>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-violet-800 dark:text-violet-300">
+                            Versi file {activeModelLod}
+                          </p>
+                          <p className="mt-0.5 text-[8px] leading-relaxed text-text-muted">
+                            Pilih satu versi aktif yang akan ditampilkan di peta.
+                          </p>
+                        </div>
                         {modelsLoading && (
                           <ArrowsClockwiseIcon
                             size={13}
-                            className="animate-spin text-text-muted"
+                            className="mt-0.5 animate-spin text-text-muted"
                           />
                         )}
                       </div>
                       {activeModelsByLod.length === 0 ? (
                         <div className="rounded-xl border border-dashed border-violet-300 bg-surface/70 p-4 text-center text-[10px] text-text-muted dark:border-violet-500/30">
                           Belum ada file model untuk {activeModelLod}. Pilih
-                          jenis file lalu gunakan tombol Impor Model.
+                          jenis file lalu gunakan tombol Impor File 3D.
                         </div>
                       ) : (
                         activeModelsByLod.map((model) => {
@@ -1494,10 +1605,23 @@ export default function Kelola3dDetailPage() {
                             String(model.id_model_3d) ===
                             String(selectedModel?.id_model_3d);
                           const status = statusConfig(model);
+                          const canActivate =
+                            canUpdate
+                            && !model.is_active
+                            && model.conversion_status === "ready"
+                            && Boolean(model.converted_public_url);
+                          const activating =
+                            activatingModelId === model.id_model_3d;
                           return (
                             <article
                               key={model.id_model_3d}
-                              className={`w-full rounded-xl border bg-surface p-3 transition ${selected ? "border-violet-400 shadow-sm shadow-violet-500/10 dark:border-violet-500/50" : "border-violet-200 hover:border-violet-400 dark:border-violet-500/25"}`}
+                              className={`w-full rounded-xl border p-3 transition ${
+                                model.is_active
+                                  ? "border-emerald-400 bg-emerald-50/60 ring-1 ring-emerald-500/15 dark:border-emerald-500/50 dark:bg-emerald-500/10"
+                                  : selected
+                                    ? "border-violet-400 bg-surface ring-1 ring-violet-500/10 dark:border-violet-500/50"
+                                    : "border-violet-200 bg-surface hover:border-violet-400 dark:border-violet-500/25"
+                              }`}
                             >
                               <button
                                 type="button"
@@ -1507,9 +1631,19 @@ export default function Kelola3dDetailPage() {
                                 className="flex w-full items-center gap-2.5 text-left focus-visible:rounded-lg focus-visible:ring-2 focus-visible:ring-violet-500"
                               >
                                 <span
-                                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${selected ? "bg-violet-600 text-white" : "bg-surface-secondary text-text-muted"}`}
+                                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                                    model.is_active
+                                      ? "bg-emerald-500 text-white"
+                                      : selected
+                                        ? "bg-violet-600 text-white"
+                                        : "bg-surface-secondary text-text-muted"
+                                  }`}
                                 >
-                                  <CubeIcon size={17} weight="duotone" />
+                                  {model.is_active ? (
+                                    <CheckCircleIcon size={18} weight="fill" />
+                                  ) : (
+                                    <CubeIcon size={17} weight="duotone" />
+                                  )}
                                 </span>
                                 <span className="min-w-0 flex-1">
                                   <span className="flex items-center gap-2">
@@ -1519,8 +1653,8 @@ export default function Kelola3dDetailPage() {
                                         model.original_name}
                                     </span>
                                     {model.is_active && (
-                                      <span className="rounded-full bg-emerald-500 px-1.5 py-0.5 text-[7px] font-black uppercase text-white">
-                                        Aktif
+                                      <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[7px] font-black uppercase tracking-wide text-white">
+                                        Ditampilkan
                                       </span>
                                     )}
                                   </span>
@@ -1539,26 +1673,45 @@ export default function Kelola3dDetailPage() {
                                   </span>
                                 </span>
                               </button>
-                              {selected && canUpdate && (
-                                <div className="mt-2.5 flex flex-wrap gap-2 border-t border-border pt-2.5">
-                                  {!model.is_active
-                                    && model.conversion_status === "ready"
-                                    && model.converted_public_url && (
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleActivate(model.id_model_3d)
-                                      }
-                                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[8px] font-extrabold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300"
-                                    >
-                                      <CheckCircleIcon
-                                        size={11}
-                                        weight="fill"
-                                      />{" "}
-                                      Aktifkan
-                                    </button>
+                              {model.is_active ? (
+                                <div
+                                  className="mt-2.5 flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-white/70 px-2.5 py-2 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-950/30 dark:text-emerald-300"
+                                  role="status"
+                                >
+                                  <span className="inline-flex items-center gap-1.5 text-[8px] font-extrabold">
+                                    <CheckCircleIcon size={12} weight="fill" />
+                                    Versi aktif untuk {activeModelLod}
+                                  </span>
+                                  <span className="text-[7px] font-bold uppercase tracking-wide">
+                                    Tampil di peta
+                                  </span>
+                                </div>
+                              ) : canActivate ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleActivate(model.id_model_3d)
+                                  }
+                                  disabled={activatingModelId !== null}
+                                  className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-3 py-2 text-[9px] font-extrabold text-white transition hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400"
+                                  aria-label={`Tampilkan versi ${model.version} ${activeModelLod} di peta`}
+                                >
+                                  {activating ? (
+                                    <ArrowsClockwiseIcon
+                                      size={13}
+                                      className="animate-spin"
+                                    />
+                                  ) : (
+                                    <CheckCircleIcon size={13} weight="bold" />
                                   )}
-                                  {model.conversion_status !== "ready" && (
+                                  {activating
+                                    ? "Mengaktifkan versi..."
+                                    : "Tampilkan versi ini di peta"}
+                                </button>
+                              ) : null}
+                              {selected && (canUpdate || canDelete) && (
+                                <div className="mt-2.5 flex flex-wrap gap-2 border-t border-border pt-2.5">
+                                  {canUpdate && model.conversion_status !== "ready" && (
                                     <button
                                       type="button"
                                       disabled={
@@ -1583,24 +1736,29 @@ export default function Kelola3dDetailPage() {
                                       Konversi GLB
                                     </button>
                                   )}
-                                  <button
-                                    type="button"
-                                    disabled={
-                                      deletingModelId === model.id_model_3d
-                                    }
-                                    onClick={() => handleArchive(model)}
-                                    className="ml-auto inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-[8px] font-extrabold text-red-700 transition hover:bg-red-100 focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/10 dark:text-red-300"
-                                  >
-                                    {deletingModelId === model.id_model_3d ? (
-                                      <ArrowsClockwiseIcon
-                                        size={11}
-                                        className="animate-spin"
-                                      />
-                                    ) : (
-                                      <TrashIcon size={11} weight="bold" />
-                                    )}
-                                    Arsipkan
-                                  </button>
+                                  {canDelete && (
+                                    <button
+                                      type="button"
+                                      disabled={
+                                        deletingModelId === model.id_model_3d
+                                      }
+                                      onClick={() => handleDeleteModel(model)}
+                                      className="ml-auto inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-[8px] font-extrabold text-red-700 transition hover:bg-red-100 focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/10 dark:text-red-300"
+                                      aria-label={`Hapus permanen model versi ${model.version}`}
+                                    >
+                                      {deletingModelId === model.id_model_3d ? (
+                                        <ArrowsClockwiseIcon
+                                          size={11}
+                                          className="animate-spin"
+                                        />
+                                      ) : (
+                                        <TrashIcon size={11} weight="bold" />
+                                      )}
+                                      {deletingModelId === model.id_model_3d
+                                        ? "Menghapus..."
+                                        : "Hapus Permanen"}
+                                    </button>
+                                  )}
                                 </div>
                               )}
                             </article>
@@ -1960,7 +2118,7 @@ export default function Kelola3dDetailPage() {
                     activePageSection,
                   )
                 }
-                className="animate-fade-in scroll-mt-20 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
+                className="motion-tab-enter scroll-mt-20 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
               >
                 <SectionTitle
                   icon={
@@ -2770,7 +2928,7 @@ export default function Kelola3dDetailPage() {
                 role="tabpanel"
                 aria-labelledby="detail-nav-daftar-ruang-3d"
                 hidden={activePageSection !== "daftar-ruang-3d"}
-                className="animate-fade-in scroll-mt-20 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
+                className="motion-tab-enter scroll-mt-20 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
               >
                 <SectionTitle
                   icon={TableIcon}
@@ -3047,6 +3205,7 @@ export default function Kelola3dDetailPage() {
                             ? flyToRequest.token
                             : `kelola-3d-initial-${selectedAssetId}-${selectedModel?.id_model_3d || "lod"}-${previewRevision}`
                         }
+                        basemapId={previewBasemap}
                         onStatusChange={setPreviewModelStatus}
                       />
                     ) : (
@@ -3063,6 +3222,70 @@ export default function Kelola3dDetailPage() {
                           Pilih kode aset dari daftar tersinkron untuk menampilkan
                           lokasi atau model 3D.
                         </p>
+                      </div>
+                    )}
+                    {previewAsset && (
+                      <div className="absolute right-3 top-3 z-20">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setIsPreviewBasemapOpen((value) => !value)
+                          }
+                          className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/70 bg-slate-950/80 px-3 text-[9px] font-extrabold text-white backdrop-blur transition hover:bg-slate-900 focus-visible:ring-2 focus-visible:ring-sky-400"
+                          aria-label="Pilih basemap preview 3D"
+                          aria-expanded={isPreviewBasemapOpen}
+                        >
+                          <StackIcon size={14} weight="fill" />
+                          {
+                            BASEMAP_OPTIONS.find(
+                              (option) => option.id === previewBasemap,
+                            )?.label
+                          }
+                          <CaretDownIcon
+                            size={12}
+                            weight="bold"
+                            className={`transition-transform ${
+                              isPreviewBasemapOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+                        {isPreviewBasemapOpen && (
+                          <div className="mt-2 w-44 overflow-hidden rounded-xl border border-white/20 bg-slate-950/95 p-1.5 text-white backdrop-blur">
+                            <p className="px-2 py-1.5 text-[8px] font-extrabold uppercase tracking-wider text-slate-400">
+                              Basemap
+                            </p>
+                            {BASEMAP_OPTIONS.map((option) => {
+                              const isActive = option.id === previewBasemap;
+                              return (
+                                <button
+                                  key={option.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setPreviewBasemap(option.id);
+                                    setIsPreviewBasemapOpen(false);
+                                  }}
+                                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[9px] font-bold transition ${
+                                    isActive
+                                      ? "bg-sky-500 text-white"
+                                      : "text-slate-200 hover:bg-white/10"
+                                  }`}
+                                  aria-pressed={isActive}
+                                >
+                                  <span className="truncate">
+                                    {option.label}
+                                  </span>
+                                  {isActive && (
+                                    <CheckCircleIcon
+                                      size={13}
+                                      weight="fill"
+                                      className="shrink-0"
+                                    />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                     {selectedModel && hasUnsavedTransformChanges && (

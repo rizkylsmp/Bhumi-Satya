@@ -149,7 +149,7 @@ function DetailModal({ item, onClose, onUpdate }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="motion-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div

@@ -38,7 +38,7 @@ export default function SessionExpiredDialog({ onExtend, onLogout }) {
   return (
     <div className="fixed inset-0 z-9999 flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="motion-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
       {/* Dialog */}
       <div
@@ -46,7 +46,7 @@ export default function SessionExpiredDialog({ onExtend, onLogout }) {
         role="alertdialog"
         aria-modal="true"
         aria-label="Sesi telah berakhir"
-        className="relative w-full max-w-md mx-4 bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-300"
+        className="motion-dialog-enter relative mx-4 w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl"
       >
         {/* Header with warning gradient */}
         <div className="bg-linear-to-br from-amber-500 to-orange-500 px-6 py-5 text-center">

@@ -532,7 +532,7 @@ function RentalDetail({ item, onClose, onLogin }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+      className="motion-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();

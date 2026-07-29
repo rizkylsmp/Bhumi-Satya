@@ -165,7 +165,7 @@ function AddAssetDialog({ open, onClose, onAdded }) {
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <div className="motion-backdrop fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section role="dialog" aria-modal="true" aria-labelledby="add-asset-3d-title" className="flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl">
         <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
           <div className="flex items-start gap-3">

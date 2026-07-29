@@ -693,6 +693,7 @@ export default function MapPage({ publicMode = false }) {
         {/* Custom Asset Detail Panel */}
         {selectedPanelAsset && (
           <AssetDetailPanel
+            key={selectedPanelAsset.id_aset || selectedPanelAsset.id}
             asset={selectedPanelAsset}
             onClose={handleCloseSelectedPanel}
             onViewDetail={handleViewDetail}

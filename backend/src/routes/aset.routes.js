@@ -170,7 +170,7 @@ router.put(
 router.delete(
   "/:id/models-3d/:modelId/permanent",
   permissionMiddleware(PERMISSIONS.ASET_DELETE),
-  AssetModel3dController.removeArchived,
+  AssetModel3dController.removePermanent,
 );
 router.delete(
   "/:id/models-3d/:modelId/objects/:objectId",
@@ -179,8 +179,8 @@ router.delete(
 );
 router.delete(
   "/:id/models-3d/:modelId",
-  permissionMiddleware(PERMISSIONS.ASET_UPDATE),
-  AssetModel3dController.archive,
+  permissionMiddleware(PERMISSIONS.ASET_DELETE),
+  AssetModel3dController.removePermanent,
 );
 router.delete(
   "/:id",

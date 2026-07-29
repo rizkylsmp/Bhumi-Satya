@@ -168,7 +168,7 @@ export default function AsetTersediaPage() {
       )}
 
       {selected && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+        <div className="motion-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <form
             onSubmit={submitRequest}
             className="w-full max-w-lg bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden"

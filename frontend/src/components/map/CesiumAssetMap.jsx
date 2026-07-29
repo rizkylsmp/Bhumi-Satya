@@ -29,6 +29,10 @@ import {
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import { resolveModelOffsetLocation } from "../../utils/model3dTransform";
+import {
+  DEFAULT_BASEMAP_ID,
+  getBasemapOption,
+} from "./basemapOptions";
 import { DEFAULT_MAP_CENTER } from "./mapDefaults";
 
 const getPropertyValue = (property) =>
@@ -156,6 +160,20 @@ const focusCoordinates = (viewer, location, duration = 0.8) => {
   return true;
 };
 
+const createBasemapProvider = (basemapId) => {
+  const option = getBasemapOption(basemapId);
+  if (!option?.cesiumUrl) return null;
+  const provider = new UrlTemplateImageryProvider({
+    url: option.cesiumUrl,
+    credit: option.attribution,
+    maximumLevel: option.maxzoom || 20,
+  });
+  provider.errorEvent.addEventListener((error) => {
+    console.error(`Cesium basemap "${option.label}" tile failed:`, error);
+  });
+  return provider;
+};
+
 const CesiumAssetMap = forwardRef(function CesiumAssetMap(
   {
     assets = [],
@@ -168,6 +186,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     onFeatureClick,
     onOtherLayerClick,
     onStatusChange,
+    basemapId = DEFAULT_BASEMAP_ID,
     analysisTool = null,
     analysisPoints = [],
     onAnalysisClick,
@@ -176,6 +195,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
 ) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
+  const basemapIdRef = useRef(basemapId);
   const targetSpheresRef = useRef([]);
   const targetSphereByLocationIdRef = useRef(new Map());
   const pendingFocusLocationRef = useRef(null);
@@ -254,6 +274,20 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     }
     viewer.scene.requestRender();
   }, [analysisPoints]);
+
+  useEffect(() => {
+    basemapIdRef.current = basemapId;
+    const viewer = viewerRef.current;
+    if (!viewer || viewer.isDestroyed()) return;
+    const option = getBasemapOption(basemapId);
+    const provider = createBasemapProvider(option.id);
+    viewer.imageryLayers.removeAll();
+    if (provider) viewer.imageryLayers.addImageryProvider(provider);
+    viewer.scene.globe.baseColor = Color.fromCssColorString(
+      option.backgroundColor || "#cbd5e1",
+    );
+    viewer.scene.requestRender();
+  }, [basemapId]);
 
   useImperativeHandle(
     forwardedRef,
@@ -379,17 +413,11 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
         failed: 0,
       });
 
-      const basemapProvider = new UrlTemplateImageryProvider({
-        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        credit: "Tiles © Esri",
-        maximumLevel: 19,
-      });
-      basemapProvider.errorEvent.addEventListener((error) => {
-        console.error("Cesium basemap tile failed:", error);
-      });
+      const basemapOption = getBasemapOption(basemapIdRef.current);
+      const basemapProvider = createBasemapProvider(basemapOption.id);
       viewer = new Viewer(containerRef.current, {
         animation: false,
-        baseLayer: new ImageryLayer(basemapProvider),
+        baseLayer: basemapProvider ? new ImageryLayer(basemapProvider) : false,
         baseLayerPicker: false,
         fullscreenButton: false,
         geocoder: false,
@@ -406,7 +434,9 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       viewerRef.current = viewer;
       viewer.scene.backgroundColor = Color.fromCssColorString("#dce7ef");
       viewer.scene.globe.show = true;
-      viewer.scene.globe.baseColor = Color.fromCssColorString("#cbd5e1");
+      viewer.scene.globe.baseColor = Color.fromCssColorString(
+        basemapOption.backgroundColor || "#cbd5e1",
+      );
       viewer.scene.globe.depthTestAgainstTerrain = false;
       viewer.scene.globe.showGroundAtmosphere = false;
       viewer.camera.setView({

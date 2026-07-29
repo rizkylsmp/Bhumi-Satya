@@ -233,7 +233,7 @@ function PhotoGallery({ photos, title }) {
       {/* Lightbox */}
       {lightbox !== null && (
         <div
-          className="fixed inset-0 bg-black/80 z-100 flex items-center justify-center p-4"
+          className="motion-backdrop fixed inset-0 z-100 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setLightbox(null)}
         >
           <button

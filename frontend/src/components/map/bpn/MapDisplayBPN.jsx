@@ -34,6 +34,10 @@ import {
 } from "../../../utils/model3dTransform";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "../mapDefaults";
 import CesiumAssetMap from "../CesiumAssetMap";
+import {
+  BASEMAP_OPTIONS,
+  DEFAULT_BASEMAP_ID,
+} from "../basemapOptions";
 import "./mapLibreStyles.css";
 
 const CERTIFIED_STATUS = "Telah Bersertifikat";
@@ -47,7 +51,7 @@ const EMPTY_FEATURE_COLLECTION = {
 };
 const MAPLIBRE_STYLE_URL =
   "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
-const MAPLIBRE_BASEMAP_ID = "maplibre";
+const MAPLIBRE_BASEMAP_ID = DEFAULT_BASEMAP_ID;
 const BASEMAP_RASTER_SOURCE_ID = "selected-basemap-raster";
 const BASEMAP_RASTER_LAYER_ID = "selected-basemap-raster-layer";
 const DETAILED_MODEL_LAYER_ID = "asset-kmz-models-3d";
@@ -67,41 +71,7 @@ const CUSTOM_OVERLAY_SOURCE_IDS = new Set([
   BASEMAP_RASTER_SOURCE_ID,
   ANALYSIS_SOURCE_ID,
 ]);
-const BASEMAP_OPTIONS = [
-  {
-    id: MAPLIBRE_BASEMAP_ID,
-    label: "Map Libre",
-  },
-  {
-    id: "osm",
-    label: "OSM",
-    tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-    tileSize: 256,
-    maxzoom: 19,
-    attribution: "OpenStreetMap contributors",
-  },
-  {
-    id: "esri",
-    label: "ESRI",
-    tiles: [
-      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
-    ],
-    tileSize: 256,
-    maxzoom: 19,
-    attribution: "Esri",
-  },
-  {
-    id: "foto_udara",
-    label: "Foto Udara",
-    tiles: [
-      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    ],
-    tileSize: 256,
-    maxzoom: 19,
-    attribution:
-      "Esri, Maxar, Earthstar Geographics, and the GIS User Community",
-  },
-];
+const BASEMAP_STORAGE_KEY = "bhumi-satya-basemap";
 
 function LayerSwitch({
   checked,
@@ -465,7 +435,13 @@ const MapDisplayBPN = ({
     useState(true);
   const [showBelumSertifikatInternal, setShowBelumSertifikatInternal] =
     useState(true);
-  const [activeBasemap, setActiveBasemap] = useState(MAPLIBRE_BASEMAP_ID);
+  const [activeBasemap, setActiveBasemap] = useState(() => {
+    if (typeof window === "undefined") return MAPLIBRE_BASEMAP_ID;
+    const storedBasemap = window.localStorage.getItem(BASEMAP_STORAGE_KEY);
+    return BASEMAP_OPTIONS.some((option) => option.id === storedBasemap)
+      ? storedBasemap
+      : MAPLIBRE_BASEMAP_ID;
+  });
   const [basemapError, setBasemapError] = useState("");
   const [isBasemapMenuOpen, setIsBasemapMenuOpen] = useState(false);
   const [openMapSetting, setOpenMapSetting] = useState("basemap");
@@ -475,7 +451,11 @@ const MapDisplayBPN = ({
   const resolvedAsset3dPanelOpen =
     typeof asset3dPanelOpen === "boolean"
       ? asset3dPanelOpen
-      : isAsset3dPanelOpen;
+    : isAsset3dPanelOpen;
+
+  useEffect(() => {
+    window.localStorage.setItem(BASEMAP_STORAGE_KEY, activeBasemap);
+  }, [activeBasemap]);
   const [visible3dLocationIds, setVisible3dLocationIds] = useState(undefined);
   const [detailedModelStatus, setDetailedModelStatus] = useState({
     state: "idle",
@@ -1570,17 +1550,22 @@ const MapDisplayBPN = ({
   };
 
   const applyBasemap = async (basemapId) => {
-    if (!map.current?.isStyleLoaded()) return;
-
     const option =
       BASEMAP_OPTIONS.find((item) => item.id === basemapId) ||
       BASEMAP_OPTIONS[0];
+    setActiveBasemap(option.id);
     setBasemapError("");
+    if (!map.current?.isStyleLoaded()) return;
 
     if (option.id === MAPLIBRE_BASEMAP_ID) {
       removeBasemapRaster();
       setBaseStyleVisibility(true);
-      setActiveBasemap(option.id);
+      return;
+    }
+
+    if (option.id === "none") {
+      removeBasemapRaster();
+      setBaseStyleVisibility(false);
       return;
     }
 
@@ -1621,7 +1606,6 @@ const MapDisplayBPN = ({
         },
         beforeLayerId,
       );
-      setActiveBasemap(option.id);
     } catch (error) {
       console.warn("Could not switch basemap:", error);
       setBasemapError("Basemap belum bisa dimuat.");
@@ -1740,7 +1724,7 @@ const MapDisplayBPN = ({
           kecTooltip
             .setLngLat(e.lngLat)
             .setHTML(
-              `<div style="font-family:system-ui;padding:2px 4px">` +
+              `<div style="padding:2px 4px">` +
                 `<div style="font-weight:700;font-size:14px;color:#5b21b6;text-transform:uppercase;letter-spacing:0.5px">${props.WADMKC || "-"}</div>` +
                 `</div>`,
             )
@@ -1852,7 +1836,7 @@ const MapDisplayBPN = ({
           kelTooltip
             .setLngLat(e.lngLat)
             .setHTML(
-              `<div style="font-family:system-ui;padding:2px 4px">` +
+              `<div style="padding:2px 4px">` +
                 `<div style="font-weight:700;font-size:13px;color:#047857">${props.NAMOBJ || "-"}</div>` +
                 `<div style="font-size:11px;color:#64748b">Kec. ${props.WADMKC || "-"}</div>` +
                 `</div>`,
@@ -2874,17 +2858,6 @@ const MapDisplayBPN = ({
                 <CaretDownIcon size={13} weight="bold" className={`transition-transform ${openMapSetting === "basemap" ? "rotate-180" : ""}`} />
               </button>
               {openMapSetting === "basemap" && <div className="border-t border-border bg-surface-secondary/80 p-3">
-                {isAsset3dMode ? (
-                <div className="flex h-10 items-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-2.5 text-violet-800 dark:border-violet-500/40 dark:bg-violet-500/10 dark:text-violet-200">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-violet-600 text-white">
-                    <BuildingsIcon size={13} weight="fill" />
-                  </span>
-                  <span className="min-w-0 flex-1 text-[9px] font-bold">
-                    Cesium + OpenStreetMap
-                  </span>
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                </div>
-              ) : (
                 <div
                   className="grid grid-cols-2 gap-1.5"
                   role="radiogroup"
@@ -2893,7 +2866,7 @@ const MapDisplayBPN = ({
                   {BASEMAP_OPTIONS.map((option) => {
                     const isActive = activeBasemap === option.id;
                     const OptionIcon =
-                      option.id === "foto_udara" ? ImageIcon : MapTrifoldIcon;
+                      option.id === "satellite" ? ImageIcon : MapTrifoldIcon;
 
                     return (
                       <button
@@ -2928,7 +2901,6 @@ const MapDisplayBPN = ({
                     );
                   })}
                 </div>
-                )}
               {basemapError && (
                 <div
                   className="mt-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-2 text-[10px] font-medium text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300"
@@ -3001,6 +2973,7 @@ const MapDisplayBPN = ({
             onFeatureClick={onFeatureClick}
             onOtherLayerClick={onOtherLayerClick}
             onStatusChange={setDetailedModelStatus}
+            basemapId={activeBasemap}
             analysisTool={analysisTool}
             analysisPoints={analysisPoints}
             onAnalysisClick={({ longitude, latitude, asset }) => {

@@ -1,79 +1,58 @@
 import { useNavigate } from "react-router-dom";
 import {
-  ChartBarIcon,
-  MapPinIcon,
-  CertificateIcon,
-  ScalesIcon,
-  RulerIcon,
-  ClipboardTextIcon,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
   CaretRightIcon,
-  ArrowRightIcon,
-  EyeIcon,
-  PlusIcon,
-  PencilSimpleIcon,
-  TrashIcon,
-  SignInIcon,
+  BuildingsIcon,
+  ClipboardTextIcon,
+  CubeIcon,
+  CurrencyDollarIcon,
+  DatabaseIcon,
   DownloadSimpleIcon,
-  ShieldCheckIcon,
+  EyeIcon,
+  MapPinIcon,
   MapTrifoldIcon,
-  WarningIcon,
-  UsersThreeIcon,
-  NotePencilIcon,
+  PencilSimpleIcon,
+  PlusIcon,
+  HandshakeIcon,
+  SignInIcon,
+  TrashIcon,
 } from "@phosphor-icons/react";
-import { BarChartComponent, DonutChartComponent } from "../charts";
 
-const formatNumber = (num) => {
-  if (!num) return "0";
-  return new Intl.NumberFormat("id-ID").format(num);
+const CHART_COLORS = {
+  accent: "#0ea5e9",
+  blue: "#3b82f6",
+  cyan: "#06b6d4",
+  emerald: "#10b981",
+  amber: "#f59e0b",
+  red: "#ef4444",
+  violet: "#8b5cf6",
+  slate: "#64748b",
 };
 
-const formatArea = (num) => {
-  if (!num) return "0 m²";
-  if (num >= 10000) return `${(num / 10000).toFixed(1)} ha`;
-  return `${formatNumber(Math.round(num))} m²`;
-};
+const formatNumber = (value) =>
+  new Intl.NumberFormat("id-ID").format(Number(value) || 0);
 
-const getActivityBadge = (aksi) => {
-  const map = {
-    CREATE:
-      "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
-    UPDATE:
-      "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
-    DELETE: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
-    VIEW: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
-    LOGIN:
-      "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400",
-    LOGOUT: "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400",
-    BACKUP:
-      "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400",
-    RESTORE: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400",
-  };
-  return map[aksi?.toUpperCase()] || "bg-surface-tertiary text-text-secondary";
-};
+const formatCurrency = (value, compact = false) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+    notation: compact ? "compact" : "standard",
+  }).format(Number(value) || 0);
 
-const getActivityIcon = (aksi) => {
-  const map = {
-    CREATE: PlusIcon,
-    UPDATE: PencilSimpleIcon,
-    DELETE: TrashIcon,
-    VIEW: EyeIcon,
-    LOGIN: SignInIcon,
-    BACKUP: DownloadSimpleIcon,
-  };
-  return map[aksi?.toUpperCase()] || ClipboardTextIcon;
-};
-
-const getActivityColor = (aksi) => {
-  const map = {
-    CREATE: "from-emerald-500 to-emerald-600",
-    UPDATE: "from-amber-500 to-amber-600",
-    DELETE: "from-red-500 to-red-600",
-    VIEW: "from-blue-500 to-blue-600",
-    LOGIN: "from-purple-500 to-purple-600",
-    BACKUP: "from-indigo-500 to-indigo-600",
-  };
-  return map[aksi?.toUpperCase()] || "from-gray-500 to-gray-600";
-};
+const getPercentage = (value, total) =>
+  total ? Math.round((Number(value || 0) / total) * 100) : 0;
 
 const formatDateTime = (dateString) => {
   if (!dateString) return "-";
@@ -86,557 +65,717 @@ const formatDateTime = (dateString) => {
   });
 };
 
+const activityStyles = {
+  CREATE: {
+    icon: PlusIcon,
+    badge:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    iconClass: "bg-emerald-500",
+  },
+  UPDATE: {
+    icon: PencilSimpleIcon,
+    badge:
+      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    iconClass: "bg-amber-500",
+  },
+  DELETE: {
+    icon: TrashIcon,
+    badge: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    iconClass: "bg-red-500",
+  },
+  VIEW: {
+    icon: EyeIcon,
+    badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    iconClass: "bg-blue-500",
+  },
+  LOGIN: {
+    icon: SignInIcon,
+    badge:
+      "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+    iconClass: "bg-violet-500",
+  },
+  BACKUP: {
+    icon: DownloadSimpleIcon,
+    badge:
+      "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+    iconClass: "bg-indigo-500",
+  },
+};
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+  suffix = "bidang",
+  valueFormatter,
+}) {
+  if (!active || !payload?.length) return null;
+
+  const item = payload[0];
+  return (
+    <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs">
+      <p className="font-semibold text-text-primary">
+        {item.payload?.fullName || label || item.name}
+      </p>
+      <p className="mt-0.5 text-text-secondary">
+        {valueFormatter ? valueFormatter(item.value) : formatNumber(item.value)}{" "}
+        {suffix}
+      </p>
+    </div>
+  );
+}
+
+function LoadingChart({ height = "h-64" }) {
+  return (
+    <div className={`${height} animate-pulse rounded-xl bg-surface-secondary`} />
+  );
+}
+
+function EmptyChart({ icon: Icon, message }) {
+  return (
+    <div className="flex h-64 flex-col items-center justify-center text-center text-text-muted">
+      <Icon size={34} className="mb-2 opacity-50" />
+      <p className="text-xs">{message}</p>
+    </div>
+  );
+}
+
+function PanelHeader({ title, description, action }) {
+  return (
+    <div className="flex min-w-0 items-start justify-between gap-3">
+      <div className="min-w-0">
+        <h2 className="text-sm font-bold text-text-primary">{title}</h2>
+        <p className="mt-1 text-xs leading-relaxed text-text-muted">
+          {description}
+        </p>
+      </div>
+      {action}
+    </div>
+  );
+}
+
 export default function DashboardIntegratedPanel({
   loading,
   asetStats,
-  userStats,
-  riwayatStats,
+  sewaStats,
+  totalDigitalTwin,
   recentActivities,
 }) {
   const navigate = useNavigate();
+  const total = Number(asetStats?.totalAset) || 0;
+  const located = Number(asetStats?.totalLokasi) || 0;
+  const coordinated = Number(asetStats?.totalKoordinat) || 0;
+  const polygonized = Number(asetStats?.totalPolygon) || 0;
+  const totalRentals = Number(sewaStats?.total) || 0;
+  const availableRentals = Number(sewaStats?.tersedia) || 0;
+  const activeRentals =
+    (Number(sewaStats?.disewakan) || 0) +
+    (Number(sewaStats?.akanBerakhir) || 0);
 
-  const totalAset = asetStats?.totalAset || 0;
-  const totalSertifikat = asetStats?.totalSertifikat || 0;
-  const pctSertifikat = totalAset
-    ? Math.round((totalSertifikat / totalAset) * 100)
-    : 0;
-
-  // Legal problem count
-  const masalahHukumCount = Object.entries(asetStats?.byStatusHukum || {})
-    .filter(([k]) => k !== "Aman")
-    .reduce((s, [, v]) => s + v, 0);
-  const totalHukum = Object.values(asetStats?.byStatusHukum || {}).reduce(
-    (s, v) => s + v,
-    0,
-  );
-
-  // Jenis Hak donut chart
-  const hakColors = {
-    HM: "#3b82f6",
-    HPL: "#10b981",
-    HP: "#f59e0b",
-    "Tanah Negara": "#8b5cf6",
-    HGB: "#ec4899",
-  };
-  const jenisHakData = asetStats?.byJenisHak
-    ? Object.entries(asetStats.byJenisHak).map(([name, value]) => ({
-        name,
-        value,
-        color: hakColors[name] || "#6b7280",
-      }))
-    : [];
-  const totalHak = jenisHakData.reduce((s, i) => s + i.value, 0);
-
-  // Status Hukum bar chart
-  const statusHukumColors = {
-    Aman: "#10b981",
-    Sengketa: "#ef4444",
-    "Dalam Proses Sertipikasi": "#f59e0b",
-    Diblokir: "#6b7280",
-  };
-  const statusHukumData = asetStats?.byStatusHukum
-    ? Object.entries(asetStats.byStatusHukum)
-        .map(([name, value]) => ({
-          name: name.length > 18 ? name.slice(0, 18) + "…" : name,
-          fullName: name,
-          value,
-          color: statusHukumColors[name] || "#8b5cf6",
-        }))
-        .sort((a, b) => b.value - a.value)
-    : [];
-
-  // Sebaran kecamatan
-  const kecamatanData = asetStats?.byKecamatan
-    ? Object.entries(asetStats.byKecamatan)
-        .map(([name, value]) => ({
-          name: name.length > 15 ? name.slice(0, 15) + "…" : name,
-          fullName: name,
-          value,
-        }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 10)
-    : [];
-
-  const openKecamatanOnMap = (kecamatan) => {
-    if (!kecamatan) return;
-    navigate("/peta", {
-      state: {
-        filterKecamatan: kecamatan,
-      },
-    });
-  };
-
-  // Jenis masalah
-  const jenisMasalahData = asetStats?.byJenisMasalah
-    ? Object.entries(asetStats.byJenisMasalah).map(([name, value]) => ({
-        name,
-        value,
-      }))
-    : [];
-
-  const statsCards = [
+  const readinessData = [
     {
-      label: "Total Bidang",
-      value: formatNumber(totalAset),
-      icon: MapPinIcon,
-      gradient: "from-blue-500 to-blue-600",
-      detail: `${formatArea(asetStats?.totalLuas)} total luas bidang`,
+      name: "Lokasi",
+      value: located,
+      percentage: getPercentage(located, total),
+      color: CHART_COLORS.blue,
     },
     {
-      label: "Tersertifikasi",
-      value: formatNumber(totalSertifikat),
-      icon: CertificateIcon,
-      gradient: "from-emerald-500 to-emerald-600",
-      detail: `${pctSertifikat}% dari total bidang`,
-      progress: pctSertifikat,
-      progressColor: "bg-emerald-500",
+      name: "Koordinat",
+      value: coordinated,
+      percentage: getPercentage(coordinated, total),
+      color: CHART_COLORS.cyan,
     },
     {
-      label: "Masalah Hukum",
-      value: formatNumber(masalahHukumCount),
-      icon: ScalesIcon,
-      gradient: "from-red-500 to-red-600",
-      detail:
-        jenisMasalahData
-          .map((i) => `${i.value} ${i.name.toLowerCase()}`)
-          .join(", ") || "Tidak ada masalah",
+      name: "Polygon",
+      value: polygonized,
+      percentage: getPercentage(polygonized, total),
+      color: CHART_COLORS.violet,
     },
     {
-      label: "Total Luas",
-      value: formatArea(asetStats?.totalLuas),
-      icon: RulerIcon,
-      gradient: "from-cyan-500 to-cyan-600",
-      detail: `${Object.keys(asetStats?.byKecamatan || {}).length} kecamatan`,
+      name: "Model 3D",
+      value: totalDigitalTwin,
+      percentage: getPercentage(totalDigitalTwin, total),
+      color: CHART_COLORS.emerald,
     },
   ];
 
+  const rentalStatusData = [
+    { name: "Tersedia", value: sewaStats?.tersedia, color: CHART_COLORS.emerald },
+    { name: "Diproses", value: sewaStats?.diproses, color: CHART_COLORS.amber },
+    { name: "Disewakan", value: sewaStats?.disewakan, color: CHART_COLORS.blue },
+    {
+      name: "Akan Berakhir",
+      value: sewaStats?.akanBerakhir,
+      color: CHART_COLORS.red,
+    },
+    { name: "Berakhir", value: sewaStats?.berakhir, color: CHART_COLORS.slate },
+    {
+      name: "Dikembalikan",
+      value: sewaStats?.dikembalikan,
+      color: CHART_COLORS.violet,
+    },
+  ]
+    .map((item) => ({ ...item, value: Number(item.value) || 0 }))
+    .filter((item) => item.value > 0);
+
+  const rentalValueData = [
+    {
+      name: "Total aktif",
+      value: Number(sewaStats?.totalNilaiSewa) || 0,
+      color: CHART_COLORS.blue,
+    },
+    {
+      name: "Triwulan",
+      value: Number(sewaStats?.totalNilaiSewaTriwulan) || 0,
+      color: CHART_COLORS.cyan,
+    },
+    {
+      name: "Semester",
+      value: Number(sewaStats?.totalNilaiSewaSemester) || 0,
+      color: CHART_COLORS.violet,
+    },
+  ];
+
+  const districtData = Object.entries(asetStats?.byKecamatan || {})
+    .map(([name, value]) => ({
+      name: name.length > 18 ? `${name.slice(0, 18)}…` : name,
+      fullName: name,
+      value: Number(value) || 0,
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+
+  const statCards = [
+    {
+      label: "Data Digital Twin",
+      value: formatNumber(totalDigitalTwin),
+      detail: `${getPercentage(totalDigitalTwin, total)}% dari ${formatNumber(total)} bidang`,
+      icon: CubeIcon,
+      iconClass: "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400",
+    },
+    {
+      label: "Memiliki Koordinat",
+      value: formatNumber(coordinated),
+      detail: `${getPercentage(coordinated, total)}% dari total bidang`,
+      icon: MapPinIcon,
+      iconClass: "bg-cyan-50 text-cyan-600 dark:bg-cyan-950/50 dark:text-cyan-400",
+    },
+    {
+      label: "Bidang Terpetakan",
+      value: formatNumber(polygonized),
+      detail: `${getPercentage(polygonized, total)}% siap dipetakan`,
+      icon: MapTrifoldIcon,
+      iconClass:
+        "bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400",
+    },
+    {
+      label: "Tersedia Disewa",
+      value: formatNumber(availableRentals),
+      detail: `${formatNumber(totalRentals)} unit dalam portofolio sewa`,
+      icon: BuildingsIcon,
+      iconClass:
+        "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
+    },
+    {
+      label: "Sewa Aktif",
+      value: formatNumber(activeRentals),
+      detail: `${formatNumber(sewaStats?.akanBerakhir)} akan berakhir`,
+      icon: HandshakeIcon,
+      iconClass:
+        "bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
+    },
+  ];
+
+  const openDistrict = (district) => {
+    if (!district) return;
+    navigate("/peta", { state: { filterKecamatan: district } });
+  };
+
   return (
-    <div className="space-y-4">
-      {/* ===== STAT CARDS ===== */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {statsCards.map((stat) => {
+    <div className="min-w-0 space-y-4">
+      <section
+        className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
+        aria-label="Ringkasan data"
+      >
+        {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div
+            <article
               key={stat.label}
-              className="bg-surface rounded-xl border border-border p-3.5 relative overflow-hidden"
+              className="min-w-0 rounded-xl border border-border bg-surface p-4"
             >
-              <div
-                className={`absolute -right-4 -top-4 w-16 h-16 bg-linear-to-br ${stat.gradient} rounded-full opacity-5`}
-              />
               {loading ? (
-                <div className="animate-pulse space-y-2">
-                  <div className="w-8 h-8 bg-surface-secondary rounded-lg" />
-                  <div className="h-5 bg-surface-secondary rounded w-16" />
-                  <div className="h-3 bg-surface-secondary rounded w-20" />
+                <div className="animate-pulse space-y-3">
+                  <div className="h-9 w-9 rounded-lg bg-surface-secondary" />
+                  <div className="h-6 w-24 rounded bg-surface-secondary" />
+                  <div className="h-3 w-32 rounded bg-surface-secondary" />
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center justify-between mb-2">
-                    <div
-                      className={`w-8 h-8 bg-linear-to-br ${stat.gradient} rounded-lg flex items-center justify-center shadow-md`}
+                  <div className="flex items-start justify-between gap-3">
+                    <span
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${stat.iconClass}`}
                     >
-                      <Icon size={16} weight="fill" className="text-surface" />
-                    </div>
-                    <span className="text-[10px] font-medium text-text-muted">
+                      <Icon size={18} weight="fill" />
+                    </span>
+                    <span className="text-right text-[11px] font-semibold text-text-muted">
                       {stat.label}
                     </span>
                   </div>
-                  <div className="text-xl font-bold text-text-primary">
+                  <p className="mt-4 truncate text-2xl font-bold tracking-tight text-text-primary">
                     {stat.value}
-                  </div>
-                  <span className="text-[10px] text-text-muted truncate block mt-1">
+                  </p>
+                  <p className="mt-1 truncate text-xs text-text-muted">
                     {stat.detail}
-                  </span>
-                  {stat.progress !== undefined && (
-                    <div className="mt-2">
-                      <div className="w-full h-1.5 bg-surface-secondary rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${stat.progressColor} rounded-full transition-all duration-500`}
-                          style={{
-                            width: `${Math.min(stat.progress, 100)}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
+                  </p>
                 </>
               )}
-            </div>
+            </article>
           );
         })}
-      </div>
+      </section>
 
-      {/* ===== CHARTS ROW ===== */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Jenis Hak - Donut */}
-        <div className="bg-surface rounded-xl border border-border p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-sm text-text-primary">
-              Distribusi Jenis Hak
-            </h3>
-            <button
-              onClick={() => navigate("/aset")}
-              className="text-[10px] text-accent hover:underline font-medium flex items-center gap-1"
-            >
-              Detail <ArrowRightIcon size={10} />
-            </button>
-          </div>
+      <section className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-3">
+        <article className="min-w-0 rounded-xl border border-border bg-surface p-4 xl:col-span-2">
+          <PanelHeader
+            title="Kesiapan Data Digital Twin"
+            description="Kelengkapan data utama dibandingkan dengan seluruh bidang terdaftar."
+            action={
+              <span className="shrink-0 rounded-md bg-surface-secondary px-2 py-1 text-[10px] font-semibold text-text-muted">
+                4 indikator
+              </span>
+            }
+          />
           {loading ? (
-            <div className="h-48 flex items-center justify-center">
-              <div className="animate-spin w-6 h-6 border-3 border-accent border-t-transparent rounded-full" />
+            <div className="mt-5">
+              <LoadingChart />
             </div>
-          ) : jenisHakData.length > 0 ? (
-            <div>
-              <DonutChartComponent
-                data={jenisHakData}
-                height={160}
-                innerRadius={40}
-                outerRadius={65}
-                showLabel={true}
-                centerText={{ value: totalHak, label: "Bidang" }}
-              />
-              <div className="mt-3 space-y-1.5">
-                {jenisHakData.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-1.5 rounded-lg hover:bg-surface-secondary transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-xs text-text-secondary">
-                        {item.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-semibold text-text-primary">
-                        {item.value}
-                      </span>
-                      <span className="text-[10px] text-text-muted">
-                        (
-                        {totalHak
-                          ? ((item.value / totalHak) * 100).toFixed(0)
-                          : 0}
-                        %)
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="h-48 flex items-center justify-center text-text-muted">
-              <div className="text-center">
-                <ShieldCheckIcon
-                  size={32}
-                  className="mx-auto mb-2 opacity-50"
-                />
-                <span className="text-xs">Belum ada data jenis hak</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Status Hukum - Bar */}
-        <div className="bg-surface rounded-xl border border-border p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-sm text-text-primary">
-              Status Hukum
-            </h3>
-            <span className="text-[10px] text-text-muted bg-surface-secondary px-2 py-0.5 rounded-md">
-              {statusHukumData.length} kategori
-            </span>
-          </div>
-          {loading ? (
-            <div className="h-48 flex items-center justify-center">
-              <div className="animate-spin w-6 h-6 border-3 border-accent border-t-transparent rounded-full" />
-            </div>
-          ) : statusHukumData.length > 0 ? (
-            <div>
-              <BarChartComponent
-                data={statusHukumData}
-                dataKey="value"
-                xAxisKey="name"
-                color="#ef4444"
-                height={160}
-                horizontal={true}
-              />
-              {/* Quick insight */}
-              <div className="mt-3 p-2.5 bg-surface-secondary rounded-lg">
-                <div className="flex items-center gap-2">
-                  {masalahHukumCount > 0 ? (
-                    <>
-                      <WarningIcon
-                        size={14}
-                        weight="fill"
-                        className="text-red-500 shrink-0"
-                      />
-                      <span className="text-[10px] text-text-secondary">
-                        {masalahHukumCount} bidang memiliki masalah hukum dari{" "}
-                        {totalHukum} tercatat.
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheckIcon
-                        size={14}
-                        weight="fill"
-                        className="text-emerald-500 shrink-0"
-                      />
-                      <span className="text-[10px] text-text-secondary">
-                        Semua bidang dalam status hukum aman.
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="h-48 flex items-center justify-center text-text-muted">
-              <div className="text-center">
-                <ScalesIcon size={32} className="mx-auto mb-2 opacity-50" />
-                <span className="text-xs">Belum ada data status hukum</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Sebaran Kecamatan - Bar */}
-        <div className="bg-surface rounded-xl border border-border p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-sm text-text-primary">
-              Sebaran per Kecamatan
-            </h3>
-            <span className="text-[10px] text-text-muted bg-surface-secondary px-2 py-0.5 rounded-md">
-              {Object.keys(asetStats?.byKecamatan || {}).length} area
-            </span>
-          </div>
-          {loading ? (
-            <div className="h-48 flex items-center justify-center">
-              <div className="animate-spin w-6 h-6 border-3 border-accent border-t-transparent rounded-full" />
-            </div>
-          ) : kecamatanData.length > 0 ? (
-            <div>
-              <BarChartComponent
-                data={kecamatanData}
-                dataKey="value"
-                xAxisKey="name"
-                color="#8b5cf6"
-                height={160}
-                horizontal={true}
-                onBarClick={(entry) => openKecamatanOnMap(entry?.fullName)}
-              />
-              <div className="mt-3 space-y-1.5">
-                {kecamatanData.slice(0, 3).map((item, idx) => (
-                  <div
-                    key={idx}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => openKecamatanOnMap(item.fullName)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        openKecamatanOnMap(item.fullName);
-                      }
-                    }}
-                    className="flex items-center justify-between p-1.5 rounded-lg hover:bg-surface-secondary transition-colors cursor-pointer"
-                    title={`Lihat aset di Kecamatan ${item.fullName}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-4 bg-purple-500 rounded-full opacity-80" />
-                      <span className="text-xs text-text-secondary">
-                        {item.fullName}
-                      </span>
-                    </div>
-                    <span className="text-xs font-semibold text-text-primary">
-                      {item.value} bidang
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="h-48 flex items-center justify-center text-text-muted">
-              <div className="text-center">
-                <MapTrifoldIcon size={32} className="mx-auto mb-2 opacity-50" />
-                <span className="text-xs">Belum ada data kecamatan</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ===== SERTIFIKASI PROGRESS + ACTIVITIES ===== */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Sertifikasi Progress */}
-        <div className="bg-surface rounded-xl border border-border p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-sm text-text-primary">
-              Progress Sertifikasi
-            </h3>
-            <span
-              className={`text-xs font-bold ${pctSertifikat >= 80 ? "text-emerald-600 dark:text-emerald-400" : pctSertifikat >= 50 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}`}
-            >
-              {pctSertifikat}%
-            </span>
-          </div>
-          {loading ? (
-            <div className="animate-pulse h-16 bg-surface-secondary rounded-lg" />
-          ) : (
+          ) : total > 0 ? (
             <>
-              <div className="w-full h-3 bg-surface-secondary rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                  style={{ width: `${pctSertifikat}%` }}
-                />
+              <div
+                className="mt-4 h-64 min-w-0"
+                role="img"
+                aria-label="Diagram kesiapan data Digital Twin"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={readinessData}
+                    margin={{ top: 12, right: 8, left: -18, bottom: 0 }}
+                  >
+                    <CartesianGrid
+                      vertical={false}
+                      stroke="var(--color-border)"
+                      strokeDasharray="3 3"
+                    />
+                    <XAxis
+                      dataKey="name"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{
+                        fill: "var(--color-text-muted)",
+                        fontSize: 11,
+                      }}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{
+                        fill: "var(--color-text-muted)",
+                        fontSize: 11,
+                      }}
+                    />
+                    <Tooltip content={<ChartTooltip />} cursor={{ opacity: 0.08 }} />
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={56}>
+                      {readinessData.map((item) => (
+                        <Cell key={item.name} fill={item.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-              <div className="flex justify-between mt-2">
-                <span className="text-[10px] text-text-muted">
-                  {totalSertifikat} tersertifikasi
-                </span>
-                <span className="text-[10px] text-text-muted">
-                  {totalAset - totalSertifikat} belum
-                </span>
-              </div>
-
-              {/* Extra stats */}
-              <div className="mt-3 space-y-2">
-                {userStats && (
-                  <div className="flex items-center justify-between p-2 bg-surface-secondary rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <UsersThreeIcon size={14} className="text-indigo-500" />
-                      <span className="text-[10px] text-text-secondary">
-                        Pengguna
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-bold text-text-primary">
-                      {formatNumber(userStats.totalUsers)}
-                    </span>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {readinessData.map((item) => (
+                  <div
+                    key={item.name}
+                    className="rounded-lg bg-surface-secondary px-3 py-2"
+                  >
+                    <p className="text-[10px] text-text-muted">{item.name}</p>
+                    <p className="mt-0.5 text-sm font-bold text-text-primary">
+                      {item.percentage}%
+                    </p>
                   </div>
-                )}
-                {riwayatStats && (
-                  <div className="flex items-center justify-between p-2 bg-surface-secondary rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <NotePencilIcon size={14} className="text-emerald-500" />
-                      <span className="text-[10px] text-text-secondary">
-                        Aktivitas
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-bold text-text-primary">
-                      {formatNumber(riwayatStats?.totalActivities)}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-3 p-2.5 bg-surface-secondary rounded-lg">
-                <div className="flex items-center gap-2">
-                  <CertificateIcon
-                    size={14}
-                    weight="fill"
-                    className="text-emerald-500 shrink-0"
-                  />
-                  <span className="text-[10px] text-text-secondary">
-                    {totalSertifikat} dari {totalAset} bidang tanah sudah
-                    memiliki sertifikat.
-                  </span>
-                </div>
+                ))}
               </div>
             </>
+          ) : (
+            <EmptyChart
+              icon={DatabaseIcon}
+              message="Belum ada data untuk divisualisasikan"
+            />
           )}
-        </div>
+        </article>
 
-        {/* Aktivitas Terbaru */}
-        <div className="lg:col-span-2 bg-surface rounded-xl border border-border overflow-hidden">
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        <article className="min-w-0 rounded-xl border border-border bg-surface p-4">
+          <PanelHeader
+            title="Portofolio Penyewaan"
+            description="Komposisi status seluruh unit dalam pengelolaan penyewaan."
+            action={
+              <button
+                type="button"
+                onClick={() => navigate("/sewa/penyewaan")}
+                className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-accent hover:underline"
+              >
+                Kelola <CaretRightIcon size={11} />
+              </button>
+            }
+          />
+          {loading ? (
+            <div className="mt-5">
+              <LoadingChart />
+            </div>
+          ) : rentalStatusData.length ? (
+            <>
+              <div
+                className="relative mt-2 h-52 min-w-0"
+                role="img"
+                aria-label="Diagram donat status penyewaan"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={rentalStatusData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={82}
+                      paddingAngle={3}
+                      stroke="none"
+                    >
+                      {rentalStatusData.map((item) => (
+                        <Cell key={item.name} fill={item.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<ChartTooltip suffix="unit" />} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                  <strong className="text-2xl font-bold text-text-primary">
+                    {formatNumber(activeRentals)}
+                  </strong>
+                  <span className="text-[10px] text-text-muted">sewa aktif</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {rentalStatusData.slice(0, 4).map((item) => (
+                  <div
+                    key={item.name}
+                    className="flex items-center justify-between gap-3 text-xs"
+                  >
+                    <span className="flex min-w-0 items-center gap-2 text-text-secondary">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="truncate">{item.name}</span>
+                    </span>
+                    <strong className="shrink-0 text-text-primary">
+                      {formatNumber(item.value)}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <EmptyChart
+              icon={HandshakeIcon}
+              message="Belum ada data penyewaan"
+            />
+          )}
+        </article>
+      </section>
+
+      <section className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
+        <article className="min-w-0 rounded-xl border border-border bg-surface p-4">
+          <PanelHeader
+            title="Sebaran Data Spasial"
+            description="Delapan kecamatan dengan jumlah bidang terbanyak. Klik batang untuk membuka Digital Twin."
+            action={
+              <button
+                type="button"
+                onClick={() => navigate("/peta")}
+                className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-accent hover:underline"
+              >
+                Buka peta <CaretRightIcon size={11} />
+              </button>
+            }
+          />
+          {loading ? (
+            <div className="mt-5">
+              <LoadingChart />
+            </div>
+          ) : districtData.length ? (
+            <div
+              className="mt-4 h-72 min-w-0"
+              role="img"
+              aria-label="Diagram sebaran bidang per kecamatan"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={districtData}
+                  layout="vertical"
+                  margin={{ top: 0, right: 10, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    horizontal={false}
+                    stroke="var(--color-border)"
+                    strokeDasharray="3 3"
+                  />
+                  <XAxis
+                    type="number"
+                    allowDecimals={false}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "var(--color-text-muted)",
+                      fontSize: 10,
+                    }}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={92}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "var(--color-text-muted)",
+                      fontSize: 10,
+                    }}
+                  />
+                  <Tooltip content={<ChartTooltip />} cursor={{ opacity: 0.08 }} />
+                  <Bar
+                    dataKey="value"
+                    fill={CHART_COLORS.blue}
+                    radius={[0, 6, 6, 0]}
+                    maxBarSize={22}
+                    cursor="pointer"
+                    onClick={(item) => openDistrict(item?.fullName)}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyChart
+              icon={MapTrifoldIcon}
+              message="Belum ada data kecamatan"
+            />
+          )}
+        </article>
+
+        <article className="min-w-0 rounded-xl border border-border bg-surface p-4">
+          <PanelHeader
+            title="Nilai Penyewaan Aktif"
+            description="Ringkasan nilai kontrak aktif berdasarkan periode pembayaran."
+          />
+          {loading ? (
+            <div className="mt-5">
+              <LoadingChart />
+            </div>
+          ) : rentalValueData.some((item) => item.value > 0) ? (
+            <div
+              className="mt-4 h-72 min-w-0"
+              role="img"
+              aria-label="Diagram nilai penyewaan aktif"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={rentalValueData}
+                  margin={{ top: 12, right: 8, left: -8, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    vertical={false}
+                    stroke="var(--color-border)"
+                    strokeDasharray="3 3"
+                  />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "var(--color-text-muted)",
+                      fontSize: 10,
+                    }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(value) => formatCurrency(value, true)}
+                    tick={{
+                      fill: "var(--color-text-muted)",
+                      fontSize: 10,
+                    }}
+                  />
+                  <Tooltip
+                    content={
+                      <ChartTooltip
+                        suffix=""
+                        valueFormatter={(value) => formatCurrency(value)}
+                      />
+                    }
+                    cursor={{ opacity: 0.08 }}
+                  />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={56}>
+                    {rentalValueData.map((item) => (
+                      <Cell key={item.name} fill={item.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyChart
+              icon={CurrencyDollarIcon}
+              message="Belum ada nilai penyewaan aktif"
+            />
+          )}
+        </article>
+      </section>
+
+      <section className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
+        <article className="min-w-0 rounded-xl border border-border bg-surface p-4">
+          <PanelHeader
+            title="Ringkasan Penyewaan"
+            description="Nilai ekonomi dan kontrak yang sedang berjalan."
+          />
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center justify-between rounded-lg bg-surface-secondary p-3">
+              <span className="flex min-w-0 items-center gap-2 text-xs text-text-secondary">
+                <CurrencyDollarIcon size={16} className="shrink-0 text-blue-500" />
+                <span className="truncate">Nilai sewa aktif</span>
+              </span>
+              <strong
+                className="shrink-0 text-sm text-text-primary"
+                title={formatCurrency(sewaStats?.totalNilaiSewa)}
+              >
+                {loading ? "…" : formatCurrency(sewaStats?.totalNilaiSewa, true)}
+              </strong>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-surface-secondary p-3">
+              <span className="flex min-w-0 items-center gap-2 text-xs text-text-secondary">
+                <BuildingsIcon size={16} className="shrink-0 text-emerald-500" />
+                <span className="truncate">Nilai data tersewa</span>
+              </span>
+              <strong
+                className="shrink-0 text-sm text-text-primary"
+                title={formatCurrency(sewaStats?.totalNilaiAsetTersewa)}
+              >
+                {loading
+                  ? "…"
+                  : formatCurrency(sewaStats?.totalNilaiAsetTersewa, true)}
+              </strong>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-surface-secondary p-3">
+              <span className="flex items-center gap-2 text-xs text-text-secondary">
+                <HandshakeIcon size={16} className="text-amber-500" />
+                Akan berakhir
+              </span>
+              <strong className="text-sm text-text-primary">
+                {loading ? "…" : `${formatNumber(sewaStats?.akanBerakhir)} unit`}
+              </strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="min-w-0 overflow-hidden rounded-xl border border-border bg-surface lg:col-span-2">
+          <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+            <div className="flex min-w-0 items-center gap-2">
               <ClipboardTextIcon
-                size={16}
+                size={17}
                 weight="fill"
-                className="text-accent"
+                className="shrink-0 text-accent"
               />
-              <h3 className="font-semibold text-sm text-text-primary">
-                Aktivitas Terbaru
-              </h3>
+              <div className="min-w-0">
+                <h2 className="text-sm font-bold text-text-primary">
+                  Aktivitas Terbaru
+                </h2>
+                <p className="truncate text-[10px] text-text-muted">
+                  Perubahan terkini pada data dan sistem
+                </p>
+              </div>
             </div>
             <button
+              type="button"
               onClick={() => navigate("/riwayat")}
-              className="text-[10px] text-accent hover:underline font-medium flex items-center gap-1"
+              className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-accent hover:underline"
             >
-              Semua <CaretRightIcon size={10} />
+              Lihat semua <CaretRightIcon size={11} />
             </button>
           </div>
           {loading ? (
-            <div className="p-4 space-y-3 animate-pulse">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-surface-secondary rounded-lg" />
-                  <div className="flex-1">
-                    <div className="h-3 bg-surface-secondary rounded w-1/3 mb-1" />
-                    <div className="h-2 bg-surface-secondary rounded w-1/2" />
-                  </div>
-                </div>
+            <div className="space-y-3 p-4">
+              {[1, 2, 3].map((item) => (
+                <div
+                  key={item}
+                  className="h-11 animate-pulse rounded-lg bg-surface-secondary"
+                />
               ))}
             </div>
-          ) : recentActivities.length > 0 ? (
+          ) : recentActivities?.length ? (
             <div className="divide-y divide-border">
-              {recentActivities.slice(0, 5).map((activity, idx) => {
-                const Icon = getActivityIcon(activity.aksi);
+              {recentActivities.slice(0, 5).map((activity, index) => {
+                const action = activity.aksi?.toUpperCase();
+                const style = activityStyles[action] || {
+                  icon: ClipboardTextIcon,
+                  badge: "bg-surface-tertiary text-text-secondary",
+                  iconClass: "bg-slate-500",
+                };
+                const ActivityIcon = style.icon;
+
                 return (
                   <div
-                    key={activity.id_riwayat || idx}
-                    className="px-4 py-3 hover:bg-surface-secondary/50 transition-colors"
+                    key={activity.id_riwayat || index}
+                    className="flex min-w-0 items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-secondary/60"
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-8 h-8 bg-linear-to-br ${getActivityColor(activity.aksi)} rounded-lg flex items-center justify-center shadow-sm`}
-                      >
-                        <Icon
-                          size={14}
-                          weight="bold"
-                          className="text-surface"
-                        />
+                    <span
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white ${style.iconClass}`}
+                    >
+                      <ActivityIcon size={14} weight="bold" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-xs font-semibold text-text-primary">
+                          {activity.user?.username ||
+                            activity.user_id ||
+                            "Pengguna"}
+                        </span>
+                        <span
+                          className={`shrink-0 rounded px-1.5 py-0.5 text-[8px] font-bold uppercase ${style.badge}`}
+                        >
+                          {activity.aksi}
+                        </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="font-medium text-xs text-text-primary">
-                            {activity.user?.username ||
-                              activity.user_id ||
-                              "User"}
-                          </span>
-                          <span
-                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${getActivityBadge(activity.aksi)}`}
-                          >
-                            {activity.aksi}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-text-muted truncate">
-                          {activity.keterangan ||
-                            `${activity.aksi} pada tabel ${activity.tabel}`}
-                        </p>
-                      </div>
-                      <p className="text-[10px] text-text-muted shrink-0">
-                        {formatDateTime(activity.created_at)}
+                      <p className="mt-0.5 truncate text-[11px] text-text-muted">
+                        {activity.keterangan ||
+                          `${activity.aksi} pada ${activity.tabel}`}
                       </p>
                     </div>
+                    <time className="hidden shrink-0 text-[10px] text-text-muted sm:block">
+                      {formatDateTime(activity.created_at)}
+                    </time>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="p-8 text-center text-text-muted">
-              <ClipboardTextIcon
-                size={32}
-                className="mx-auto mb-2 opacity-50"
-              />
-              <span className="text-xs">Belum ada aktivitas</span>
+            <div className="flex h-44 flex-col items-center justify-center text-text-muted">
+              <ClipboardTextIcon size={32} className="mb-2 opacity-50" />
+              <p className="text-xs">Belum ada aktivitas</p>
             </div>
           )}
-        </div>
-      </div>
+        </article>
+      </section>
     </div>
   );
 }

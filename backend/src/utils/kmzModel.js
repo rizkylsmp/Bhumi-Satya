@@ -41,6 +41,38 @@ const normalizeEntryName = (value) =>
     .replace(/^\.\//, "")
     .replace(/^\//, "");
 
+const normalizeHeading = (value) => ((value % 360) + 360) % 360;
+
+const inspectDaeOrientation = (entries, rawModelEntry, extension) => {
+  if (extension !== "dae" || !rawModelEntry) {
+    return {
+      sourceUpAxis: null,
+      sourceAuthoringTool: null,
+      orientationCorrectionDeg: 0,
+      orientationCorrectionReason: null,
+    };
+  }
+
+  const dae = textDecoder.decode(entries[rawModelEntry]);
+  const sourceUpAxis = getTagValue(dae, "up_axis")?.toUpperCase() || null;
+  const sourceAuthoringTool = getTagValue(dae, "authoring_tool") || null;
+
+  // SketchUp writes georeferenced Collada models as Z_UP. After conversion to
+  // GLB, Cesium's local east/north frame needs a quarter-turn to preserve the
+  // same map orientation shown by SketchUp/Google Earth.
+  const requiresSketchUpCorrection = sourceUpAxis === "Z_UP"
+    && /sketchup/i.test(sourceAuthoringTool || "");
+
+  return {
+    sourceUpAxis,
+    sourceAuthoringTool,
+    orientationCorrectionDeg: requiresSketchUpCorrection ? 90 : 0,
+    orientationCorrectionReason: requiresSketchUpCorrection
+      ? "sketchup-z-up-to-cesium"
+      : null,
+  };
+};
+
 export const assessKmzModelLocation = ({ assetLat, assetLng, modelLat, modelLng }) => {
   const rawValues = [assetLat, assetLng, modelLat, modelLng];
   if (rawValues.some((value) => value === null || value === undefined || String(value).trim() === "")) {
@@ -124,11 +156,23 @@ export const inspectKmzModel = (buffer) => {
     throw new KmzValidationError(`Format model .${extension || "?"} di dalam KMZ belum didukung`);
   }
 
+  const rawModelEntry = Object.keys(entries).find(
+    (name) => normalizeEntryName(name) === modelEntry,
+  );
+  const {
+    sourceUpAxis,
+    sourceAuthoringTool,
+    orientationCorrectionDeg,
+    orientationCorrectionReason,
+  } = inspectDaeOrientation(entries, rawModelEntry, extension);
+
   const latitude = optionalNumber(getTagValue(location, "latitude"));
   const longitude = optionalNumber(getTagValue(location, "longitude"));
   if (latitude === null || longitude === null || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
     throw new KmzValidationError("Lokasi latitude/longitude model pada KML tidak valid");
   }
+
+  const sourceHeading = optionalNumber(getTagValue(orientation, "heading")) || 0;
 
   return {
     format: "KMZ",
@@ -139,7 +183,12 @@ export const inspectKmzModel = (buffer) => {
     longitude,
     altitudeM: optionalNumber(getTagValue(location, "altitude")) || 0,
     altitudeMode: getTagValue(modelSection, "altitudeMode") || "relativeToGround",
-    heading: optionalNumber(getTagValue(orientation, "heading")) || 0,
+    heading: normalizeHeading(sourceHeading + orientationCorrectionDeg),
+    sourceHeading,
+    sourceUpAxis,
+    sourceAuthoringTool,
+    orientationCorrectionDeg,
+    orientationCorrectionReason,
     tilt: optionalNumber(getTagValue(orientation, "tilt")) || 0,
     roll: optionalNumber(getTagValue(orientation, "roll")) || 0,
     scaleX: optionalNumber(getTagValue(scale, "x")) ?? 1,

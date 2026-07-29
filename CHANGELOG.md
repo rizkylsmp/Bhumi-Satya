@@ -1,5 +1,12 @@
 # Changelog
 
+## Dashboard Digital Twin
+
+- Memperbarui dashboard menjadi ringkasan kesiapan data Digital Twin.
+- Menambahkan diagram interaktif berbasis Recharts untuk kesiapan data, portofolio sewa, sebaran spasial, dan nilai kontrak aktif.
+- Menata ulang kartu statistik dan aktivitas agar responsif tanpa scroll horizontal serta tanpa efek glow atau shadow.
+- Memfokuskan isi dashboard pada kesiapan model Digital Twin dan operasional penyewaan, termasuk status unit dan nilai kontrak aktif.
+
 Semua perubahan penting pada Bhumi Satya dicatat di dokumen ini. Formatnya
 mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/id-ID/1.1.0/)
 dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
@@ -8,6 +15,8 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Menambahkan pemilih basemap pada preview Kelola 3D dengan preferensi layer yang
+  tersimpan.
 - Menambahkan tabel manajemen katalog 3D dengan Center X/Y, URL model, status,
   filter lanjutan, sort, dan ekspor CSV yang mengikuti hasil filter.
 - Menambahkan UUID, CRUD, pencarian, filter, pagination, template CSV, dan impor
@@ -20,6 +29,20 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Sidebar kini memakai animasi ringan saat dibuka atau diringkas, termasuk
+  backdrop mobile, ikon menu, submenu, flyout, dan kemunculan item secara
+  bertahap dengan dukungan preferensi pengurangan gerakan.
+- Motion ringan kini diterapkan secara konsisten pada pergantian halaman,
+  modal konfirmasi dan detail, popover header, tab Kelola 3D, panel kontrol
+  peta, serta feedback tekan pada tombol.
+- Tombol `Kembali ke atas` dan `Butuh bantuan` kini dirender langsung pada
+  viewport sehingga tetap mengambang ketika halaman memakai animasi transisi.
+- Tipografi menu, kontrol, popup, dan skala peta kini memakai font antarmuka
+  Bhumi Satya sebagai pengganti font bawaan Helvetica/Arial dari MapLibre,
+  tanpa mengubah bobot teks tebal yang sudah digunakan.
+- Popup informasi peta dan panel detail objek kini dapat diseret melalui
+  header, dengan posisi awal di sekitar tengah-kanan dan posisi drag yang
+  dibatasi agar tetap berada di dalam area peta.
 - Fitur Tapak Bangunan dihapus dari alur aktif: kontrol impor dan statusnya
   tidak lagi tampil pada form maupun Kelola 3D, peta tidak lagi membuat model
   prosedural dari footprint, dan penempatan model memakai koordinat objek,

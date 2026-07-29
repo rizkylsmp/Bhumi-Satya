@@ -168,7 +168,7 @@ const ChatbotModal = ({ isOpen, onClose }) => {
       role="dialog"
       aria-modal="false"
       aria-label="Asisten Bhumi Satya"
-      className="fixed inset-x-3 bottom-20 z-50 ml-auto flex h-[min(31rem,calc(100dvh-6.5rem))] w-auto flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl sm:inset-x-auto sm:right-5 sm:w-[22rem]"
+      className="motion-panel-enter fixed inset-x-3 bottom-20 z-50 ml-auto flex h-[min(31rem,calc(100dvh-6.5rem))] w-auto flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl sm:inset-x-auto sm:right-5 sm:w-[22rem]"
     >
       <header className="flex min-h-14 items-center justify-between border-b border-white/10 bg-gray-900 px-3.5 py-2.5 text-white dark:bg-gray-700">
         <div className="flex min-w-0 items-center gap-2.5">
