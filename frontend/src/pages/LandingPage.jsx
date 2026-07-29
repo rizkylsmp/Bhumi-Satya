@@ -496,31 +496,6 @@ export default function LandingPage() {
     );
   }, [mapAssets, mapSearch]);
 
-  const assetStats = useMemo(() => {
-    const kecamatanSet = new Set();
-    const jenisSet = new Set();
-    let certified = 0;
-
-    mapAssets.forEach((asset) => {
-      if (asset.kecamatan) kecamatanSet.add(asset.kecamatan);
-      if (asset.jenis_aset) jenisSet.add(asset.jenis_aset);
-      if (
-        asset.nomor_sertifikat ||
-        asset.no_sertifikat ||
-        asset.status_sertifikat === "bersertifikat"
-      ) {
-        certified += 1;
-      }
-    });
-
-    return {
-      total: mapAssets.length,
-      kecamatan: kecamatanSet.size,
-      jenis: jenisSet.size,
-      certified,
-    };
-  }, [mapAssets]);
-
   const scrollTo = (ref) => {
     ref.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -711,15 +686,15 @@ export default function LandingPage() {
               Platform Digital Twin
             </div>
             <h2 className="max-w-3xl text-3xl font-black leading-tight tracking-tight text-slate-950 dark:text-white sm:text-4xl lg:text-6xl">
-              Jelajahi aset wilayah
+              Jelajahi ruang secara digital.
               <span className="block text-emerald-600 dark:text-emerald-300">
-                dalam representasi digital.
+                Kelola pemanfaatannya lebih mudah.
               </span>
             </h2>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-600 dark:text-slate-300 md:text-lg">
-              Bhumi Satya menyatukan peta 2D, model 3D, data spasial, legalitas,
-              dan pemanfaatan aset dalam Digital Twin yang mudah dijelajahi,
-              dipahami, dan diperbarui.
+              Bhumi Satya menghadirkan Digital Twin 2D dan 3D untuk memahami
+              kondisi ruang, sekaligus layanan penyewaan untuk menemukan objek
+              tersedia dan mengajukan pemanfaatan secara online.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <button
@@ -730,6 +705,14 @@ export default function LandingPage() {
                 <MapTrifoldIcon size={19} weight="fill" />
                 Jelajahi Digital Twin
               </button>
+              <button
+                type="button"
+                onClick={() => scrollTo(sewaRef)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/70 px-5 py-3 text-sm font-bold text-slate-700 backdrop-blur-sm transition hover:border-emerald-300 hover:bg-white hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-white dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:border-emerald-300/40 dark:hover:bg-white/15 dark:hover:text-emerald-100 dark:focus:ring-emerald-200 dark:focus:ring-offset-emerald-950"
+              >
+                <StorefrontIcon size={19} weight="duotone" />
+                Lihat Penyewaan
+              </button>
             </div>
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-slate-600 dark:text-slate-300">
               <span className="inline-flex items-center gap-2">
@@ -738,7 +721,7 @@ export default function LandingPage() {
                   weight="fill"
                   className="text-sky-600 dark:text-sky-300"
                 />
-                Peta aset terintegrasi
+                Digital Twin 2D & 3D
               </span>
               <span className="inline-flex items-center gap-2">
                 <ShieldCheckIcon
@@ -746,7 +729,7 @@ export default function LandingPage() {
                   weight="fill"
                   className="text-emerald-600 dark:text-emerald-300"
                 />
-                Model dan konteks 3D
+                Data ruang terhubung
               </span>
               <span className="inline-flex items-center gap-2">
                 <StackIcon
@@ -754,7 +737,7 @@ export default function LandingPage() {
                   weight="fill"
                   className="text-amber-600 dark:text-amber-300"
                 />
-                Data aset terverifikasi
+                Penyewaan dalam satu alur
               </span>
             </div>
           </div>
@@ -762,11 +745,15 @@ export default function LandingPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-300">
-                  Cakupan Digital Twin
+                  Satu Platform Terintegrasi
                 </p>
                 <h3 className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
-                  Ringkasan representasi aset
+                  Digital Twin & layanan penyewaan
                 </h3>
+                <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                  Pahami kondisi ruang secara visual, lalu lanjutkan ke layanan
+                  penyewaan melalui alur yang saling terhubung.
+                </p>
               </div>
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-300/15 dark:text-emerald-200">
                 <BuildingsIcon size={23} weight="duotone" />
@@ -775,24 +762,28 @@ export default function LandingPage() {
             <div className="mt-6 grid grid-cols-2 gap-3">
               {[
                 {
-                  label: "Total aset",
-                  value: assetStats.total,
+                  label: "Digital Twin",
+                  value: "2D + 3D",
+                  description: "Visual ruang terpadu",
+                  icon: MapTrifoldIcon,
+                },
+                {
+                  label: "Data terhubung",
+                  value: mapAssets.length || "—",
+                  description: "Objek dalam peta",
                   icon: BuildingsIcon,
                 },
                 {
-                  label: "Kecamatan",
-                  value: assetStats.kecamatan,
-                  icon: MapPinIcon,
+                  label: "Pilihan sewa",
+                  value: items.length || "—",
+                  description: "Objek ditawarkan",
+                  icon: StorefrontIcon,
                 },
                 {
-                  label: "Jenis aset",
-                  value: assetStats.jenis,
-                  icon: StackIcon,
-                },
-                {
-                  label: "Bersertifikat",
-                  value: assetStats.certified,
-                  icon: ShieldCheckIcon,
+                  label: "Pengajuan",
+                  value: "Online",
+                  description: "Alur masyarakat",
+                  icon: PaperPlaneTiltIcon,
                 },
               ].map((stat) => (
                 <div
@@ -805,22 +796,35 @@ export default function LandingPage() {
                     className="text-emerald-600 dark:text-emerald-300"
                   />
                   <p className="mt-3 text-2xl font-black text-slate-900 dark:text-white">
-                    {stat.value || "—"}
+                    {stat.value}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
                     {stat.label}
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    {stat.description}
                   </p>
                 </div>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={() => scrollTo(petaRef)}
-              className="mt-4 flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-white hover:text-emerald-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:text-slate-100"
-            >
-              Lihat persebaran aset
-              <ArrowRightIcon size={16} weight="bold" />
-            </button>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => navigate("/peta-publik")}
+                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-white hover:text-emerald-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:border-emerald-300/30 dark:hover:bg-white/10 dark:hover:text-emerald-100"
+              >
+                Digital Twin
+                <ArrowRightIcon size={16} weight="bold" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollTo(sewaRef)}
+                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-white hover:text-emerald-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:border-emerald-300/30 dark:hover:bg-white/10 dark:hover:text-emerald-100"
+              >
+                Penyewaan
+                <ArrowRightIcon size={16} weight="bold" />
+              </button>
+            </div>
           </aside>
         </div>
       </section>
@@ -840,16 +844,18 @@ export default function LandingPage() {
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-bold text-text-primary">
-              Peta Lokasi Aset
+              Digital Twin 2D
             </h3>
             <p className="text-sm text-text-muted">
-              Peta berpusat di Sekolah Tinggi Pertanahan Nasional, Yogyakarta
+              Eksplorasi data ruang dalam konteks lokasi yang saling terhubung
             </p>
           </div>
           <div className="relative w-64 hidden sm:block">
             <MagnifyingGlassIcon
               size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
+              weight="bold"
+              aria-hidden="true"
+              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-sky-600 dark:text-cyan-300"
             />
             <input
               type="text"
@@ -873,7 +879,9 @@ export default function LandingPage() {
           <div className="relative">
             <MagnifyingGlassIcon
               size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
+              weight="bold"
+              aria-hidden="true"
+              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-sky-600 dark:text-cyan-300"
             />
             <input
               type="text"
@@ -941,7 +949,7 @@ export default function LandingPage() {
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3.5 py-2 text-xs font-semibold text-text-secondary transition-colors hover:border-blue-500/40 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
           >
             <MapTrifoldIcon size={16} weight="bold" />
-            Buka Peta Layar Penuh
+            Buka Digital Twin
             <ArrowRightIcon size={14} weight="bold" />
           </button>
         </div>
@@ -991,14 +999,14 @@ export default function LandingPage() {
           <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">
-                Sewa Aset
+                Layanan Penyewaan
               </p>
               <h3 className="mt-2 text-2xl font-bold text-text-primary md:text-3xl">
-                Aset pilihan yang siap disewa
+                Pilihan ruang yang tersedia untuk disewa
               </h3>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-text-secondary">
-                Lihat beberapa aset terbaru di beranda atau buka katalog lengkap
-                untuk mencari dan memfilter aset sesuai kebutuhan Anda.
+                Temukan objek yang tersedia, pelajari detail ruangnya, lalu
+                ajukan pemanfaatan melalui satu alur layanan.
               </p>
             </div>
             <button
@@ -1006,7 +1014,7 @@ export default function LandingPage() {
               onClick={() => navigate("/sewa-aset")}
               className="inline-flex items-center gap-2 self-start rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-surface transition hover:bg-accent-hover sm:self-auto"
             >
-              Lihat Semua Aset
+              Lihat Pilihan Sewa
               <ArrowRightIcon size={16} weight="bold" />
             </button>
           </div>
@@ -1039,10 +1047,10 @@ export default function LandingPage() {
                 className="mx-auto text-text-muted mb-4"
               />
               <h4 className="text-lg font-semibold text-text-primary mb-2">
-                Belum Ada Aset Tersedia
+                Belum Ada Objek Sewa
               </h4>
               <p className="text-sm text-text-muted max-w-md mx-auto">
-                Saat ini belum ada aset yang tersedia untuk disewakan.
+                Saat ini belum ada objek yang ditawarkan untuk disewa.
               </p>
             </div>
           ) : (
@@ -1070,7 +1078,7 @@ export default function LandingPage() {
           </h3>
           <p className="text-text-secondary text-sm max-w-lg mx-auto">
             Pengajuan sewa dilakukan melalui akun masyarakat agar status
-            permintaan dan dokumen balasan pengelola aset bisa dipantau dengan
+            permintaan dan dokumen balasan pengelola bisa dipantau dengan
             aman.
           </p>
         </div>
@@ -1142,7 +1150,7 @@ export default function LandingPage() {
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-surface rounded-2xl border border-border p-6">
               <h4 className="font-bold text-text-primary text-sm mb-4">
-                Kontak Pengelola Aset Kota Pasuruan
+                Kontak Pengelola
               </h4>
               <div className="space-y-4">
                 <a

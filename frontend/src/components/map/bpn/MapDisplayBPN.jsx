@@ -8,6 +8,8 @@ import {
   ImageIcon,
   MapPinIcon,
   MapTrifoldIcon,
+  MinusIcon,
+  PlusIcon,
   PolygonIcon,
   StackIcon,
   XIcon,
@@ -444,6 +446,7 @@ const MapDisplayBPN = ({
   const map = useRef(null);
   const cesiumMapRef = useRef(null);
   const popupRef = useRef(null);
+  const popupDragCleanupRef = useRef(null);
   const lastHandledHighlightRef = useRef(null);
   const lastHandledFocus3dRef = useRef(null);
   const lastAutoFocused3dLoadRef = useRef(null);
@@ -476,7 +479,7 @@ const MapDisplayBPN = ({
     typeof asset3dPanelOpen === "boolean"
       ? asset3dPanelOpen
       : isAsset3dPanelOpen;
-  const [visible3dLocationIds, setVisible3dLocationIds] = useState(null);
+  const [visible3dLocationIds, setVisible3dLocationIds] = useState(undefined);
   const [detailedModelStatus, setDetailedModelStatus] = useState({
     state: "idle",
     loaded: 0,
@@ -576,11 +579,34 @@ const MapDisplayBPN = ({
     }),
     [roleAssets],
   );
+  const default3dLocationIds = useMemo(() => {
+    const lod1Locations = model3dLocations.filter(
+      (location) =>
+        String(location.lod || "")
+          .toUpperCase()
+          .replaceAll(" ", "") === "LOD1",
+    );
+    if (lod1Locations.length > 0) {
+      return lod1Locations.map((location) => String(location.id));
+    }
+
+    const fallbackLod = String(model3dLocations[0]?.lod || "").toUpperCase();
+    return model3dLocations
+      .filter(
+        (location) =>
+          String(location.lod || "").toUpperCase() === fallbackLod,
+      )
+      .map((location) => String(location.id));
+  }, [model3dLocations]);
+  const resolvedVisible3dLocationIds =
+    visible3dLocationIds === undefined
+      ? default3dLocationIds
+      : visible3dLocationIds;
   const visible3dLocationIdSet = useMemo(
-    () => visible3dLocationIds === null
+    () => resolvedVisible3dLocationIds === null
       ? null
-      : new Set(visible3dLocationIds.map(String)),
-    [visible3dLocationIds],
+      : new Set(resolvedVisible3dLocationIds.map(String)),
+    [resolvedVisible3dLocationIds],
   );
   const visible3dAssetIdSet = useMemo(
     () => visible3dLocationIdSet === null
@@ -888,6 +914,8 @@ const MapDisplayBPN = ({
   const openMapPopup = (lngLat, properties, layerId = "") => {
     if (!map.current) return;
 
+    popupDragCleanupRef.current?.();
+    popupDragCleanupRef.current = null;
     if (popupRef.current) {
       popupRef.current.remove();
       popupRef.current = null;
@@ -901,8 +929,59 @@ const MapDisplayBPN = ({
       .setHTML(buildMapPopupHtml(properties, layerId))
       .addTo(map.current);
 
+    const popupHeader = popup
+      .getElement()
+      ?.querySelector(".popup-header");
+    if (popupHeader) {
+      let startPointer = null;
+      let startPopupPoint = null;
+
+      const stopDragging = () => {
+        startPointer = null;
+        startPopupPoint = null;
+        popupHeader.classList.remove("is-dragging");
+        document.removeEventListener("pointermove", handlePointerMove);
+        document.removeEventListener("pointerup", stopDragging);
+        document.removeEventListener("pointercancel", stopDragging);
+      };
+      const handlePointerMove = (event) => {
+        const currentMap = map.current;
+        if (!currentMap || !startPointer || !startPopupPoint) return;
+        event.preventDefault();
+        popup.setLngLat(
+          currentMap.unproject([
+            startPopupPoint.x + event.clientX - startPointer.x,
+            startPopupPoint.y + event.clientY - startPointer.y,
+          ]),
+        );
+      };
+      const handlePointerDown = (event) => {
+        if (event.button !== 0 || !map.current) return;
+        event.preventDefault();
+        event.stopPropagation();
+        startPointer = { x: event.clientX, y: event.clientY };
+        startPopupPoint = map.current.project(popup.getLngLat());
+        popupHeader.classList.add("is-dragging");
+        document.addEventListener("pointermove", handlePointerMove, {
+          passive: false,
+        });
+        document.addEventListener("pointerup", stopDragging);
+        document.addEventListener("pointercancel", stopDragging);
+      };
+      const cleanupPopupDrag = () => {
+        stopDragging();
+        popupHeader.removeEventListener("pointerdown", handlePointerDown);
+      };
+
+      popupHeader.title = "Tahan dan geser untuk memindahkan popup";
+      popupHeader.addEventListener("pointerdown", handlePointerDown);
+      popupDragCleanupRef.current = cleanupPopupDrag;
+    }
+
     popup.on("close", () => {
       try {
+        popupDragCleanupRef.current?.();
+        popupDragCleanupRef.current = null;
         if (popupRef.current === popup) {
           popupRef.current = null;
         }
@@ -993,6 +1072,8 @@ const MapDisplayBPN = ({
   };
 
   const closeMapPopup = () => {
+    popupDragCleanupRef.current?.();
+    popupDragCleanupRef.current = null;
     if (popupRef.current) {
       popupRef.current.remove();
       popupRef.current = null;
@@ -2135,9 +2216,8 @@ const MapDisplayBPN = ({
       },
     });
 
-    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
     map.current.addControl(
-      new maplibregl.ScaleControl({ maxWidth: 140, unit: "metric" }),
+      new maplibregl.ScaleControl({ maxWidth: 96, unit: "metric" }),
       "bottom-left",
     );
 
@@ -2186,6 +2266,8 @@ const MapDisplayBPN = ({
 
     return () => {
       // Remove popup FIRST before map to prevent race condition
+      popupDragCleanupRef.current?.();
+      popupDragCleanupRef.current = null;
       if (popupRef.current) {
         popupRef.current.off("close"); // Detach close listener to avoid calling it during destruction
         popupRef.current.remove();
@@ -2615,7 +2697,7 @@ const MapDisplayBPN = ({
       tilesetStatus={tileset3dStatus}
       fallbackStatus={detailedModelStatus}
       locations={model3dLocations}
-      visibleLocationIds={visible3dLocationIds}
+      visibleLocationIds={resolvedVisible3dLocationIds}
       onVisibleLocationIdsChange={setVisible3dLocationIds}
       showMarkers={showMarkers}
       onShowMarkersChange={setShowMarkersResolved}
@@ -2635,7 +2717,7 @@ const MapDisplayBPN = ({
   );
 
   const basemapSwitcher = (
-    <div className="absolute right-4 top-4 z-20 flex flex-col items-end sm:right-16">
+    <div className="absolute right-4 top-4 z-20 flex flex-col items-end">
       <div className="flex items-center gap-2">
         {showAsset3dToolbar && (
           <button
@@ -2667,6 +2749,43 @@ const MapDisplayBPN = ({
             )}
           </button>
         )}
+        <div
+          className="order-last flex overflow-hidden rounded-lg border border-white/80 bg-white/95 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95"
+          role="group"
+          aria-label="Kontrol zoom peta"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              if (isAsset3dMode) {
+                cesiumMapRef.current?.zoomOut();
+                return;
+              }
+              map.current?.zoomOut({ duration: 250 });
+            }}
+            className="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-slate-100 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent dark:text-slate-100 dark:hover:bg-slate-800"
+            title="Perkecil peta"
+            aria-label="Perkecil peta"
+          >
+            <MinusIcon size={18} weight="bold" />
+          </button>
+          <span className="w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={() => {
+              if (isAsset3dMode) {
+                cesiumMapRef.current?.zoomIn();
+                return;
+              }
+              map.current?.zoomIn({ duration: 250 });
+            }}
+            className="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-slate-100 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent dark:text-slate-100 dark:hover:bg-slate-800"
+            title="Perbesar peta"
+            aria-label="Perbesar peta"
+          >
+            <PlusIcon size={18} weight="bold" />
+          </button>
+        </div>
         <button
           type="button"
           onClick={() => {

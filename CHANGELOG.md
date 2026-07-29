@@ -20,6 +20,9 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Ringkasan hero landing page kini memaparkan kapabilitas Digital Twin 2D/3D,
+  data yang terhubung, pilihan penyewaan, dan pengajuan online, lengkap dengan
+  akses langsung menuju kedua layanan.
 - Identitas produk disederhanakan menjadi `Digital Twin`; label sidebar juga
   diringkas tanpa kata `Aset`, termasuk
   `Kelola Data`, `Pusat Data`, `Penyewaan`, dan `Objek Tersedia`.

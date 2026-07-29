@@ -7,10 +7,17 @@
 .maplibre-popup-content .popup-header {
   background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
   color: white;
+  cursor: grab;
   padding: 12px 16px;
   font-weight: 600;
   border-bottom: 1px solid #e5e7eb;
   margin-bottom: 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.maplibre-popup-content .popup-header.is-dragging {
+  cursor: grabbing;
 }
 
 .maplibre-popup-content .popup-body {
@@ -70,6 +77,11 @@
 
 .maplibregl-popup-close-button:hover {
   color: #1f2937;
+}
+
+/* Custom map toolbar replaces MapLibre's built-in top-right navigation. */
+.digital-twin-map .maplibregl-ctrl-top-right {
+  display: none;
 }
 
 /* Boundary hover tooltip — compact, no arrow clutter */

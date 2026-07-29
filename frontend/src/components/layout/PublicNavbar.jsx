@@ -26,7 +26,7 @@ const PUBLIC_LINKS = [
     matches: ["/peta-publik"],
   },
   {
-    label: "Sewa Aset",
+    label: "Penyewaan",
     icon: StorefrontIcon,
     path: "/sewa-aset",
     matches: ["/sewa-aset"],

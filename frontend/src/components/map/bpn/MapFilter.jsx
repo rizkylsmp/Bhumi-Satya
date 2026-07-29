@@ -139,8 +139,8 @@ export default function MapFilter({
           </label>
         )}
         <div className="group relative">
-          <span className="pointer-events-none absolute left-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-accent/10 text-accent transition-colors group-focus-within:bg-accent group-focus-within:text-surface dark:bg-sky-500/15 dark:text-sky-300 dark:group-focus-within:bg-sky-500 dark:group-focus-within:text-white">
-            <MagnifyingGlassIcon size={15} weight="bold" />
+          <span className="pointer-events-none absolute left-3 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center text-sky-600 transition-colors group-focus-within:text-sky-700 dark:text-cyan-300 dark:group-focus-within:text-cyan-200">
+            <MagnifyingGlassIcon size={18} weight="bold" aria-hidden="true" />
           </span>
           <input
             type="text"
@@ -151,7 +151,7 @@ export default function MapFilter({
             }
             value={searchTerm}
             onChange={handleSearch}
-            className={`w-full bg-surface pl-11 pr-9 text-sm text-text-primary outline-none transition-all placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 ${
+            className={`w-full bg-surface pl-10 pr-9 text-sm text-text-primary outline-none transition-all placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 ${
               searchOnly
                 ? "h-11 rounded-xl border border-border shadow-lg shadow-black/10 backdrop-blur-xl"
                 : "rounded-xl border-2 border-border py-3"

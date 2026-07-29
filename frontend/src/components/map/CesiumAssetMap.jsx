@@ -300,6 +300,22 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
         viewer.scene.requestRender();
         return true;
       },
+      zoomIn() {
+        const viewer = viewerRef.current;
+        if (!viewer || viewer.isDestroyed()) return false;
+        const height = viewer.camera.positionCartographic.height;
+        viewer.camera.zoomIn(Math.max(25, height * 0.3));
+        viewer.scene.requestRender();
+        return true;
+      },
+      zoomOut() {
+        const viewer = viewerRef.current;
+        if (!viewer || viewer.isDestroyed()) return false;
+        const height = viewer.camera.positionCartographic.height;
+        viewer.camera.zoomOut(Math.max(25, height * 0.3));
+        viewer.scene.requestRender();
+        return true;
+      },
     }),
     [],
   );
