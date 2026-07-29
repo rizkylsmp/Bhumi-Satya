@@ -17,13 +17,14 @@ import {
   GeoJsonDataSource,
   HeadingPitchRange,
   HeadingPitchRoll,
+  ImageryLayer,
   Math as CesiumMath,
   Matrix4,
   Model,
-  OpenStreetMapImageryProvider,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
   Transforms,
+  UrlTemplateImageryProvider,
   Viewer,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
@@ -116,6 +117,45 @@ const focusSpheres = (viewer, spheres, duration = 0.8) => {
   return true;
 };
 
+const focusCoordinates = (viewer, location, duration = 0.8) => {
+  if (!viewer || viewer.isDestroyed()) return false;
+  const longitude = Number(location?.longitude);
+  const latitude = Number(location?.latitude);
+  if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return false;
+  const radius = Math.max(25, Number(location?.radius) || 100);
+  const target = Cartesian3.fromDegrees(
+    longitude,
+    latitude,
+    Number(location?.altitude) || 0,
+  );
+  const range = Math.max(350, radius * 3.2);
+  const localFrame = Transforms.eastNorthUpToFixedFrame(target);
+  const destination = Matrix4.multiplyByPoint(
+    localFrame,
+    new Cartesian3(0, -range * 0.65, range * 0.75),
+    new Cartesian3(),
+  );
+  const direction = Cartesian3.normalize(
+    Cartesian3.subtract(target, destination, new Cartesian3()),
+    new Cartesian3(),
+  );
+  const surfaceNormal = Cartesian3.normalize(target, new Cartesian3());
+  const right = Cartesian3.normalize(
+    Cartesian3.cross(direction, surfaceNormal, new Cartesian3()),
+    new Cartesian3(),
+  );
+  const up = Cartesian3.normalize(
+    Cartesian3.cross(right, direction, new Cartesian3()),
+    new Cartesian3(),
+  );
+  viewer.camera.flyTo({
+    destination,
+    duration,
+    orientation: { direction, up },
+  });
+  return true;
+};
+
 const CesiumAssetMap = forwardRef(function CesiumAssetMap(
   {
     assets = [],
@@ -137,6 +177,8 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
   const targetSpheresRef = useRef([]);
+  const targetSphereByLocationIdRef = useRef(new Map());
+  const pendingFocusLocationRef = useRef(null);
   const fallbackTargetRef = useRef(null);
   const assetsRef = useRef(assets);
   const onFeatureClickRef = useRef(onFeatureClick);
@@ -217,20 +259,18 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     forwardedRef,
     () => ({
       focus(location = null) {
+        pendingFocusLocationRef.current = location;
         const viewer = viewerRef.current;
-        if (!viewer || viewer.isDestroyed()) return false;
-        const longitude = Number(location?.longitude);
-        const latitude = Number(location?.latitude);
-        if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
-          viewer.camera.flyTo({
-            destination: Cartesian3.fromDegrees(longitude, latitude, 850),
-            orientation: {
-              heading: CesiumMath.toRadians(25),
-              pitch: CesiumMath.toRadians(-35),
-              roll: 0,
-            },
-            duration: 0.8,
-          });
+        if (!viewer || viewer.isDestroyed()) return Boolean(location);
+        if (focusCoordinates(viewer, location)) {
+          pendingFocusLocationRef.current = null;
+          return true;
+        }
+        const targetSphere = location?.id
+          ? targetSphereByLocationIdRef.current.get(String(location.id))
+          : null;
+        if (targetSphere && focusSpheres(viewer, [targetSphere])) {
+          pendingFocusLocationRef.current = null;
           return true;
         }
         if (focusSpheres(viewer, targetSpheresRef.current)) return true;
@@ -329,6 +369,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     let clickHandler;
     let hoveredModel;
     const targetSpheres = [];
+    const targetSphereByLocationId = new Map();
 
     const initialize = async () => {
       onStatusChangeRef.current?.({
@@ -338,9 +379,17 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
         failed: 0,
       });
 
+      const basemapProvider = new UrlTemplateImageryProvider({
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        credit: "Tiles © Esri",
+        maximumLevel: 19,
+      });
+      basemapProvider.errorEvent.addEventListener((error) => {
+        console.error("Cesium basemap tile failed:", error);
+      });
       viewer = new Viewer(containerRef.current, {
         animation: false,
-        baseLayer: false,
+        baseLayer: new ImageryLayer(basemapProvider),
         baseLayerPicker: false,
         fullscreenButton: false,
         geocoder: false,
@@ -356,13 +405,10 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       });
       viewerRef.current = viewer;
       viewer.scene.backgroundColor = Color.fromCssColorString("#dce7ef");
+      viewer.scene.globe.show = true;
+      viewer.scene.globe.baseColor = Color.fromCssColorString("#cbd5e1");
       viewer.scene.globe.depthTestAgainstTerrain = false;
       viewer.scene.globe.showGroundAtmosphere = false;
-      viewer.imageryLayers.addImageryProvider(
-        new OpenStreetMapImageryProvider({
-          url: "https://tile.openstreetmap.org/",
-        }),
-      );
       viewer.camera.setView({
         destination: Cartesian3.fromDegrees(
           DEFAULT_MAP_CENTER[0],
@@ -445,6 +491,12 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
             viewer.scene.primitives.add(tileset);
             setModelHoverColor(tileset, false);
             targetSpheres.push(tileset.boundingSphere);
+            if (model.locationId) {
+              targetSphereByLocationId.set(
+                String(model.locationId),
+                tileset.boundingSphere,
+              );
+            }
           } else {
             const location = resolveModelOffsetLocation(model);
             if (
@@ -469,6 +521,12 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
             await waitForModelReady(primitive);
             setModelHoverColor(primitive, false);
             targetSpheres.push(primitive.boundingSphere);
+            if (model.locationId) {
+              targetSphereByLocationId.set(
+                String(model.locationId),
+                primitive.boundingSphere,
+              );
+            }
           }
           loaded += 1;
         } catch (error) {
@@ -489,11 +547,41 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       }
 
       targetSpheresRef.current = targetSpheres;
-      if (!cancelled && targetSpheres.length > 0) {
+      targetSphereByLocationIdRef.current = targetSphereByLocationId;
+      const pendingLocation = pendingFocusLocationRef.current;
+      const pendingSphere = pendingLocation?.id
+        ? targetSphereByLocationId.get(String(pendingLocation.id))
+        : null;
+      if (!cancelled && pendingLocation && focusCoordinates(
+        viewer,
+        pendingLocation,
+        0.7,
+      )) {
+        pendingFocusLocationRef.current = null;
+      } else if (!cancelled && pendingSphere) {
+        focusSpheres(viewer, [pendingSphere], 0.7);
+        pendingFocusLocationRef.current = null;
+      } else if (!cancelled && detailedModels.length > 0 && focusCoordinates(
+        viewer,
+        (() => {
+          const model = detailedModels[0];
+          const location = resolveModelOffsetLocation(model);
+          return {
+            longitude: location.longitude,
+            latitude: location.latitude,
+            altitude: location.altitude,
+            radius: model.converted_bounds?.radius,
+          };
+        })(),
+        0.7,
+      )) {
+        pendingFocusLocationRef.current = null;
+      } else if (!cancelled && targetSpheres.length > 0) {
         focusSpheres(viewer, targetSpheres, 0.7);
       } else if (!cancelled && fallbackTargetRef.current) {
         await viewer.zoomTo(fallbackTargetRef.current);
       }
+      viewer.scene.requestRender();
 
       clickHandler = new ScreenSpaceEventHandler(viewer.scene.canvas);
       clickHandler.setInputAction((movement) => {
@@ -570,6 +658,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       setModelHoverColor(hoveredModel, false);
       resizeObserver?.disconnect();
       targetSpheresRef.current = [];
+      targetSphereByLocationIdRef.current = new Map();
       fallbackTargetRef.current = null;
       viewerRef.current = null;
       if (viewer && !viewer.isDestroyed()) viewer.destroy();

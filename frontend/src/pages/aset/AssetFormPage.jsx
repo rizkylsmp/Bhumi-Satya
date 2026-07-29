@@ -33,7 +33,7 @@ const formSections = [
   { id: "legal", label: "Legal", icon: ScalesIcon },
   { id: "fisik", label: "Fisik", icon: MapPinIcon },
   { id: "spasial", label: "Spasial", icon: MapPinIcon },
-  { id: "administratif", label: "Administratif", icon: CurrencyDollarIcon },
+  { id: "administratif", label: "Keuangan", icon: CurrencyDollarIcon },
   { id: "dokumentasi", label: "Dokumentasi", icon: FolderOpenIcon },
 ];
 

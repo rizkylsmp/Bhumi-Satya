@@ -20,6 +20,23 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Fitur Tapak Bangunan dihapus dari alur aktif: kontrol impor dan statusnya
+  tidak lagi tampil pada form maupun Kelola 3D, peta tidak lagi membuat model
+  prosedural dari footprint, dan penempatan model memakai koordinat objek,
+  koordinat model, atau polygon bidang.
+- Field `Ketinggian` model dipindahkan ke bagian `Informasi Dasar` pada detail
+  Kelola 3D agar metadata utama lebih mudah ditemukan.
+- Alur Kelola 3D disederhanakan menjadi konversi lalu aktivasi. Tab verifikasi,
+  panel sumber/referensi, CRS manual, dan checklist publikasi tidak lagi
+  digunakan sebagai syarat aktivasi model.
+- Tab `Daftar Ruang` pada detail Kelola 3D dinonaktifkan sementara dan diberi
+  indikator bahwa fitur masih dalam proses pengembangan.
+- Sidebar kini menempatkan `Pusat Data` sebagai menu mandiri, sedangkan
+  `Data Legal`, `Data Fisik`, dan `Keuangan` dikelompokkan dalam dropdown
+  `Kelola Data`.
+- Pencarian peta kini mendukung kode 3D. `Fly to` memprioritaskan koordinat
+  utama objek, lalu polygon, dan menggunakan koordinat model aktif sebagai
+  fallback ketika data 2D belum tersedia.
 - Ringkasan hero landing page kini memaparkan kapabilitas Digital Twin 2D/3D,
   data yang terhubung, pilihan penyewaan, dan pengajuan online, lengkap dengan
   akses langsung menuju kedua layanan.

@@ -27,7 +27,6 @@ const assetAttributes = [
   "koordinat_lat",
   "koordinat_long",
   "polygon_bidang",
-  "building_footprint",
   "building_height_m",
   "building_base_elevation_m",
   "building_floors",

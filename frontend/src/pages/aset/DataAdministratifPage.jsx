@@ -124,9 +124,9 @@ const statsCards = (assets, totalItems, assetStats) => {
 export default function DataAdministratifPage() {
   return (
     <SubstansiAssetPage
-      title="Data Administratif"
-      subtitle="Kodefikasi BMD, nilai aset, OPD pengguna, dan dokumen penetapan"
-      icon={FileTextIcon}
+      title="Keuangan"
+      subtitle="Kodefikasi BMD, nilai perolehan, NJOP, dan informasi pengelolaan"
+      icon={CurrencyDollarIcon}
       iconColor="from-violet-500 to-violet-600"
       columns={columns}
       statsCards={statsCards}

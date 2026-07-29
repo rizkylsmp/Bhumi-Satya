@@ -27,7 +27,6 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { assetModel3dService } from "../../services/api";
-import { downloadBuildingFootprintGeojson } from "../../utils/geojsonExport";
 import { getAsset3dSummary, HEIGHT_QUALITY_CONFIG } from "../../utils/asset3dGeojson";
 import { useConfirm } from "../ui/confirmContext";
 
@@ -715,9 +714,9 @@ export default function AssetViewModal({
                 />
               </Section>
 
-              {/* Data Administratif / Keuangan */}
+              {/* Keuangan */}
               <Section
-                title="Data Administratif / Keuangan"
+                title="Keuangan"
                 icon={CurrencyDollarIcon}
                 columns={3}
                 hidden={activeDetailTab !== "detail-data-administratif-keuangan"}
@@ -876,23 +875,13 @@ export default function AssetViewModal({
                 </div>
               )}
 
-              {activeDetailTab === "detail-data-bangunan-3d" && (hasPolygonData(asset.building_footprint) || asset3d.height || model3dVersions.length > 0) && (
+              {activeDetailTab === "detail-data-bangunan-3d" && (asset3d.height || model3dVersions.length > 0) && (
                 <section id="detail-data-bangunan-3d" role="tabpanel" aria-labelledby="tab-detail-data-bangunan-3d" className="rounded-2xl border border-violet-200 bg-violet-50/60 p-4 shadow-sm dark:border-violet-500/30 dark:bg-violet-500/5">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <h4 id="asset-3d-summary" className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-violet-800 dark:text-violet-300">
                       <BuildingsIcon size={15} weight="fill" />
                       Data Bangunan 3D
                     </h4>
-                    {hasPolygonData(asset.building_footprint) && (
-                      <button
-                        type="button"
-                        onClick={() => downloadBuildingFootprintGeojson(asset)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-surface px-2.5 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100 focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-violet-500/30 dark:text-violet-300"
-                      >
-                        <DownloadSimpleIcon size={13} />
-                        Unduh Tapak
-                      </button>
-                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                     <InfoItem label="LOD" value={asset3d.lod} />
@@ -1071,11 +1060,11 @@ export default function AssetViewModal({
                 </section>
               )}
 
-              {activeDetailTab === "detail-data-bangunan-3d" && !hasPolygonData(asset.building_footprint) && !asset3d.height && model3dVersions.length === 0 && (
+              {activeDetailTab === "detail-data-bangunan-3d" && !asset3d.height && model3dVersions.length === 0 && (
                 <div id="detail-data-bangunan-3d" role="tabpanel" aria-labelledby="tab-detail-data-bangunan-3d" className="rounded-2xl border border-dashed border-violet-300 bg-violet-50/40 p-10 text-center dark:border-violet-500/30 dark:bg-violet-500/5">
                   <BuildingsIcon size={30} className="mx-auto text-violet-400" />
                   <p className="mt-3 text-sm font-bold text-text-primary">Data bangunan 3D belum tersedia</p>
-                  <p className="mt-1 text-xs text-text-muted">Tambahkan footprint bangunan atau import model KMZ/GLB melalui Kelola 3D.</p>
+                  <p className="mt-1 text-xs text-text-muted">Impor model KMZ/GLB melalui Kelola 3D.</p>
                 </div>
               )}
             </div>

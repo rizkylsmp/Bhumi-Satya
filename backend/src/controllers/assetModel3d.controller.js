@@ -81,7 +81,7 @@ const resolveAssetLocation = (asset) => {
     return { latitude, longitude };
   }
 
-  const spatialValue = asset.building_footprint || asset.polygon_bidang;
+  const spatialValue = asset.polygon_bidang;
   let geometry = spatialValue;
   if (typeof geometry === "string") {
     try {
@@ -518,16 +518,10 @@ export const activate = async (req, res) => {
         error: "Model harus selesai dikonversi sebelum diaktifkan",
       });
     }
-    if (!["verified", "active"].includes(model.review_status)) {
-      return res.status(409).json({
-        success: false,
-        error: "Model harus diverifikasi sebelum diaktifkan",
-      });
-    }
     const oldData = serializeModel(model);
     await sequelize.transaction(async (transaction) => {
       await AsetModel3d.update(
-        { is_active: false, review_status: "verified", updated_at: new Date() },
+        { is_active: false, updated_at: new Date() },
         {
           where: {
             id_aset: model.id_aset,
@@ -548,13 +542,13 @@ export const activate = async (req, res) => {
       id_referensi: model.id_model_3d,
       data_lama: oldData,
       data_baru: serializeModel(model),
-      keterangan: `Mengaktifkan model 3D ${model.lod} terverifikasi aset ${model.id_aset} versi ${model.version}`,
+      keterangan: `Mengaktifkan model 3D ${model.lod} aset ${model.id_aset} versi ${model.version}`,
       user_id: req.user.id_user,
       req,
     });
     return res.json({
       success: true,
-      message: `Model ${model.lod} terverifikasi berhasil diaktifkan`,
+      message: `Model ${model.lod} berhasil diaktifkan`,
       data: serializeModel(model),
     });
   } catch (error) {

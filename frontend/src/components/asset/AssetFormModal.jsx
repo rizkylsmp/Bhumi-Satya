@@ -8,7 +8,6 @@ import FormFileUpload from "../form/FormFileUpload";
 import AssetCoordinatePicker from "../map/AssetCoordinatePicker";
 import AssetPolygonDrawer from "../map/AssetPolygonDrawer";
 import { extractGeojsonPolygonPoints as parseGeojsonPolygonPoints } from "../../utils/geojsonExport";
-import { assessBuildingFootprintLocation } from "../../utils/asset3dGeojson";
 import {
   ClipboardTextIcon,
   ScalesIcon,
@@ -40,12 +39,9 @@ const SectionHeader = ({ icon: Icon, title }) => (
 const Building3dFields = ({
   formData,
   onChange,
-  onImport,
-  fileName,
   modelFile,
   onModelImport,
 }) => {
-  const locationCheck = assessBuildingFootprintLocation(formData);
   const [active3dSubtab, setActive3dSubtab] = useState("model");
   return (
     <fieldset className="space-y-5">
@@ -99,42 +95,6 @@ const Building3dFields = ({
         hidden={active3dSubtab !== "model"}
         className="space-y-5"
       >
-        <p className="text-sm leading-relaxed text-text-muted">
-          Tapak bangunan berbeda dari batas bidang tanah. Gunakan data ukur atau dokumen yang dapat ditelusuri.
-        </p>
-        <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-text-primary">
-            {getPolygonPointCount(formData.building_footprint) >= 3
-              ? `${getPolygonPointCount(formData.building_footprint)} titik tapak bangunan`
-              : "Belum ada tapak bangunan"}
-          </p>
-          <p className="text-xs text-text-muted">Impor GeoJSON Polygon tapak bangunan.</p>
-          {fileName && <p className="mt-1 text-xs font-medium text-accent">{fileName}</p>}
-        </div>
-        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:opacity-90 focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2">
-          <UploadSimpleIcon size={16} weight="bold" />
-          Impor Tapak
-          <input
-            type="file"
-            accept=".geojson,.json,application/geo+json,application/json"
-            onChange={onImport}
-            className="sr-only"
-          />
-        </label>
-        </div>
-        {formData.building_footprint && locationCheck.status !== "missing" && (
-          <p
-            role={locationCheck.status === "warning" ? "alert" : "status"}
-            className={`rounded-lg border px-3 py-2 text-xs ${
-              locationCheck.status === "warning"
-                ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300"
-                : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
-            }`}
-          >
-            {locationCheck.message}
-          </p>
-        )}
         <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-text-primary">
@@ -191,7 +151,7 @@ const Building3dFields = ({
           { value: "estimated", label: "Estimasi" },
         ]} size="lg" />
         <FormSelect label="Level of Detail" name="model_3d_lod" value={formData.model_3d_lod} onChange={onChange} placeholder="Pilih LOD" options={[
-          { value: "LOD0", label: "LOD0 - Tapak" }, { value: "LOD1", label: "LOD1 - Blok" },
+          { value: "LOD0", label: "LOD0 - Sederhana" }, { value: "LOD1", label: "LOD1 - Blok" },
           { value: "LOD2", label: "LOD2 - Bentuk Atap" },
         ]} size="lg" />
         <FormInput label="CRS Sumber" name="model_3d_source_crs" value={formData.model_3d_source_crs} onChange={onChange} placeholder="EPSG:32749" size="lg" />
@@ -254,7 +214,6 @@ const initialFormData = {
   plotting_status: "",
   // Data Spasial
   polygon_bidang: null,
-  building_footprint: null,
   building_height_m: "",
   building_base_elevation_m: "",
   building_floors: "",
@@ -341,7 +300,6 @@ export default function AssetFormModal({
     buildInitialFormData(),
   );
   const [polygonImportFileName, setPolygonImportFileName] = useState("");
-  const [buildingFootprintFileName, setBuildingFootprintFileName] = useState("");
   const [model3dFile, setModel3dFile] = useState(null);
 
   // Update form when assetData changes (for edit mode)
@@ -402,7 +360,6 @@ export default function AssetFormModal({
         plotting_status: assetData.plotting_status || "",
         // Data Spasial
         polygon_bidang: assetData.polygon_bidang || null,
-        building_footprint: assetData.building_footprint || null,
         building_height_m: assetData.building_height_m || "",
         building_base_elevation_m: assetData.building_base_elevation_m || "",
         building_floors: assetData.building_floors || "",
@@ -414,12 +371,10 @@ export default function AssetFormModal({
         model_3d_accuracy_m: assetData.model_3d_accuracy_m || "",
       });
       setPolygonImportFileName("");
-      setBuildingFootprintFileName("");
       setModel3dFile(null);
     } else {
       setFormData(buildInitialFormData());
       setPolygonImportFileName("");
-      setBuildingFootprintFileName("");
       setModel3dFile(null);
     }
   }, [assetData, isOpen]);
@@ -578,26 +533,6 @@ export default function AssetFormModal({
     } catch (error) {
       console.error("Error importing GeoJSON:", error);
       toast.error("Gagal membaca file GeoJSON");
-    } finally {
-      e.target.value = "";
-    }
-  };
-
-  const handleBuildingFootprintImport = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const footprint = parseGeojsonPolygonPoints(await file.text());
-      if (!footprint) {
-        toast.error("File tidak memiliki polygon tapak bangunan yang valid");
-        return;
-      }
-      setFormData((prev) => ({ ...prev, building_footprint: footprint }));
-      setBuildingFootprintFileName(file.name);
-      toast.success("Tapak bangunan berhasil diimpor");
-    } catch (error) {
-      console.error("Error importing building footprint:", error);
-      toast.error("Gagal membaca tapak bangunan");
     } finally {
       e.target.value = "";
     }
@@ -773,8 +708,8 @@ export default function AssetFormModal({
       icon: MapPinIcon,
     },
     administratif: {
-      title: "Edit Data Administratif",
-      subtitle: "Perbarui informasi keuangan dan administrasi aset",
+      title: "Edit Keuangan",
+      subtitle: "Perbarui informasi nilai dan pengelolaan keuangan",
       icon: CurrencyDollarIcon,
     },
     spasial: {
@@ -1050,7 +985,7 @@ export default function AssetFormModal({
                   <div className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                     <SectionHeader
                       icon={FolderOpenIcon}
-                      title="Data KIB dan Administratif"
+                      title="Data KIB dan Keuangan"
                     />
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -1284,8 +1219,6 @@ export default function AssetFormModal({
                       <Building3dFields
                         formData={formData}
                         onChange={handleInputChange}
-                        onImport={handleBuildingFootprintImport}
-                        fileName={buildingFootprintFileName}
                         modelFile={model3dFile}
                         onModelImport={handleModel3dImport}
                       />
@@ -1681,7 +1614,7 @@ export default function AssetFormModal({
                 <div id="administratif" role="tabpanel" aria-labelledby="form-tab-administratif" hidden={isPage && activeSection !== "administratif"} data-form-section="administratif" className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                   <SectionHeader
                     icon={CurrencyDollarIcon}
-                    title="Data Administratif"
+                    title="Keuangan"
                   />
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

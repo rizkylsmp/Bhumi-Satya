@@ -186,33 +186,3 @@ export const downloadAssetGeojson = (asset) => {
   downloadGeojson(`aset-${sanitizeFilename(key)}`, feature);
   return true;
 };
-
-export const buildBuildingFootprintGeojsonFeature = (asset) => {
-  const geometry = normalizePolygonToGeometry(asset?.building_footprint);
-  if (!geometry) return null;
-  return {
-    type: "Feature",
-    properties: {
-      id_aset: asset?.id_aset || asset?.id || null,
-      kode_aset: asset?.kode_aset || null,
-      nama_aset: asset?.nama_aset || asset?.nama || null,
-      building_height_m: asset?.building_height_m || null,
-      building_floors: asset?.building_floors || null,
-      building_height_source: asset?.building_height_source || null,
-      building_height_quality: asset?.building_height_quality || null,
-      model_3d_lod: asset?.model_3d_lod || null,
-      model_3d_source_crs: asset?.model_3d_source_crs || null,
-      model_3d_recorded_at: asset?.model_3d_recorded_at || null,
-      model_3d_accuracy_m: asset?.model_3d_accuracy_m || null,
-    },
-    geometry,
-  };
-};
-
-export const downloadBuildingFootprintGeojson = (asset) => {
-  const feature = buildBuildingFootprintGeojsonFeature(asset);
-  if (!feature) return false;
-  const key = asset?.kode_aset || asset?.id_aset || asset?.id || "aset";
-  downloadGeojson(`tapak-bangunan-${sanitizeFilename(key)}`, feature);
-  return true;
-};

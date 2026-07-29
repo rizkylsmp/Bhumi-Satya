@@ -6,6 +6,7 @@ describe("map asset adapter", () => {
     const marker = normalizeMapMarker({
       id: 7,
       kode: "AST-007",
+      kode_3d: "3D-000007",
       nama: "Gedung Pelayanan",
       lat: -7.645,
       lng: 112.907,
@@ -19,6 +20,7 @@ describe("map asset adapter", () => {
     expect(marker).toMatchObject({
       id: 7,
       kode_aset: "AST-007",
+      kode_3d: "3D-000007",
       nama_aset: "Gedung Pelayanan",
       latitude: -7.645,
       longitude: 112.907,

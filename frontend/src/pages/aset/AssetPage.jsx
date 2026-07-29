@@ -338,11 +338,11 @@ export default function AssetPage() {
           </div>
           <div>
             <h1 className="text-xl lg:text-2xl font-bold text-text-primary">
-              Kelola Aset
+              Pusat Data
             </h1>
             <p className="text-text-muted text-sm">
-              Pusat data/master aset terpadu. Data legal, fisik, administratif,
-              dan spasial pada menu substansi selalu merujuk ke aset yang sama.
+              Master data terpadu. Data legal, fisik, keuangan, dan spasial
+              selalu merujuk ke objek yang sama.
             </p>
           </div>
         </div>

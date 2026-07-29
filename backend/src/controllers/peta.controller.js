@@ -1,5 +1,10 @@
 import { Op } from "sequelize";
-import { Aset, AsetModel3d, SewaAset } from "../models/index.js";
+import {
+  Aset,
+  Aset3dCatalog,
+  AsetModel3d,
+  SewaAset,
+} from "../models/index.js";
 import { hasPermission, PERMISSIONS } from "../middleware/auth.middleware.js";
 import { createModel3dTileset } from "../utils/model3dTileset.js";
 
@@ -29,7 +34,6 @@ const buildMapAssetLocationFilters = (publishedModelAssetIds = []) => {
       koordinat_long: { [Op.ne]: null },
     },
     { polygon_bidang: { [Op.ne]: null } },
-    { building_footprint: { [Op.ne]: null } },
   ];
   if (publishedModelAssetIds.length > 0) {
     filters.push({ id_aset: { [Op.in]: publishedModelAssetIds } });
@@ -87,7 +91,6 @@ export const getModel3dTileset = async (req, res) => {
         attributes: [
           "koordinat_lat",
           "koordinat_long",
-          "building_footprint",
           "building_height_m",
           "building_base_elevation_m",
         ],
@@ -162,7 +165,6 @@ export const getPublicMarkers = async (req, res) => {
         "nibar",
         "kw",
         "polygon_bidang",
-        "building_footprint",
         "building_height_m",
         "building_base_elevation_m",
         "building_floors",
@@ -175,6 +177,12 @@ export const getPublicMarkers = async (req, res) => {
         "sumber",
       ],
       include: [
+        {
+          model: Aset3dCatalog,
+          as: "catalog3d",
+          attributes: ["kode_3d"],
+          required: false,
+        },
         {
           model: SewaAset,
           as: "sewas",
@@ -233,6 +241,7 @@ export const getPublicMarkers = async (req, res) => {
         id: plain.id_aset,
         kode: plain.kode_aset,
         kode_aset: plain.kode_aset,
+        kode_3d: plain.catalog3d?.kode_3d || null,
         nib: plain.nib || null,
         nama: plain.nama_aset,
         nama_aset: plain.nama_aset,
@@ -260,7 +269,6 @@ export const getPublicMarkers = async (req, res) => {
         nibar: plain.nibar || null,
         kw: plain.kw || null,
         polygon: plain.polygon_bidang || null,
-        building_footprint: plain.building_footprint || null,
         building_height_m: plain.building_height_m
           ? parseFloat(plain.building_height_m)
           : null,
@@ -414,7 +422,6 @@ export const getMarkers = async (req, res) => {
         "nibar",
         "kw",
         "polygon_bidang",
-        "building_footprint",
         "building_height_m",
         "building_base_elevation_m",
         "building_floors",
@@ -427,6 +434,12 @@ export const getMarkers = async (req, res) => {
         "sumber",
       ],
       include: [
+        {
+          model: Aset3dCatalog,
+          as: "catalog3d",
+          attributes: ["kode_3d"],
+          required: false,
+        },
         {
           model: SewaAset,
           as: "sewas",
@@ -491,6 +504,7 @@ export const getMarkers = async (req, res) => {
       return {
         id: plain.id_aset,
         kode: plain.kode_aset,
+        kode_3d: plain.catalog3d?.kode_3d || null,
         nib: plain.nib || null,
         nama: plain.nama_aset,
         lokasi: plain.lokasi,
@@ -517,7 +531,6 @@ export const getMarkers = async (req, res) => {
         nibar: plain.nibar || null,
         kw: plain.kw || null,
         polygon: plain.polygon_bidang || null,
-        building_footprint: plain.building_footprint || null,
         building_height_m: plain.building_height_m
           ? parseFloat(plain.building_height_m)
           : null,

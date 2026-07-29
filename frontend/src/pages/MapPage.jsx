@@ -10,7 +10,7 @@ import { petaService, asetService } from "../services/api";
 import { downloadAssetPdf } from "../utils/pdfExport";
 import { downloadAssetGeojson } from "../utils/geojsonExport";
 import { hasUsableAsset3dData } from "../utils/asset3dGeojson";
-import { normalizeMapMarkers, parseMapPolygon } from "../utils/mapAssets";
+import { normalizeMapMarkers } from "../utils/mapAssets";
 import {
   CaretDownIcon,
   MapTrifoldIcon,
@@ -373,82 +373,30 @@ export default function MapPage({ publicMode = false }) {
       return undefined;
     }
 
-    if (publicMode) {
-      const normalizedTerm = term.toLowerCase();
-      const results = assets
-        .filter((asset) =>
-          [
-            asset.nama_aset,
-            asset.kode_aset,
-            asset.nib,
-            asset.nibar,
-            asset.nomor_sertifikat,
-            asset.opd_pengguna,
-            asset.lokasi,
-          ].some((value) =>
-            String(value || "").toLowerCase().includes(normalizedTerm),
-          ),
-        )
-        .slice(0, 8);
+    const normalizedTerm = term.toLowerCase();
+    const results = assets
+      .filter((asset) =>
+        [
+          asset.nama_aset,
+          asset.kode_aset,
+          asset.kode_3d,
+          asset.nib,
+          asset.nibar,
+          asset.nomor_sertifikat,
+          asset.opd_pengguna,
+          asset.lokasi,
+          asset.kecamatan,
+          asset.desa_kelurahan,
+        ].some((value) =>
+          String(value || "").toLowerCase().includes(normalizedTerm),
+        ),
+      )
+      .slice(0, 8);
 
-      setMapSearchResults(results);
-      setIsMapSearchLoading(false);
-      return undefined;
-    }
-
-    const timer = setTimeout(async () => {
-      setIsMapSearchLoading(true);
-      try {
-        const response = await asetService.getAll({
-          search: term,
-          limit: 8,
-          page: 1,
-        });
-        const results = response.data.data || [];
-        const transformedResults = results.map((asset) => ({
-            id: asset.id_aset,
-            kode_aset: asset.kode_aset,
-            nib: asset.nib || null,
-            nama_aset: asset.nama_aset,
-            lokasi: asset.lokasi,
-            status: asset.status?.toLowerCase().replace(/\s+/g, "_") || "aktif",
-            status_sertifikat: asset.status_sertifikat || null,
-            jenis_masalah: asset.jenis_masalah || null,
-            luas: asset.luas?.toString() || "0",
-            tahun: asset.tahun_perolehan?.toString() || "-",
-            jenis_aset: asset.jenis_aset,
-            keterangan: asset.keterangan || null,
-            latitude: asset.koordinat_lat ? Number(asset.koordinat_lat) : null,
-            longitude: asset.koordinat_long
-              ? Number(asset.koordinat_long)
-              : null,
-            polygon: parseMapPolygon(asset.polygon_bidang),
-            nomor_sertifikat: asset.nomor_sertifikat || null,
-            jenis_hak: asset.jenis_hak || null,
-            kecamatan: asset.kecamatan || null,
-            desa_kelurahan: asset.desa_kelurahan || null,
-            penggunaan_saat_ini: asset.penggunaan_saat_ini || null,
-            luas_lapangan: asset.luas_lapangan?.toString() || null,
-            opd_pengguna: asset.opd_pengguna || null,
-            atas_nama: asset.atas_nama || null,
-            status_hukum: asset.status_hukum || null,
-            nibar: asset.nibar || null,
-            kw: asset.kw || null,
-            status_sewa: asset.status_sewa || "Tidak Disewakan",
-            penyewa_aktif: asset.penyewa_aktif || null,
-            sumber: asset.sumber || null,
-        }));
-        setMapSearchResults(transformedResults);
-      } catch (error) {
-        console.error("Error searching map assets:", error);
-        setMapSearchResults([]);
-      } finally {
-        setIsMapSearchLoading(false);
-      }
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [assets, publicMode, searchFilter]);
+    setMapSearchResults(results);
+    setIsMapSearchLoading(false);
+    return undefined;
+  }, [assets, searchFilter]);
 
   // Fetch full asset detail
   const fetchAssetDetail = async (assetId) => {

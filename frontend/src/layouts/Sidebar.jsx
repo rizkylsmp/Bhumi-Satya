@@ -26,7 +26,7 @@ import {
   DatabaseIcon,
   ScalesIcon,
   MapPinIcon,
-  FileTextIcon,
+  CurrencyDollarIcon,
   GlobeHemisphereWestIcon,
   CubeIcon,
 } from "@phosphor-icons/react";
@@ -46,11 +46,21 @@ export default function Sidebar({
   // Auto-expand dropdown menus based on current route
   const [expandedMenus, setExpandedMenus] = useState(() => {
     const expanded = [];
+    const assetFormSection = new URLSearchParams(location.search).get("bagian")
+      || new URLSearchParams(location.search).get("kembali");
     if (
-      location.pathname.startsWith("/aset") &&
-      !location.pathname.startsWith("/aset/spasial")
+      ["/aset/legal", "/aset/fisik", "/aset/administratif"].some((path) =>
+        location.pathname.startsWith(path),
+      )
+      || (
+        (
+          location.pathname === "/aset/tambah"
+          || /^\/aset\/[^/]+\/edit$/.test(location.pathname)
+        )
+        && ["legal", "fisik", "administratif"].includes(assetFormSection)
+      )
     ) {
-      expanded.push("kelola-aset");
+      expanded.push("kelola-data");
     }
     if (
       location.pathname.startsWith("/aset/spasial") ||
@@ -100,15 +110,15 @@ export default function Sidebar({
       path: "/peta",
     },
     canAccessMenu(userRole, "aset") && {
-      id: "kelola-aset",
+      icon: DatabaseIcon,
+      label: "Pusat Data",
+      path: "/aset",
+    },
+    canAccessMenu(userRole, "aset") && {
+      id: "kelola-data",
       icon: FolderIcon,
       label: "Kelola Data",
       children: [
-        {
-          icon: DatabaseIcon,
-          label: "Pusat Data",
-          path: "/aset",
-        },
         {
           icon: ScalesIcon,
           label: "Data Legal",
@@ -120,8 +130,8 @@ export default function Sidebar({
           path: "/aset/fisik",
         },
         {
-          icon: FileTextIcon,
-          label: "Data Administratif",
+          icon: CurrencyDollarIcon,
+          label: "Keuangan",
           path: "/aset/administratif",
         },
       ].filter(Boolean),

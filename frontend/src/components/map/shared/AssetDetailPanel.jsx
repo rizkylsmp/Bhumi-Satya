@@ -160,7 +160,7 @@ export default function AssetDetailPanel({ asset, onClose, onViewDetail }) {
           )}
         </div>
 
-        {(asset.building_footprint || asset3d.height) && (
+        {(asset3d.available || asset3d.height) && (
           <div className="rounded-xl border border-violet-200 bg-violet-50/70 p-2.5 dark:border-violet-500/30 dark:bg-violet-500/10">
             <div className="mb-2 flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-violet-700 dark:text-violet-300">

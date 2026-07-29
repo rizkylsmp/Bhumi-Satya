@@ -125,6 +125,40 @@ textarea:disabled,
   cursor: not-allowed;
 }
 
+/* Compact model transform slider with a consistent thumb across browsers. */
+.model-transform-slider {
+  height: 3px;
+  appearance: none;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-accent) 24%, var(--color-border));
+}
+
+.model-transform-slider::-webkit-slider-thumb {
+  width: 13px;
+  height: 13px;
+  appearance: none;
+  border: 2px solid var(--color-surface);
+  border-radius: 9999px;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+.model-transform-slider::-moz-range-track {
+  height: 3px;
+  border: 0;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-accent) 24%, var(--color-border));
+}
+
+.model-transform-slider::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--color-surface);
+  border-radius: 9999px;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
 /* Crosshair cursor for map drawing/picking mode */
 .map-cursor-crosshair .maplibregl-canvas {
   cursor: crosshair !important;

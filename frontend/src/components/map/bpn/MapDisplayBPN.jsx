@@ -18,8 +18,6 @@ import BPNLayerControl from "./BPNLayerControl";
 import Model3dControlPanel from "./Model3dControlPanel";
 import Switch from "../../ui/Switch";
 import {
-  buildAssetBuildingFeature,
-  buildAssetBuildingFeatureCollection,
   getAsset3dSummary,
   hasUsableAsset3dData,
   resolveAssetBuildingHeight,
@@ -28,7 +26,6 @@ import {
   buildAnalysisFeatureCollection,
   distanceMeters,
   formatMetricValue,
-  geometryAreaSquareMeters,
   lineDistanceMeters,
 } from "../../../utils/mapAnalysis";
 import {
@@ -549,10 +546,10 @@ const MapDisplayBPN = ({
 
       return activeModels.map((model, modelIndex) => {
         const rawLatitude = Number(
-          model?.location_lat ?? asset?.koordinat_lat ?? asset?.latitude ?? asset?.lat,
+          asset?.koordinat_lat ?? asset?.latitude ?? asset?.lat ?? model?.location_lat,
         );
         const rawLongitude = Number(
-          model?.location_long ?? asset?.koordinat_long ?? asset?.longitude ?? asset?.lng,
+          asset?.koordinat_long ?? asset?.longitude ?? asset?.lng ?? model?.location_long,
         );
         const offsetLocation = resolveModelOffsetLocation({
           ...model,
@@ -570,6 +567,8 @@ const MapDisplayBPN = ({
           location: asset?.lokasi || asset?.desa_kelurahan || "Lokasi belum dilengkapi",
           latitude: offsetLocation.latitude,
           longitude: offsetLocation.longitude,
+          altitude: offsetLocation.altitude,
+          radius: model?.converted_bounds?.radius,
           lod: model?.lod || summary.lod || "LOD1",
           modelType: model?.model_type || (model?.public_url ? "Model detail" : "Bangunan LOD1"),
           conversionStatus: model?.conversion_status || "ready",
@@ -624,13 +623,7 @@ const MapDisplayBPN = ({
       : roleAssets.filter((asset) => visible3dAssetIdSet.has(String(asset?.id_aset || asset?.id))),
     [roleAssets, visible3dAssetIdSet],
   );
-  const assetBuildingGeoJson = useMemo(
-    () => buildAssetBuildingFeatureCollection(
-      visible3dAssets,
-      { fallbackOnly: true },
-    ),
-    [visible3dAssets],
-  );
+  const assetBuildingGeoJson = EMPTY_FEATURE_COLLECTION;
   const detailedModels3d = useMemo(
     () => visible3dAssets
       .flatMap((asset) => {
@@ -640,14 +633,14 @@ const MapDisplayBPN = ({
           : asset?.active_model_3d
             ? [asset.active_model_3d]
             : [];
-        const assetLongitude = Number(
+        const assetLongitude = parseCoordinateValue(
           asset?.koordinat_long ?? asset?.lng ?? asset?.longitude,
         );
-        const assetLatitude = Number(
+        const assetLatitude = parseCoordinateValue(
           asset?.koordinat_lat ?? asset?.lat ?? asset?.latitude,
         );
         const fallbackPoints = getPolygonPoints(
-          asset?.polygon || asset?.polygon_bidang || asset?.building_footprint,
+          asset?.polygon || asset?.polygon_bidang,
         );
         const fallbackLongitude = Number.isFinite(assetLongitude)
           ? assetLongitude
@@ -663,8 +656,8 @@ const MapDisplayBPN = ({
           ...model,
           assetId: asset?.id_aset || asset?.id,
           locationId: `model-${model.id_model_3d}`,
-          location_lat: model.location_lat ?? fallbackLatitude,
-          location_long: model.location_long ?? fallbackLongitude,
+          location_lat: fallbackLatitude ?? model.location_lat,
+          location_long: fallbackLongitude ?? model.location_long,
         }));
       })
       .filter((model) => (model?.public_url || model?.converted_public_url)
@@ -1103,16 +1096,16 @@ const MapDisplayBPN = ({
       .map((asset) => {
         const model = asset?.active_model_3d;
         const rawLongitude = Number(
-          model?.location_long ??
-            asset?.koordinat_long ??
+          asset?.koordinat_long ??
             asset?.longitude ??
-            asset?.lng,
+            asset?.lng ??
+            model?.location_long,
         );
         const rawLatitude = Number(
-          model?.location_lat ??
-            asset?.koordinat_lat ??
+          asset?.koordinat_lat ??
             asset?.latitude ??
-            asset?.lat,
+            asset?.lat ??
+            model?.location_lat,
         );
         if (!Number.isFinite(rawLongitude) || !Number.isFinite(rawLatitude)) {
           return null;
@@ -1211,7 +1204,6 @@ const MapDisplayBPN = ({
       return true;
     }
 
-    const buildingFeature = buildAssetBuildingFeature(asset);
     const heightData = resolveAssetBuildingHeight(asset);
     const modelBounds = asset?.active_model_3d?.converted_bounds;
     const modelHeight = Number(modelBounds?.size?.[1]);
@@ -1223,7 +1215,7 @@ const MapDisplayBPN = ({
     if (tool === "height") {
       setAnalysisVisualization({
         points: [clickedPoint],
-        geometry: buildingFeature?.geometry || null,
+        geometry: null,
         result: height
           ? {
               status: "success",
@@ -1243,7 +1235,6 @@ const MapDisplayBPN = ({
       return true;
     }
 
-    const footprintArea = geometryAreaSquareMeters(buildingFeature?.geometry);
     const boundSizes = Array.isArray(modelBounds?.size)
       ? modelBounds.size.map(Number)
       : [];
@@ -1251,28 +1242,23 @@ const MapDisplayBPN = ({
       boundSizes.length === 3 && boundSizes.every((size) => Number.isFinite(size) && size > 0)
         ? boundSizes.reduce((product, size) => product * size, 1)
         : null;
-    const volume =
-      footprintArea > 0 && height
-        ? footprintArea * height
-        : boundsVolume;
+    const volume = boundsVolume;
 
     setAnalysisVisualization({
       points: [clickedPoint],
-      geometry: buildingFeature?.geometry || null,
+      geometry: null,
       result: volume
         ? {
             status: "success",
             label: `Volume · ${assetName}`,
             value: formatMetricValue(volume, "m³"),
-            detail: footprintArea > 0 && height
-              ? `Tapak ${formatMetricValue(footprintArea, "m²")} × tinggi ${formatMetricValue(height, "m")}.`
-              : "Estimasi berdasarkan volume kotak batas model 3D.",
+            detail: "Estimasi berdasarkan volume kotak batas model 3D.",
           }
         : {
             status: "error",
             label: "Data volume belum cukup",
             value: assetName,
-            detail: "Tambahkan tapak dan tinggi bangunan, atau konversi model dengan metadata kotak batas.",
+            detail: "Konversi model dengan metadata kotak batas untuk menghitung volume.",
           },
     });
     return true;
@@ -1441,7 +1427,7 @@ const MapDisplayBPN = ({
     }
 
     const validPoints = getPolygonPoints(
-      asset?.polygon ?? asset?.polygon_bidang ?? asset?.building_footprint,
+      asset?.polygon ?? asset?.polygon_bidang,
     );
     if (validPoints.length > 0) {
       const sum = validPoints.reduce(
@@ -1451,14 +1437,47 @@ const MapDisplayBPN = ({
       return [sum[1] / validPoints.length, sum[0] / validPoints.length];
     }
 
+    const activeModels = Array.isArray(asset?.active_models_3d)
+      ? asset.active_models_3d
+      : asset?.active_model_3d
+        ? [asset.active_model_3d]
+        : [];
+    for (const model of activeModels) {
+      const location = resolveModelOffsetLocation(model);
+      if (
+        Number.isFinite(Number(location?.longitude)) &&
+        Number.isFinite(Number(location?.latitude))
+      ) {
+        return [Number(location.longitude), Number(location.latitude)];
+      }
+    }
+
     return null;
   };
 
   const fitToHighlightedAsset = (asset, lngLat) => {
     if (!map.current) return;
 
+    const assetLatitude = Number(
+      asset?.koordinat_lat ?? asset?.latitude ?? asset?.lat,
+    );
+    const assetLongitude = Number(
+      asset?.koordinat_long ?? asset?.longitude ?? asset?.lng,
+    );
+    if (
+      Number.isFinite(assetLatitude) &&
+      Number.isFinite(assetLongitude)
+    ) {
+      map.current.flyTo({
+        center: [assetLongitude, assetLatitude],
+        zoom: Math.max(map.current.getZoom(), 17),
+        duration: 1200,
+      });
+      return;
+    }
+
     const ring = normalizePolygonRing(
-      asset?.polygon ?? asset?.polygon_bidang ?? asset?.building_footprint,
+      asset?.polygon ?? asset?.polygon_bidang,
     );
     if (ring?.length >= 3) {
       const bounds = new maplibregl.LngLatBounds();
@@ -2519,6 +2538,16 @@ const MapDisplayBPN = ({
     const openHighlightedPopup = () => {
       if (!map.current || !map.current.isStyleLoaded()) return;
 
+      if (isAsset3dMode && cesiumMapRef.current) {
+        cesiumMapRef.current.focus({
+          longitude: lngLat[0],
+          latitude: lngLat[1],
+        });
+        onFeatureClick?.(targetAsset);
+        lastHandledHighlightRef.current = requestToken;
+        return;
+      }
+
       selectBidangAsset(targetAsset);
       fitToHighlightedAsset(targetAsset, lngLat);
 
@@ -2543,6 +2572,7 @@ const MapDisplayBPN = ({
     allAssetsResolved,
     highlightAssetId,
     highlightRequestKey,
+    isAsset3dMode,
     isBPKAMode,
     onFeatureClick,
   ]);
@@ -2594,7 +2624,7 @@ const MapDisplayBPN = ({
       fallbackAsset?.koordinat_lat ?? fallbackAsset?.lat ?? fallbackAsset?.latitude,
     );
     const fallbackPoints = getPolygonPoints(
-      fallbackAsset?.polygon || fallbackAsset?.polygon_bidang || fallbackAsset?.building_footprint,
+      fallbackAsset?.polygon || fallbackAsset?.polygon_bidang,
     );
     const fallbackCoords = Number.isFinite(fallbackLongitude) && Number.isFinite(fallbackLatitude)
       ? [fallbackLongitude, fallbackLatitude]
@@ -2690,7 +2720,6 @@ const MapDisplayBPN = ({
       }}
       onDisable3d={disableAsset3dMode}
       data2dContent={asset2dPanelContent}
-      buildingCount={assetBuildingGeoJson.features.length}
       detailedModelCount={detailedModels3d.length}
       tiledModelCount={tiledAssetIds.length}
       fallbackCount={fallbackDetailedModels3d.length}

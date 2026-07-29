@@ -10,11 +10,6 @@ import {
   assetModel3dService,
 } from "../services/api";
 import { useAuthStore } from "../stores/authStore";
-import {
-  getAsset3dSummary,
-  HEIGHT_QUALITY_CONFIG,
-} from "../utils/asset3dGeojson";
-import { extractGeojsonPolygonPoints as parseGeojsonPolygonPoints } from "../utils/geojsonExport";
 import { hasPermission } from "../utils/permissions";
 import {
   ArrowLeftIcon,
@@ -48,20 +43,42 @@ const DETAIL_SECTIONS = [
     icon: CubeIcon,
   },
   {
-    id: "verifikasi-model-3d",
-    label: "Verifikasi",
-    icon: CheckCircleIcon,
+    id: "transformasi-model-3d",
+    label: "Transformasi",
+    icon: ArrowsClockwiseIcon,
   },
   {
     id: "daftar-ruang-3d",
     label: "Daftar Ruang",
     icon: TableIcon,
+    disabled: true,
   },
 ];
 
+const ENABLED_DETAIL_SECTIONS = DETAIL_SECTIONS.filter(
+  (section) => !section.disabled,
+);
+
+const LOD_OPTIONS = [
+  { value: "LOD1", label: "LOD 1", description: "Block Model" },
+  { value: "LOD2", label: "LOD 2", description: "Roof Detail" },
+  { value: "LOD2.5", label: "LOD 2.5", description: "Facade Detail" },
+  { value: "LOD3", label: "LOD 3", description: "Detailed Facade" },
+  { value: "LOD4", label: "LOD 4", description: "Architectural Detail" },
+  {
+    value: "GAUSSIAN_SPLATTING",
+    label: "Gaussian",
+    description: "Gaussian Splatting",
+  },
+];
+
+const normalizeLod = (value) =>
+  String(value || "LOD1")
+    .trim()
+    .toUpperCase()
+    .replaceAll(" ", "");
+
 const TRANSFORM_KEYS = [
-  "location_lat",
-  "location_long",
   "altitude_m",
   "heading",
   "tilt",
@@ -102,8 +119,6 @@ const formatDateTime = (value) => {
 const metadataFromModel = (model) => ({
   display_name: model?.manifest?.display_name || "",
   description: model?.manifest?.description || "",
-  location_lat: model?.location_lat ?? "",
-  location_long: model?.location_long ?? "",
   altitude_m: model?.altitude_m ?? "",
   heading: model?.heading ?? "",
   tilt: model?.tilt ?? "",
@@ -218,6 +233,8 @@ function TransformSlider({
   unit,
   disabled,
   onChange,
+  resetValue,
+  onReset,
 }) {
   const numericValue = Number(value);
   const sliderValue = Number.isFinite(numericValue)
@@ -225,14 +242,28 @@ function TransformSlider({
     : 0;
 
   return (
-    <label className="block rounded-lg border border-border bg-surface p-2.5">
+    <div className="block rounded-lg border border-border bg-surface p-2.5">
       <span className="mb-2 flex items-center justify-between gap-2">
         <span className="text-[8px] font-extrabold uppercase tracking-wide text-text-muted">
           {label}
         </span>
-        <span className="text-[8px] font-bold text-violet-600 dark:text-violet-300">
-          {Number.isFinite(numericValue) ? numericValue : 0}
-          {unit}
+        <span className="flex items-center gap-1.5">
+          <span className="text-[8px] font-bold text-violet-600 dark:text-violet-300">
+            {Number.isFinite(numericValue) ? numericValue : 0}
+            {unit}
+          </span>
+          <button
+            type="button"
+            disabled={
+              disabled || Number(value) === Number(resetValue)
+            }
+            onClick={() => onReset(resetValue)}
+            className="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-surface-secondary text-text-muted transition hover:border-violet-300 hover:text-violet-700 focus-visible:ring-2 focus-visible:ring-violet-500 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:text-violet-300"
+            title={`Reset ${label}`}
+            aria-label={`Reset ${label}`}
+          >
+            <ArrowCounterClockwiseIcon size={12} weight="bold" />
+          </button>
         </span>
       </span>
       <div className="flex items-center gap-2">
@@ -244,7 +275,7 @@ function TransformSlider({
           value={sliderValue}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
-          className="h-2 min-w-0 flex-1 cursor-pointer accent-violet-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="model-transform-slider min-w-0 flex-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           aria-label={`${label} slider`}
         />
         <input
@@ -261,7 +292,7 @@ function TransformSlider({
         <span>{min}</span>
         <span>{max}</span>
       </span>
-    </label>
+    </div>
   );
 }
 
@@ -272,7 +303,6 @@ export default function Kelola3dDetailPage() {
   const canUpdate = hasPermission(userRole, "kelola3d", "update");
   const canDelete = hasPermission(userRole, "aset", "delete");
   const fileInputRef = useRef(null);
-  const footprintInputRef = useRef(null);
   const confirm = useConfirm();
 
   const [catalog, setCatalog] = useState(null);
@@ -286,8 +316,8 @@ export default function Kelola3dDetailPage() {
     asset3dMetadataFromAsset(null),
   );
   const [importLod, setImportLod] = useState("LOD1");
+  const [activeModelLod, setActiveModelLod] = useState("LOD1");
   const [uploading, setUploading] = useState(false);
-  const [savingFootprint, setSavingFootprint] = useState(false);
   const [savingAsset3dMetadata, setSavingAsset3dMetadata] = useState(false);
   const [savingMetadata, setSavingMetadata] = useState(false);
   const [savingRooms, setSavingRooms] = useState(false);
@@ -313,10 +343,6 @@ export default function Kelola3dDetailPage() {
 
   const selectedAsset = catalog?.asset || null;
   const selectedAssetId = selectedAsset?.id_aset || null;
-  const asset3dSummary = useMemo(
-    () => getAsset3dSummary(selectedAsset || {}),
-    [selectedAsset],
-  );
   const activeModels = useMemo(
     () =>
       models.filter(
@@ -331,6 +357,29 @@ export default function Kelola3dDetailPage() {
       ),
     [models],
   );
+  const activeModelsByLod = useMemo(
+    () =>
+      activeModels.filter(
+        (model) => normalizeLod(model.lod) === activeModelLod,
+      ),
+    [activeModelLod, activeModels],
+  );
+  const archivedModelsByLod = useMemo(
+    () =>
+      archivedModels.filter(
+        (model) => normalizeLod(model.lod) === activeModelLod,
+      ),
+    [activeModelLod, archivedModels],
+  );
+  const modelCountByLod = useMemo(
+    () =>
+      models.reduce((counts, model) => {
+        const lod = normalizeLod(model.lod);
+        counts[lod] = (counts[lod] || 0) + 1;
+        return counts;
+      }, {}),
+    [models],
+  );
   const selectedModel = useMemo(
     () =>
       activeModels.find(
@@ -340,6 +389,16 @@ export default function Kelola3dDetailPage() {
       activeModels[0] ||
       null,
     [activeModels, selectedModelId],
+  );
+  const selectedModelInActiveLod = useMemo(
+    () =>
+      activeModelsByLod.find(
+        (model) => String(model.id_model_3d) === String(selectedModelId),
+      ) ||
+      activeModelsByLod.find((model) => model.is_active) ||
+      activeModelsByLod[0] ||
+      null,
+    [activeModelsByLod, selectedModelId],
   );
   const verificationRequirements = useMemo(
     () => [
@@ -395,6 +454,11 @@ export default function Kelola3dDetailPage() {
   const verificationReady = missingVerificationRequirements.length === 0;
 
   const switchSection = (sectionId) => {
+    const targetSection = DETAIL_SECTIONS.find(
+      (section) => section.id === sectionId,
+    );
+    if (!targetSection || targetSection.disabled) return;
+
     setActivePageSection(sectionId);
     window.requestAnimationFrame(() => {
       document.getElementById(sectionId)?.scrollIntoView({
@@ -419,18 +483,19 @@ export default function Kelola3dDetailPage() {
   const handlePageSectionKeyDown = (event) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
-    const currentIndex = DETAIL_SECTIONS.findIndex(
+    const currentIndex = ENABLED_DETAIL_SECTIONS.findIndex(
       ({ id }) => id === activePageSection,
     );
     let nextIndex = currentIndex < 0 ? 0 : currentIndex;
     if (event.key === "ArrowRight")
-      nextIndex = (nextIndex + 1) % DETAIL_SECTIONS.length;
+      nextIndex = (nextIndex + 1) % ENABLED_DETAIL_SECTIONS.length;
     if (event.key === "ArrowLeft")
       nextIndex =
-        (nextIndex - 1 + DETAIL_SECTIONS.length) % DETAIL_SECTIONS.length;
+        (nextIndex - 1 + ENABLED_DETAIL_SECTIONS.length)
+        % ENABLED_DETAIL_SECTIONS.length;
     if (event.key === "Home") nextIndex = 0;
-    if (event.key === "End") nextIndex = DETAIL_SECTIONS.length - 1;
-    const nextSection = DETAIL_SECTIONS[nextIndex];
+    if (event.key === "End") nextIndex = ENABLED_DETAIL_SECTIONS.length - 1;
+    const nextSection = ENABLED_DETAIL_SECTIONS[nextIndex];
     switchSection(nextSection.id);
     window.requestAnimationFrame(() =>
       document.getElementById(`detail-nav-${nextSection.id}`)?.focus(),
@@ -486,6 +551,11 @@ export default function Kelola3dDetailPage() {
         available[0] ||
         null;
       setSelectedModelId(nextSelected?.id_model_3d || null);
+      if (nextSelected) {
+        const nextLod = normalizeLod(nextSelected.lod);
+        setActiveModelLod(nextLod);
+        setImportLod(nextLod);
+      }
       setPreviewRevision((value) => value + 1);
     } catch (error) {
       toast.error(errorMessage(error, "Gagal memuat katalog model 3D"));
@@ -577,32 +647,6 @@ export default function Kelola3dDetailPage() {
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  const handleBuildingFootprintImport = async (file) => {
-    if (!file || !selectedAssetId || !canUpdate) return;
-
-    setSavingFootprint(true);
-    try {
-      const footprint = parseGeojsonPolygonPoints(await file.text());
-      if (!footprint) {
-        toast.error("File tidak memiliki polygon tapak bangunan yang valid");
-        return;
-      }
-      const response = await asetService.update(selectedAssetId, {
-        building_footprint: footprint,
-      });
-      toast.success(
-        response.data?.message || "Tapak bangunan berhasil disimpan",
-      );
-      await fetchCatalog();
-      setPreviewRevision((value) => value + 1);
-    } catch (error) {
-      toast.error(errorMessage(error, "Gagal menyimpan tapak bangunan"));
-    } finally {
-      setSavingFootprint(false);
-      if (footprintInputRef.current) footprintInputRef.current.value = "";
     }
   };
 
@@ -905,7 +949,7 @@ export default function Kelola3dDetailPage() {
     [metadata, selectedModel],
   );
   const handleSelectModel = async (modelId) => {
-    if (String(modelId) === String(selectedModel?.id_model_3d)) return;
+    if (String(modelId) === String(selectedModel?.id_model_3d)) return true;
     if (hasUnsavedMetadataChanges) {
       const approved = await confirm({
         title: "Ganti Versi Model?",
@@ -914,10 +958,25 @@ export default function Kelola3dDetailPage() {
         confirmText: "Ganti Versi",
         type: "warning",
       });
-      if (!approved) return;
+      if (!approved) return false;
     }
     setSelectedModelId(modelId);
     setPreviewRevision((value) => value + 1);
+    return true;
+  };
+  const handleModelLodChange = async (lod) => {
+    const normalizedLod = normalizeLod(lod);
+    const lodModels = activeModels.filter(
+      (model) => normalizeLod(model.lod) === normalizedLod,
+    );
+    const nextModel =
+      lodModels.find((model) => model.is_active) || lodModels[0] || null;
+    if (nextModel) {
+      const changed = await handleSelectModel(nextModel.id_model_3d);
+      if (!changed) return;
+    }
+    setActiveModelLod(normalizedLod);
+    setImportLod(normalizedLod);
   };
   const discardMetadataChanges = () => {
     setMetadata(metadataFromModel(selectedModel));
@@ -1111,8 +1170,7 @@ export default function Kelola3dDetailPage() {
                         String(assetId) === String(selectedAssetId);
                       const has3d = Boolean(
                         asset.active_model_3d ||
-                        asset.model_3d_lod ||
-                        asset.building_footprint,
+                        asset.model_3d_lod,
                       );
                       return (
                         <button
@@ -1228,17 +1286,35 @@ export default function Kelola3dDetailPage() {
                         id={`detail-nav-${section.id}`}
                         role="tab"
                         aria-selected={active}
+                        aria-disabled={section.disabled || undefined}
                         aria-controls={section.id}
-                        tabIndex={active ? 0 : -1}
-                        onClick={() => switchSection(section.id)}
+                        tabIndex={section.disabled ? 0 : active ? 0 : -1}
+                        onClick={() => {
+                          if (!section.disabled) switchSection(section.id);
+                        }}
+                        title={
+                          section.disabled
+                            ? "Fitur masih dalam proses pengembangan"
+                            : undefined
+                        }
                         className={`inline-flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-bold transition focus-visible:ring-2 focus-visible:ring-accent ${
-                          active
+                          section.disabled
+                            ? "cursor-not-allowed text-text-muted opacity-55"
+                            : active
                             ? "bg-accent text-surface"
                             : "text-text-secondary hover:bg-accent/10 hover:text-accent"
                         }`}
                       >
                         <Icon size={15} weight={active ? "fill" : "duotone"} />
                         {section.label}
+                        {section.disabled && (
+                          <span
+                            className="flex h-5 w-5 items-center justify-center rounded-full text-amber-500 dark:text-amber-300"
+                            aria-hidden="true"
+                          >
+                            <WarningCircleIcon size={13} weight="fill" />
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -1264,15 +1340,6 @@ export default function Kelola3dDetailPage() {
                 <div className="p-4">
                   <div className="space-y-3">
                     <input
-                      ref={footprintInputRef}
-                      type="file"
-                      accept=".geojson,.json,application/geo+json,application/json"
-                      className="hidden"
-                      onChange={(event) =>
-                        handleBuildingFootprintImport(event.target.files?.[0])
-                      }
-                    />
-                    <input
                       ref={fileInputRef}
                       type="file"
                       accept=".kmz,.glb,.zip,application/vnd.google-earth.kmz,model/gltf-binary,application/zip,application/x-zip-compressed"
@@ -1296,19 +1363,19 @@ export default function Kelola3dDetailPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="text-[10px] font-black text-text-primary">
-                              {selectedModel
-                                ? `${selectedModel.lod || "LOD1"} · v${selectedModel.version}`
+                              {selectedModelInActiveLod
+                                ? `${selectedModelInActiveLod.lod || "LOD1"} · v${selectedModelInActiveLod.version}`
                                 : "Belum ada model"}
                             </p>
-                            {selectedModel?.is_active && (
+                            {selectedModelInActiveLod?.is_active && (
                               <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[7px] font-black uppercase text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
                                 Aktif
                               </span>
                             )}
                           </div>
                           <p className="mt-0.5 truncate text-[8px] text-text-muted">
-                            {selectedModel
-                              ? `${activeModels.length} file model · ${selectedModel.model_type || "Model 3D"}`
+                            {selectedModelInActiveLod
+                              ? `${activeModelsByLod.length} file ${activeModelLod} · ${selectedModelInActiveLod.model_type || "Model 3D"}`
                               : "KMZ, GLB, atau ZIP 3D Tiles · maks. 100 MB"}
                           </p>
                         </div>
@@ -1319,18 +1386,17 @@ export default function Kelola3dDetailPage() {
                           <select
                             value={importLod}
                             disabled={!selectedAsset || !canUpdate || uploading}
-                            onChange={(event) => setImportLod(event.target.value)}
+                            onChange={(event) =>
+                              void handleModelLodChange(event.target.value)
+                            }
                             className="h-9 w-full rounded-lg border border-border bg-surface-secondary px-2.5 text-[9px] font-extrabold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-60"
                             aria-label="Pilih Level of Detail untuk model"
                           >
-                            <option value="LOD1">LOD 1 · Block Model</option>
-                            <option value="LOD2">LOD 2 · Roof Detail</option>
-                            <option value="LOD2.5">LOD 2.5 · Facade Detail</option>
-                            <option value="LOD3">LOD 3 · Detailed Facade</option>
-                            <option value="LOD4">LOD 4 · Architectural Detail</option>
-                            <option value="GAUSSIAN_SPLATTING">
-                              Gaussian Splatting
-                            </option>
+                            {LOD_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label} · {option.description}
+                              </option>
+                            ))}
                           </select>
                         </label>
                         <button
@@ -1353,42 +1419,6 @@ export default function Kelola3dDetailPage() {
                         </button>
                       </div>
 
-                      <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center">
-                        <span
-                          className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                          style={{
-                            backgroundColor:
-                              HEIGHT_QUALITY_CONFIG[asset3dSummary.quality]
-                                ?.color || "#94a3b8",
-                          }}
-                        />
-                        <p className="min-w-0 flex-1 text-[8px] font-semibold text-text-secondary">
-                          Tapak bangunan:{" "}
-                          <span className="text-text-primary">
-                            {selectedAsset?.building_footprint
-                              ? "tersedia"
-                              : "belum tersedia"}
-                          </span>
-                        </p>
-                        <button
-                          type="button"
-                          disabled={
-                            !selectedAsset || !canUpdate || savingFootprint
-                          }
-                          onClick={() => footprintInputRef.current?.click()}
-                          className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface-secondary px-2.5 text-[8px] font-extrabold text-text-primary transition hover:border-accent/40 hover:text-accent focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {savingFootprint ? (
-                            <ArrowsClockwiseIcon
-                              size={11}
-                              className="animate-spin"
-                            />
-                          ) : (
-                            <FileArrowUpIcon size={11} weight="bold" />
-                          )}
-                          {savingFootprint ? "Menyimpan…" : "Impor GeoJSON"}
-                        </button>
-                      </div>
                     </div>
                     {!canUpdate && (
                       <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[8px] font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
@@ -1397,10 +1427,54 @@ export default function Kelola3dDetailPage() {
                       </p>
                     )}
 
+                    <div className="rounded-xl border border-violet-200 bg-surface p-2 dark:border-violet-500/30">
+                      <p className="px-1 pb-2 text-[8px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
+                        Kelompok Level of Detail
+                      </p>
+                      <div
+                        role="tablist"
+                        aria-label="Pilih kelompok Level of Detail"
+                        className="flex gap-1.5 overflow-x-auto pb-0.5"
+                      >
+                        {LOD_OPTIONS.map((option) => {
+                          const selected = activeModelLod === option.value;
+                          const count = modelCountByLod[option.value] || 0;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              role="tab"
+                              aria-selected={selected}
+                              onClick={() =>
+                                void handleModelLodChange(option.value)
+                              }
+                              className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border px-2.5 text-[9px] font-extrabold transition focus-visible:ring-2 focus-visible:ring-violet-500 ${
+                                selected
+                                  ? "border-violet-600 bg-violet-600 text-white"
+                                  : "border-border bg-surface-secondary text-text-secondary hover:border-violet-300 hover:text-violet-700 dark:hover:text-violet-300"
+                              }`}
+                              title={option.description}
+                            >
+                              <span>{option.label}</span>
+                              <span
+                                className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[8px] font-black ${
+                                  selected
+                                    ? "bg-white/20 text-white"
+                                    : "bg-surface text-text-muted"
+                                }`}
+                              >
+                                {count}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <p className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-violet-800 dark:text-violet-300">
-                          Versi file model
+                          Versi file {activeModelLod}
                         </p>
                         {modelsLoading && (
                           <ArrowsClockwiseIcon
@@ -1409,17 +1483,17 @@ export default function Kelola3dDetailPage() {
                           />
                         )}
                       </div>
-                      {activeModels.length === 0 ? (
+                      {activeModelsByLod.length === 0 ? (
                         <div className="rounded-xl border border-dashed border-violet-300 bg-surface/70 p-4 text-center text-[10px] text-text-muted dark:border-violet-500/30">
-                          Belum ada file KMZ, GLB, atau ZIP 3D Tiles untuk aset ini.
+                          Belum ada file model untuk {activeModelLod}. Pilih
+                          jenis file lalu gunakan tombol Impor Model.
                         </div>
                       ) : (
-                        activeModels.map((model) => {
+                        activeModelsByLod.map((model) => {
                           const selected =
                             String(model.id_model_3d) ===
                             String(selectedModel?.id_model_3d);
                           const status = statusConfig(model);
-                          const reviewStatus = reviewStatusConfig(model.review_status);
                           return (
                             <article
                               key={model.id_model_3d}
@@ -1456,11 +1530,6 @@ export default function Kelola3dDetailPage() {
                                     >
                                       {status.label}
                                     </span>
-                                    <span
-                                      className={`inline-flex rounded-full px-2 py-0.5 text-[8px] font-bold ${reviewStatus.className}`}
-                                    >
-                                      {reviewStatus.label}
-                                    </span>
                                     <span className="text-[8px] font-semibold uppercase text-text-muted">
                                       {model.model_type || "MODEL 3D"}
                                     </span>
@@ -1472,7 +1541,9 @@ export default function Kelola3dDetailPage() {
                               </button>
                               {selected && canUpdate && (
                                 <div className="mt-2.5 flex flex-wrap gap-2 border-t border-border pt-2.5">
-                                  {!model.is_active && model.review_status === "verified" && (
+                                  {!model.is_active
+                                    && model.conversion_status === "ready"
+                                    && model.converted_public_url && (
                                     <button
                                       type="button"
                                       onClick={() =>
@@ -1538,7 +1609,7 @@ export default function Kelola3dDetailPage() {
                       )}
                     </div>
 
-                    {archivedModels.length > 0 && (
+                    {archivedModelsByLod.length > 0 && (
                       <div className="space-y-2 border-t border-violet-200 pt-3 dark:border-violet-500/30">
                         <div className="flex items-center justify-between gap-3">
                           <div>
@@ -1546,16 +1617,17 @@ export default function Kelola3dDetailPage() {
                               Arsip model
                             </p>
                             <p className="mt-0.5 text-[8px] text-text-muted">
-                              {archivedModels.length} versi dapat dipulihkan
+                              {archivedModelsByLod.length} versi{" "}
+                              {activeModelLod} dapat dipulihkan
                               tanpa mengunggah ulang file.
                             </p>
                           </div>
                           <span className="rounded-full bg-slate-100 px-2 py-1 text-[8px] font-black text-slate-600 dark:bg-slate-500/15 dark:text-slate-300">
-                            {archivedModels.length} arsip
+                            {archivedModelsByLod.length} arsip
                           </span>
                         </div>
                         <div className="space-y-2">
-                          {archivedModels.map((model) => (
+                          {archivedModelsByLod.map((model) => (
                             <article
                               key={model.id_model_3d}
                               className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-surface p-3 sm:flex-row sm:items-center dark:border-slate-700"
@@ -1653,8 +1725,8 @@ export default function Kelola3dDetailPage() {
                       </p>
                       <p className="mt-1 text-[9px] leading-relaxed text-text-muted">
                         Setelah model diimpor, pilih tingkat detail yang sesuai,
-                        lengkapi sumber serta kualitasnya, lalu simpan sebelum
-                        model diverifikasi dan dipublikasikan ke peta.
+                        lengkapi metadata yang diperlukan, lalu aktifkan model
+                        untuk menampilkannya pada peta.
                       </p>
                     </div>
 
@@ -1873,12 +1945,18 @@ export default function Kelola3dDetailPage() {
                 id={
                   activePageSection === "verifikasi-model-3d"
                     ? "verifikasi-model-3d"
-                    : "detail-model-3d"
+                    : activePageSection === "transformasi-model-3d"
+                      ? "transformasi-model-3d"
+                      : "detail-model-3d"
                 }
                 role="tabpanel"
                 aria-labelledby={`detail-nav-${activePageSection}`}
                 hidden={
-                  !["detail-model-3d", "verifikasi-model-3d"].includes(
+                  ![
+                    "detail-model-3d",
+                    "transformasi-model-3d",
+                    "verifikasi-model-3d",
+                  ].includes(
                     activePageSection,
                   )
                 }
@@ -1888,18 +1966,24 @@ export default function Kelola3dDetailPage() {
                   icon={
                     activePageSection === "verifikasi-model-3d"
                       ? CheckCircleIcon
-                      : CubeIcon
+                      : activePageSection === "transformasi-model-3d"
+                        ? ArrowsClockwiseIcon
+                        : CubeIcon
                   }
                   title={
                     activePageSection === "verifikasi-model-3d"
                       ? "Verifikasi Model 3D"
-                      : "Detail Model 3D"
+                      : activePageSection === "transformasi-model-3d"
+                        ? "Transformasi Model 3D"
+                        : "Detail Model 3D"
                   }
                   description={
                     selectedModel
                       ? activePageSection === "verifikasi-model-3d"
                         ? `Periksa kesiapan dan tentukan keputusan model versi ${selectedModel.version}`
-                        : `Edit identitas dan transformasi model versi ${selectedModel.version}`
+                        : activePageSection === "transformasi-model-3d"
+                          ? `Atur posisi, rotasi, dan skala model versi ${selectedModel.version}`
+                          : `Edit identitas dan metadata model versi ${selectedModel.version}`
                       : "Pilih model untuk melihat detail"
                   }
                 />
@@ -1929,10 +2013,12 @@ export default function Kelola3dDetailPage() {
                         className={`grid gap-2 sm:grid-cols-2 ${
                           activePageSection === "verifikasi-model-3d"
                             ? "[&>*:not(.keep-on-verification)]:hidden"
-                            : ""
+                            : activePageSection === "transformasi-model-3d"
+                              ? "[&>*:not(.keep-on-transform)]:hidden"
+                              : "[&>*.transform-only]:hidden"
                         }`}
                       >
-                        <div className="keep-on-verification rounded-xl border border-border bg-surface-secondary/60 p-3 sm:col-span-2">
+                        <div className="keep-on-transform keep-on-verification rounded-xl border border-border bg-surface-secondary/60 p-3 sm:col-span-2">
                           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
                               <CubeIcon size={19} weight="duotone" />
@@ -1954,15 +2040,6 @@ export default function Kelola3dDetailPage() {
                                   className={`rounded-full px-2 py-0.5 text-[8px] font-bold ${statusConfig(selectedModel).className}`}
                                 >
                                   {statusConfig(selectedModel).label}
-                                </span>
-                                <span
-                                  className={`rounded-full px-2 py-0.5 text-[8px] font-bold ${reviewStatusConfig(selectedModel.review_status).className}`}
-                                >
-                                  {
-                                    reviewStatusConfig(
-                                      selectedModel.review_status,
-                                    ).label
-                                  }
                                 </span>
                               </div>
                               <p className="mt-1 truncate text-[9px] text-text-muted">
@@ -2023,7 +2100,7 @@ export default function Kelola3dDetailPage() {
                               pada daftar versi.
                             </p>
                           </div>
-                          <div className="grid gap-3">
+                          <div className="grid gap-3 sm:grid-cols-2">
                             <label className="block">
                               <span className="mb-1.5 block text-[9px] font-extrabold text-text-secondary">
                                 Nama model
@@ -2045,6 +2122,26 @@ export default function Kelola3dDetailPage() {
                             </label>
                             <label className="block">
                               <span className="mb-1.5 block text-[9px] font-extrabold text-text-secondary">
+                                Ketinggian (m)
+                              </span>
+                              <input
+                                type="number"
+                                min="-10000"
+                                max="100000"
+                                step="0.001"
+                                value={metadata.altitude_m}
+                                disabled={!canUpdate}
+                                onChange={(event) =>
+                                  setMetadata((current) => ({
+                                    ...current,
+                                    altitude_m: event.target.value,
+                                  }))
+                                }
+                                className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-70"
+                              />
+                            </label>
+                            <label className="block sm:col-span-2">
+                              <span className="mb-1.5 block text-[9px] font-extrabold text-text-secondary">
                                 Deskripsi
                               </span>
                               <textarea
@@ -2058,7 +2155,7 @@ export default function Kelola3dDetailPage() {
                                     description: event.target.value,
                                   }))
                                 }
-                                placeholder="Keterangan sumber, survei, fungsi, atau cakupan model"
+                                placeholder="Fungsi, cakupan, atau catatan model"
                                 className="w-full resize-y rounded-lg border border-border bg-surface px-3 py-2.5 text-[10px] font-semibold leading-relaxed text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-70"
                               />
                               <span className="mt-1 block text-right text-[7px] text-text-muted">
@@ -2325,7 +2422,9 @@ export default function Kelola3dDetailPage() {
                         </div>
                         <div
                           id="model-source-validation"
-                          className="scroll-mt-24 rounded-xl border border-border bg-surface-secondary/60 p-3 sm:col-span-2"
+                          hidden
+                          aria-hidden="true"
+                          className="hidden"
                         >
                           <div className="mb-3">
                             <p className="text-[10px] font-black text-text-primary">
@@ -2433,15 +2532,15 @@ export default function Kelola3dDetailPage() {
                             ))}
                           </div>
                         </div>
-                        <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-3 dark:border-violet-500/30 dark:bg-violet-500/5 sm:col-span-2">
+                        <div className="keep-on-transform transform-only rounded-xl border border-violet-200 bg-violet-50/60 p-3 dark:border-violet-500/30 dark:bg-violet-500/5 sm:col-span-2">
                           <div className="mb-3 flex items-start justify-between gap-3">
                             <div>
                               <p className="text-[10px] font-black text-text-primary">
                                 Geser Posisi Model (X, Y, Z)
                               </p>
                               <p className="mt-0.5 text-[9px] leading-relaxed text-text-muted">
-                                Satuan meter. Koordinat asli file tetap
-                                tersimpan dan tidak berubah.
+                                Satuan meter dari titik acuan Data Spasial 2D.
+                                Koordinat aset tidak ikut berubah.
                               </p>
                               {hasUnsavedTransformChanges && (
                                 <span className="mt-1.5 inline-flex rounded-full bg-amber-100 px-2 py-1 text-[7px] font-black uppercase tracking-wide text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
@@ -2449,22 +2548,6 @@ export default function Kelola3dDetailPage() {
                                 </span>
                               )}
                             </div>
-                            {canUpdate && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setMetadata((current) => ({
-                                    ...current,
-                                    offset_x_m: 0,
-                                    offset_y_m: 0,
-                                    offset_z_m: 0,
-                                  }))
-                                }
-                                className="shrink-0 rounded-lg border border-border bg-surface px-2 py-1.5 text-[8px] font-extrabold text-text-secondary transition hover:border-violet-300 hover:text-violet-700 focus-visible:ring-2 focus-visible:ring-violet-500"
-                              >
-                                Reset posisi
-                              </button>
-                            )}
                           </div>
                           <div className="grid gap-2 sm:grid-cols-3">
                             {[
@@ -2499,6 +2582,13 @@ export default function Kelola3dDetailPage() {
                                 step={0.1}
                                 unit=" m"
                                 disabled={!canUpdate}
+                                resetValue={0}
+                                onReset={(value) =>
+                                  setMetadata((current) => ({
+                                    ...current,
+                                    [field.key]: value,
+                                  }))
+                                }
                                 onChange={(value) =>
                                   setMetadata((current) => ({
                                     ...current,
@@ -2509,51 +2599,7 @@ export default function Kelola3dDetailPage() {
                             ))}
                           </div>
                         </div>
-                        {[
-                          {
-                            key: "location_lat",
-                            label: "Latitude",
-                            min: -90,
-                            max: 90,
-                            step: "0.00000001",
-                          },
-                          {
-                            key: "location_long",
-                            label: "Longitude",
-                            min: -180,
-                            max: 180,
-                            step: "0.00000001",
-                          },
-                          {
-                            key: "altitude_m",
-                            label: "Ketinggian (m)",
-                            min: -10000,
-                            max: 100000,
-                            step: "0.001",
-                          },
-                        ].map((field) => (
-                          <label key={field.key} className="block">
-                            <span className="mb-1 block text-[8px] font-extrabold uppercase tracking-wide text-text-muted">
-                              {field.label}
-                            </span>
-                            <input
-                              type="number"
-                              min={field.min}
-                              max={field.max}
-                              step={field.step}
-                              value={metadata[field.key]}
-                              disabled={!canUpdate}
-                              onChange={(event) =>
-                                setMetadata((current) => ({
-                                  ...current,
-                                  [field.key]: event.target.value,
-                                }))
-                              }
-                              className="h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-70"
-                            />
-                          </label>
-                        ))}
-                        <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-3 dark:border-violet-500/30 dark:bg-violet-500/5 sm:col-span-2">
+                        <div className="keep-on-transform transform-only rounded-xl border border-violet-200 bg-violet-50/60 p-3 dark:border-violet-500/30 dark:bg-violet-500/5 sm:col-span-2">
                           <div className="mb-3 flex items-start justify-between gap-3">
                             <div>
                               <p className="text-[10px] font-black text-text-primary">
@@ -2564,21 +2610,6 @@ export default function Kelola3dDetailPage() {
                                 preview.
                               </p>
                             </div>
-                            <button
-                              type="button"
-                              disabled={!canUpdate}
-                              onClick={() =>
-                                setMetadata((current) => ({
-                                  ...current,
-                                  heading: 0,
-                                  tilt: 0,
-                                  roll: 0,
-                                }))
-                              }
-                              className="rounded-lg border border-border bg-surface px-2 py-1.5 text-[8px] font-extrabold text-text-secondary transition hover:border-violet-300 hover:text-violet-700 focus-visible:ring-2 focus-visible:ring-violet-500 disabled:opacity-50"
-                            >
-                              Reset rotasi
-                            </button>
                           </div>
                           <div className="grid gap-2 sm:grid-cols-3">
                             {[
@@ -2595,6 +2626,13 @@ export default function Kelola3dDetailPage() {
                                 step={0.5}
                                 unit="°"
                                 disabled={!canUpdate}
+                                resetValue={0}
+                                onReset={(value) =>
+                                  setMetadata((current) => ({
+                                    ...current,
+                                    [key]: value,
+                                  }))
+                                }
                                 onChange={(value) =>
                                   setMetadata((current) => ({
                                     ...current,
@@ -2606,7 +2644,7 @@ export default function Kelola3dDetailPage() {
                           </div>
                         </div>
 
-                        <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-3 dark:border-violet-500/30 dark:bg-violet-500/5 sm:col-span-2">
+                        <div className="keep-on-transform transform-only rounded-xl border border-violet-200 bg-violet-50/60 p-3 dark:border-violet-500/30 dark:bg-violet-500/5 sm:col-span-2">
                           <div className="mb-3 flex items-start justify-between gap-3">
                             <div>
                               <p className="text-[10px] font-black text-text-primary">
@@ -2617,21 +2655,6 @@ export default function Kelola3dDetailPage() {
                                 menerima nilai di luar rentang.
                               </p>
                             </div>
-                            <button
-                              type="button"
-                              disabled={!canUpdate}
-                              onClick={() =>
-                                setMetadata((current) => ({
-                                  ...current,
-                                  scale_x: 1,
-                                  scale_y: 1,
-                                  scale_z: 1,
-                                }))
-                              }
-                              className="rounded-lg border border-border bg-surface px-2 py-1.5 text-[8px] font-extrabold text-text-secondary transition hover:border-violet-300 hover:text-violet-700 focus-visible:ring-2 focus-visible:ring-violet-500 disabled:opacity-50"
-                            >
-                              Reset skala
-                            </button>
                           </div>
                           <div className="grid gap-2 sm:grid-cols-3">
                             {[
@@ -2648,6 +2671,13 @@ export default function Kelola3dDetailPage() {
                                 step={0.01}
                                 unit="×"
                                 disabled={!canUpdate}
+                                resetValue={1}
+                                onReset={(value) =>
+                                  setMetadata((current) => ({
+                                    ...current,
+                                    [key]: value,
+                                  }))
+                                }
                                 onChange={(value) =>
                                   setMetadata((current) => ({
                                     ...current,
@@ -2660,7 +2690,10 @@ export default function Kelola3dDetailPage() {
                         </div>
                       </div>
                       {canUpdate &&
-                        activePageSection === "detail-model-3d" && (
+                        [
+                          "detail-model-3d",
+                          "transformasi-model-3d",
+                        ].includes(activePageSection) && (
                           <div className="sticky bottom-3 z-10 flex flex-col gap-3 rounded-xl border border-border bg-surface/95 p-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-2">
                               {hasUnsavedMetadataChanges ? (
@@ -2684,7 +2717,10 @@ export default function Kelola3dDetailPage() {
                                 </p>
                                 <p className="mt-0.5 text-[8px] text-text-muted">
                                   {hasUnsavedMetadataChanges
-                                    ? "Simpan untuk menerapkan Detail Model secara permanen."
+                                    ? activePageSection ===
+                                      "transformasi-model-3d"
+                                      ? "Simpan untuk menerapkan transformasi model secara permanen."
+                                      : "Simpan untuk menerapkan Detail Model secara permanen."
                                     : `Terakhir diperbarui ${formatDateTime(selectedModel.updated_at)}`}
                                 </p>
                               </div>
@@ -3025,7 +3061,7 @@ export default function Kelola3dDetailPage() {
                         </p>
                         <p className="mt-1 max-w-sm text-[10px] leading-relaxed text-slate-400">
                           Pilih kode aset dari daftar tersinkron untuk menampilkan
-                          lokasi, footprint, atau model 3D.
+                          lokasi atau model 3D.
                         </p>
                       </div>
                     )}
@@ -3062,9 +3098,7 @@ export default function Kelola3dDetailPage() {
                         </div>
                       </div>
                     )}
-                    {selectedAsset &&
-                      !selectedModel &&
-                      !selectedAsset.building_footprint && (
+                    {selectedAsset && !selectedModel && (
                         <div className="absolute bottom-3 left-3 right-3 flex items-start gap-2 rounded-xl border border-amber-400/30 bg-slate-950/85 p-3 text-amber-200 backdrop-blur">
                           <WarningCircleIcon
                             size={16}
@@ -3072,8 +3106,8 @@ export default function Kelola3dDetailPage() {
                             className="mt-0.5 shrink-0"
                           />
                           <p className="text-[9px] leading-relaxed">
-                            Aset ini belum memiliki model KMZ/GLB/3D Tiles maupun footprint
-                            bangunan. Import model untuk mengaktifkan preview 3D.
+                            Data ini belum memiliki model KMZ/GLB/3D Tiles. Impor
+                            model untuk mengaktifkan preview 3D.
                           </p>
                         </div>
                       )}

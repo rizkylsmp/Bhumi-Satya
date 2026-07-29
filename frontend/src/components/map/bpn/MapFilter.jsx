@@ -8,10 +8,12 @@ import {
   CrosshairIcon,
   ProhibitIcon,
 } from "@phosphor-icons/react";
+import { resolveModelOffsetLocation } from "../../../utils/model3dTransform";
 
 const SEARCH_FIELDS = [
   "nama_aset",
   "kode_aset",
+  "kode_3d",
   "nib",
   "nibar",
   "nomor_sertifikat",
@@ -70,10 +72,34 @@ function hasPolygonCoordinates(value) {
 }
 
 function hasMapGeometry(asset) {
+  const activeModels = Array.isArray(asset?.active_models_3d)
+    ? asset.active_models_3d
+    : asset?.active_model_3d
+      ? [asset.active_model_3d]
+      : [];
+  const hasModelLocation = activeModels.some((model) => {
+    const location = resolveModelOffsetLocation(model);
+    return hasCoordinatePair(location?.latitude, location?.longitude);
+  });
+
   return (
     hasCoordinatePair(asset?.latitude, asset?.longitude) ||
-    hasPolygonCoordinates(asset?.polygon)
+    hasPolygonCoordinates(asset?.polygon) ||
+    hasModelLocation
   );
+}
+
+function hasModel3dLocation(asset) {
+  const activeModels = Array.isArray(asset?.active_models_3d)
+    ? asset.active_models_3d
+    : asset?.active_model_3d
+      ? [asset.active_model_3d]
+      : [];
+
+  return activeModels.some((model) => {
+    const location = resolveModelOffsetLocation(model);
+    return hasCoordinatePair(location?.latitude, location?.longitude);
+  });
 }
 
 function hasMapPolygon(asset) {
@@ -144,11 +170,7 @@ export default function MapFilter({
           </span>
           <input
             type="text"
-            placeholder={
-              isBPKAMode
-                ? "NIBAR, No Sertifikat, OPD..."
-                : "Nama atau kode aset..."
-            }
+            placeholder="Search..."
             value={searchTerm}
             onChange={handleSearch}
             className={`w-full bg-surface pl-10 pr-9 text-sm text-text-primary outline-none transition-all placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 ${
@@ -180,14 +202,14 @@ export default function MapFilter({
             {displayedSearchResults.map((asset) => {
               const hasMap = hasMapGeometry(asset);
               const hasBidang = hasMapPolygon(asset);
-              const hasPointOnly = hasMap && !hasBidang;
-              const SearchActionIcon = hasBidang ? CrosshairIcon : ProhibitIcon;
+              const hasModel3d = hasModel3dLocation(asset);
+              const SearchActionIcon = hasMap ? CrosshairIcon : ProhibitIcon;
 
               return (
               <div
                 key={asset.id}
                 className={`flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border last:border-b-0 transition-colors ${
-                  hasBidang
+                  hasMap
                     ? "hover:bg-surface-secondary"
                     : "bg-amber-50/70 hover:bg-amber-50 dark:bg-amber-900/10 dark:hover:bg-amber-900/20"
                 }`}
@@ -197,16 +219,19 @@ export default function MapFilter({
                     <p className="text-xs font-semibold text-text-primary truncate">
                       {asset.nama_aset || asset.kode_aset}
                     </p>
-                    {!hasBidang && (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
-                        <ProhibitIcon size={10} weight="bold" />
-                        Tanpa bidang
+                    {asset.kode_3d && (
+                      <span className="inline-flex shrink-0 rounded-full bg-violet-100 px-1.5 py-0.5 font-mono text-[9px] font-bold text-violet-700 dark:bg-violet-500/15 dark:text-violet-200">
+                        {asset.kode_3d}
                       </span>
                     )}
                   </div>
                   <p className="text-[10px] text-text-muted truncate">
-                    {!hasBidang
-                      ? "Belum memiliki bidang/polygon"
+                    {!hasBidang && hasModel3d
+                      ? "Tersedia sebagai model 3D"
+                      : !hasBidang && hasMap
+                        ? "Tersedia sebagai titik lokasi"
+                        : !hasBidang
+                          ? "Belum memiliki lokasi peta"
                       : isBPKAMode && asset.nibar
                       ? `NIBAR: ${asset.nibar}`
                       : asset.kecamatan
@@ -216,19 +241,21 @@ export default function MapFilter({
                 </div>
                 <button
                   onClick={() => onSelectAsset?.(asset)}
-                  disabled={!hasBidang}
+                  disabled={!hasMap}
                   aria-label={
-                    hasBidang ? "Lihat bidang di peta" : "Tidak ada bidang"
+                    hasMap ? "Lihat objek di peta" : "Tidak ada lokasi peta"
                   }
                   title={
                     hasBidang
                       ? "Lihat bidang aset di peta"
-                      : hasPointOnly
-                        ? "Aset ini hanya memiliki titik koordinat, belum ada polygon bidang"
-                        : "Aset ini belum memiliki polygon bidang"
+                      : hasModel3d
+                        ? "Lihat model 3D di peta"
+                        : hasMap
+                          ? "Lihat titik lokasi di peta"
+                          : "Objek ini belum memiliki lokasi peta"
                   }
                   className={`shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                    hasBidang
+                    hasMap
                       ? "text-surface bg-accent hover:bg-accent/80"
                       : "text-amber-700 bg-amber-100 cursor-not-allowed dark:text-amber-200 dark:bg-amber-900/30"
                   }`}

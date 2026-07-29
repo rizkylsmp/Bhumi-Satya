@@ -13,6 +13,7 @@ export function normalizeMapMarker(marker) {
   return {
     id: marker.id,
     kode_aset: marker.kode,
+    kode_3d: marker.kode_3d || null,
     nib: marker.nib || null,
     nama_aset: marker.nama,
     lokasi: marker.lokasi,
@@ -40,7 +41,6 @@ export function normalizeMapMarker(marker) {
     status_sewa: marker.status_sewa || "Tidak Disewakan",
     penyewa_aktif: marker.penyewa_aktif || null,
     sumber: marker.sumber || null,
-    building_footprint: parseMapPolygon(marker.building_footprint),
     building_height_m: marker.building_height_m ?? null,
     building_base_elevation_m: marker.building_base_elevation_m ?? null,
     building_floors: marker.building_floors ?? null,

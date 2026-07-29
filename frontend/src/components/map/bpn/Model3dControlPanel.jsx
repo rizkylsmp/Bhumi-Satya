@@ -31,7 +31,7 @@ const ANALYSIS_TOOL_COPY = {
   },
   volume: {
     title: "Estimasi volume",
-    instruction: "Klik bangunan 3D. Volume dihitung dari tapak dan tinggi, atau kotak batas model.",
+    instruction: "Klik model 3D. Volume dihitung dari metadata kotak batas model.",
   },
   height: {
     title: "Ukur tinggi",
@@ -44,12 +44,12 @@ const ANALYSIS_TOOL_COPY = {
 };
 
 const LOD_OPTIONS = [
-  { id: "lod1", label: "LoD 1 – Block Model" },
-  { id: "lod2", label: "LoD 2 – Roof Detail" },
-  { id: "lod2.5", label: "LoD 2.5 – Facade Detail" },
-  { id: "lod3", label: "LoD 3 – Detailed Facade" },
-  { id: "lod4", label: "LoD 4 – Architectural Detail" },
-  { id: "gaussian", label: "Gaussian Splatting" },
+  { id: "lod1", shortLabel: "LoD 1", label: "LoD 1 – Block Model" },
+  { id: "lod2", shortLabel: "LoD 2", label: "LoD 2 – Roof Detail" },
+  { id: "lod2.5", shortLabel: "LoD 2.5", label: "LoD 2.5 – Facade Detail" },
+  { id: "lod3", shortLabel: "LoD 3", label: "LoD 3 – Detailed Facade" },
+  { id: "lod4", shortLabel: "LoD 4", label: "LoD 4 – Architectural Detail" },
+  { id: "gaussian", shortLabel: "Gaussian", label: "Gaussian Splatting" },
 ];
 
 function resolveLodOption(location) {
@@ -277,38 +277,113 @@ export default function Model3dControlPanel({
         )}
 
         {activeTab === "data3d" && (
-          <section id="panel-3d-data3d" role="tabpanel" aria-label="Pilih level of detail" className="space-y-1.5">
-            {LOD_OPTIONS.map((option) => {
-              const count = locationsByLod[option.id].length;
-              const isActive = effectiveSelectedLod === option.id;
+          <section id="panel-3d-data3d" role="tabpanel" aria-label="Pilih level of detail" className="space-y-3">
+            <div
+              role="tablist"
+              aria-label="Level of Detail model 3D"
+              className="flex gap-1.5 overflow-x-auto pb-1"
+            >
+              {LOD_OPTIONS.map((option) => {
+                const count = locationsByLod[option.id].length;
+                const isActive = effectiveSelectedLod === option.id;
 
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => selectLod(option.id)}
-                  disabled={count === 0}
-                  aria-pressed={isActive}
-                  className={`flex min-h-9 w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                    isActive
-                      ? "border-accent bg-accent text-surface"
-                      : "border-border bg-surface text-text-secondary hover:bg-surface-tertiary hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-45"
-                  }`}
-                >
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                    isActive ? "bg-surface" : "bg-text-muted"
-                  }`} />
-                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                  {count > 0 && (
-                    <span className={`text-[8px] font-bold ${
-                      isActive ? "text-surface/70" : "text-text-muted"
-                    }`}>
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="tab"
+                    onClick={() => selectLod(option.id)}
+                    disabled={count === 0}
+                    aria-selected={isActive}
+                    title={option.label}
+                    className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[9px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                      isActive
+                        ? "border-accent bg-accent text-surface"
+                        : "border-border bg-surface text-text-secondary hover:bg-surface-tertiary hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                    }`}
+                  >
+                    <span>{option.shortLabel}</span>
+                    <span
+                      className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[7px] font-black ${
+                        isActive
+                          ? "bg-surface/20 text-surface"
+                          : "bg-surface-secondary text-text-muted"
+                      }`}
+                    >
                       {count}
                     </span>
-                  )}
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.1em] text-text-primary">
+                  {
+                    LOD_OPTIONS.find(
+                      (option) => option.id === effectiveSelectedLod,
+                    )?.shortLabel
+                  }
+                </p>
+                <p className="mt-0.5 text-[8px] text-text-muted">
+                  Pilih lokasi untuk mengarahkan kamera.
+                </p>
+              </div>
+              <span className="rounded-full bg-surface px-2 py-1 text-[8px] font-black text-text-secondary">
+                {locationsByLod[effectiveSelectedLod].length} data
+              </span>
+            </div>
+
+            {locationsByLod[effectiveSelectedLod].length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border bg-surface px-3 py-5 text-center">
+                <BuildingsIcon size={21} className="mx-auto text-text-muted" />
+                <p className="mt-2 text-[9px] font-bold text-text-muted">
+                  Belum ada data pada level ini.
+                </p>
+              </div>
+            ) : (
+              <div className="max-h-64 space-y-1.5 overflow-y-auto pr-0.5">
+                {locationsByLod[effectiveSelectedLod].map((location) => {
+                  const isVisible = selectedIds.includes(String(location.id));
+                  return (
+                    <article
+                      key={location.id}
+                      className="flex items-center gap-2 rounded-xl border border-border bg-surface p-2.5"
+                    >
+                      <span
+                        className={`h-2 w-2 shrink-0 rounded-full ${
+                          isVisible ? "bg-emerald-500" : "bg-text-muted"
+                        }`}
+                        title={isVisible ? "Ditampilkan" : "Disembunyikan"}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="truncate text-[10px] font-extrabold text-text-primary"
+                          title={location.name}
+                        >
+                          {location.name}
+                        </p>
+                        <p className="mt-0.5 flex items-center gap-1 truncate text-[8px] text-text-muted">
+                          <MapPinIcon size={9} weight="fill" />
+                          {location.location}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onFocusModels?.(location)}
+                        className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-accent/30 bg-accent/10 px-2 text-[8px] font-extrabold text-accent transition hover:border-accent hover:bg-accent hover:text-surface focus-visible:ring-2 focus-visible:ring-accent"
+                        aria-label={`Fly To ${location.name}`}
+                        title={`Fly To ${location.name}`}
+                      >
+                        <CrosshairIcon size={11} weight="bold" />
+                        Fly To
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
 
             {/*
             <label className="relative block">
@@ -348,7 +423,7 @@ export default function Model3dControlPanel({
             </div>
 
             <p className="rounded-lg bg-surface-secondary px-2.5 py-2 text-[8px] font-semibold text-text-muted">
-              {tilesMessage} · {buildingCount} bangunan LOD
+              {tilesMessage}
               {fallbackStatus.failed > 0 ? ` · ${fallbackCount} fallback` : ""}
             </p>
 
