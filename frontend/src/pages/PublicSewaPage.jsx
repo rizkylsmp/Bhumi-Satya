@@ -380,7 +380,7 @@ export default function PublicSewaPage() {
             </span>
           </div>
           <span className="text-xs text-surface/50 dark:text-text-muted">
-            Digital Twin STPN
+            Digital Twin
           </span>
         </div>
       </footer>

@@ -20,10 +20,16 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Identitas produk disederhanakan menjadi `Digital Twin`; label sidebar juga
+  diringkas tanpa kata `Aset`, termasuk
+  `Kelola Data`, `Pusat Data`, `Penyewaan`, dan `Objek Tersedia`.
+- Tampilan skala peta diperbarui menjadi ruler kartografis yang responsif,
+  adaptif terhadap mode terang/gelap, dan tidak tertutup panel kontrol maupun
+  atribusi peta pada desktop dan mobile.
 - File WebAssembly `assimpjs.wasm` kini disertakan secara eksplisit dalam
   bundle backend Vercel agar impor dan konversi model 3D dapat berjalan pada
   runtime serverless.
-- Identitas sistem diperbarui menjadi `Bhumi Satya — Digital Twin STPN` pada
+- Identitas sistem diperbarui menjadi `Bhumi Satya — Digital Twin` pada
   metadata, navbar, header internal, footer, pengaturan,
   chatbot, dokumentasi, dan halaman API; hero landing page kini menekankan
   integrasi peta 2D, model 3D, serta data spasial.
@@ -113,7 +119,7 @@ dan penomoran versi menggunakan [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- Platform Bhumi Satya sebagai Digital Twin STPN dengan frontend
+- Platform Bhumi Satya sebagai Digital Twin dengan frontend
   React/Vite dan backend Express/PostgreSQL.
 - Landing page publik yang memaparkan aset dan menyediakan satu alur login.
 - Peta publik dan peta internal berbagi komponen serta sumber data aset dari

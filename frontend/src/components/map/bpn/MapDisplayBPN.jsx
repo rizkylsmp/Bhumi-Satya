@@ -2834,7 +2834,7 @@ const MapDisplayBPN = ({
   );
 
   return (
-    <div className="relative h-full w-full bg-gray-100 dark:bg-slate-950">
+    <div className="digital-twin-map relative h-full w-full bg-gray-100 dark:bg-slate-950">
       <div
         ref={mapContainer}
         className={`h-full w-full ${isAsset3dMode ? "invisible absolute inset-0" : ""}`}

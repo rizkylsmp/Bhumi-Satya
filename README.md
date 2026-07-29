@@ -1,8 +1,8 @@
-# Bhumi Satya - Digital Twin STPN
+# Bhumi Satya - Digital Twin
 
 ## 📋 Gambaran Umum
 
-**Bhumi Satya** adalah platform Digital Twin STPN yang mengintegrasikan data aset tanah, peta 2D, model 3D, legalitas, dan informasi pemanfaatan dalam satu representasi digital terpadu.
+**Bhumi Satya** adalah platform Digital Twin yang mengintegrasikan data aset tanah, peta 2D, model 3D, legalitas, dan informasi pemanfaatan dalam satu representasi digital terpadu.
 
 ---
 

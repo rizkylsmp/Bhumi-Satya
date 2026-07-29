@@ -1,7 +1,7 @@
 {
   "name": "bhumi-satya-backend",
   "version": "1.0.0",
-  "description": "Bhumi Satya Digital Twin STPN Backend",
+  "description": "Bhumi Satya Digital Twin Backend",
   "type": "module",
   "main": "src/server.js",
   "scripts": {

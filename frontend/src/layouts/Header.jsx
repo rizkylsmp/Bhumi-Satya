@@ -213,7 +213,7 @@ export default function Header({
               Bhumi Satya
             </h1>
             <p className="text-[10px] text-text-muted -mt-0.5 md:block hidden">
-              Digital Twin STPN
+              Digital Twin
             </p>
           </div>
         </div>

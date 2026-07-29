@@ -2,7 +2,7 @@
   "name": "bhumi-satya",
   "version": "1.0.0",
   "private": true,
-  "description": "Bhumi Satya - Digital Twin STPN",
+  "description": "Bhumi Satya - Digital Twin",
   "scripts": {
     "dev": "concurrently -n BE,FE -c blue,green \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
     "dev:be": "npm run dev --prefix backend",

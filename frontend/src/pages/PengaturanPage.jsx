@@ -76,9 +76,9 @@ export default function PengaturanPage() {
 
   // General settings
   const [generalSettings, setGeneralSettings] = useState({
-    namaAplikasi: "Bhumi Satya - Digital Twin STPN",
+    namaAplikasi: "Bhumi Satya - Digital Twin",
     deskripsiAplikasi:
-      "Platform Digital Twin STPN yang terintegrasi",
+      "Platform Digital Twin yang terintegrasi",
     emailAdmin: "admin@bhumisatya.go.id",
     teleponAdmin: "0274-123456",
     alamatKantor: "Jl. Tata Bumi No. 5, Gamping, Sleman, Yogyakarta",

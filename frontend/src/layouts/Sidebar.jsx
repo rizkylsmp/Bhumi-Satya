@@ -102,11 +102,11 @@ export default function Sidebar({
     canAccessMenu(userRole, "aset") && {
       id: "kelola-aset",
       icon: FolderIcon,
-      label: "Kelola Aset",
+      label: "Kelola Data",
       children: [
         {
           icon: DatabaseIcon,
-          label: "Pusat Data Aset",
+          label: "Pusat Data",
           path: "/aset",
         },
         {
@@ -147,9 +147,9 @@ export default function Sidebar({
     canAccessMenu(userRole, "sewa-aset") && {
       id: "sewa-aset",
       icon: HandshakeIcon,
-      label: "Sewa Aset",
+      label: "Penyewaan",
       children: [
-        { icon: SignInIcon, label: "Penyewaan", path: "/sewa/penyewaan" },
+        { icon: SignInIcon, label: "Daftar Sewa", path: "/sewa/penyewaan" },
         {
           icon: EnvelopeOpenIcon,
           label: "Permintaan",
@@ -164,7 +164,7 @@ export default function Sidebar({
       children: [
         {
           icon: StorefrontIcon,
-          label: "Aset Tersedia",
+          label: "Objek Tersedia",
           path: "/sewa/aset-tersedia",
         },
         {

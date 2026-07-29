@@ -708,7 +708,7 @@ export default function LandingPage() {
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-3 py-1.5 text-xs font-semibold text-emerald-800 backdrop-blur-sm dark:border-emerald-300/20 dark:bg-emerald-300/10 dark:text-emerald-100">
               <BuildingsIcon size={15} weight="fill" />
-              Platform Digital Twin STPN
+              Platform Digital Twin
             </div>
             <h2 className="max-w-3xl text-3xl font-black leading-tight tracking-tight text-slate-950 dark:text-white sm:text-4xl lg:text-6xl">
               Jelajahi aset wilayah
@@ -1235,7 +1235,7 @@ export default function LandingPage() {
             </span>
           </div>
           <span className="text-xs text-surface/50 dark:text-text-muted">
-            Digital Twin STPN
+            Digital Twin
           </span>
         </div>
       </footer>

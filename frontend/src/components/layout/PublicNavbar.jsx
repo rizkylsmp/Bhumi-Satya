@@ -64,7 +64,7 @@ export default function PublicNavbar() {
           <BrandMark className="h-9 w-9 text-xs" />
           <div className="hidden text-left sm:block">
             <h1 className="text-base font-bold leading-none tracking-tight text-text-primary">Bhumi Satya</h1>
-            <p className="hidden text-[10px] text-text-muted sm:block">Digital Twin STPN</p>
+            <p className="hidden text-[10px] text-text-muted sm:block">Digital Twin</p>
           </div>
         </button>
 

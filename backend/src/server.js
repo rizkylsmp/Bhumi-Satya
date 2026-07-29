@@ -117,7 +117,7 @@ app.get("/", (req, res) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Bhumi Satya API - Digital Twin STPN</title>
+      <title>Bhumi Satya API - Digital Twin</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -166,7 +166,7 @@ app.get("/", (req, res) => {
       <div class="container">
         <div class="logo">🏛️</div>
         <h1>Bhumi Satya API</h1>
-        <p class="subtitle">Digital Twin STPN - Backend Service</p>
+        <p class="subtitle">Digital Twin - Backend Service</p>
         <div class="status">
           <div class="status-item">
             <span>Status</span>
