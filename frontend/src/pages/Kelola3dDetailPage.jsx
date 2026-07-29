@@ -6,7 +6,7 @@ import {
   BASEMAP_OPTIONS,
   DEFAULT_BASEMAP_ID,
 } from "../components/map/basemapOptions";
-import Model3dObjectsPanel from "../components/asset/Model3dObjectsPanel";
+import AssetPopupCard from "../components/map/shared/AssetPopupCard";
 import { useConfirm } from "../components/ui/confirmContext";
 import {
   aset3dCatalogService,
@@ -3369,13 +3369,48 @@ export default function Kelola3dDetailPage() {
                   id="preview-panel-attributes"
                   role="tabpanel"
                   aria-labelledby="preview-tab-attributes"
-                  className="max-h-[min(76vh,800px)] min-h-[430px] overflow-y-auto"
+                  className="max-h-[min(76vh,800px)] min-h-[430px] overflow-y-auto bg-surface-secondary/40 p-4"
                 >
-                  <Model3dObjectsPanel
-                    key={selectedModel?.id_model_3d || "no-model"}
-                    assetId={selectedAssetId}
-                    model={selectedModel}
-                  />
+                  {selectedAsset ? (
+                    <div className="mx-auto max-w-sm">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[9px] font-black uppercase tracking-[0.12em] text-text-primary">
+                            Preview Popup Peta
+                          </p>
+                          <p className="mt-0.5 text-[8px] text-text-muted">
+                            Tampilan ini sama dengan popup saat bangunan dipilih.
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-border bg-surface px-2 py-1 text-[7px] font-bold uppercase text-text-muted">
+                          Hanya tampilan
+                        </span>
+                      </div>
+                      <article className="overflow-hidden rounded-2xl border border-border bg-surface">
+                        <AssetPopupCard
+                          asset={{
+                            ...selectedAsset,
+                            kode_3d: catalog?.kode_3d,
+                          }}
+                          model={selectedModel}
+                          preview
+                        />
+                      </article>
+                    </div>
+                  ) : (
+                    <div className="flex min-h-[400px] items-center justify-center text-center">
+                      <div>
+                        <BuildingsIcon
+                          size={30}
+                          weight="duotone"
+                          className="mx-auto text-text-muted"
+                        />
+                        <p className="mt-2 text-[10px] font-bold text-text-muted">
+                          Pilih aset untuk melihat preview popup.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </section>

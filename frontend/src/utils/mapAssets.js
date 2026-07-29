@@ -20,8 +20,14 @@ export function normalizeMapMarker(marker) {
     status: marker.status?.toLowerCase().replace(/\s+/g, "_") || "aktif",
     status_sertifikat: marker.status_sertifikat || null,
     jenis_masalah: marker.jenis_masalah || null,
-    luas: marker.luas?.toString() || "0",
-    tahun: marker.tahun?.toString() || "-",
+    luas:
+      marker.luas === null || marker.luas === undefined
+        ? null
+        : marker.luas.toString(),
+    tahun:
+      marker.tahun === null || marker.tahun === undefined
+        ? null
+        : marker.tahun.toString(),
     jenis_aset: marker.jenis,
     keterangan: marker.keterangan || null,
     latitude: marker.lat,
