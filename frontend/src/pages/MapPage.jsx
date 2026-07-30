@@ -32,9 +32,9 @@ function DropdownSection({ id, label, open, onToggle, children }) {
         onClick={onToggle}
         aria-expanded={open}
         aria-controls={`map-control-${id}`}
-        className={`flex min-h-11 w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left text-[10px] font-extrabold uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${
+        className={`flex min-h-10 w-full items-center justify-between gap-3 px-3.5 py-2 text-left text-[9px] font-extrabold uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${
           open
-            ? "bg-accent text-surface"
+            ? "bg-surface-secondary text-text-primary"
             : "bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
         }`}
       >
@@ -48,7 +48,7 @@ function DropdownSection({ id, label, open, onToggle, children }) {
       {open && (
         <div
           id={`map-control-${id}`}
-          className="border-t border-border bg-surface-secondary/80 p-2.5"
+          className="border-t border-border bg-surface p-2.5"
         >
           {children}
         </div>
@@ -176,105 +176,73 @@ function MapData2dControls({
 
   return (
     <div className="overflow-hidden">
+      <div
+        className="flex min-h-11 items-center justify-between gap-2 border-b border-border bg-surface px-3.5"
+        role="status"
+        aria-live="polite"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+          <span className="text-xs font-bold text-text-primary">
+            {filteredAssets.length}
+          </span>
+          <span className="truncate text-[9px] font-semibold text-text-muted">
+            data tampil
+          </span>
+        </span>
+        {selectedKecamatanFilter && (
+          <button
+            type="button"
+            onClick={() => setSelectedKecamatanFilter("")}
+            className="shrink-0 rounded-md border border-border px-2 py-1 text-[9px] font-bold text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary"
+          >
+            Reset wilayah
+          </button>
+        )}
+      </div>
+
       <DropdownSection
         id="layer"
-        label="Layer Controls"
+        label="Layer Peta"
         open={openSection === "layer"}
         onToggle={() => toggleSection("layer")}
       >
-        <div className="rounded-lg border border-border bg-surface p-2.5">
-          <AssetLayerControl
-            embedded
-            activeLayer={activeLayer}
-            setActiveLayer={setActiveLayer}
-            panelTitle="Kontrol Layer"
-            bidangLabel="Bidang Tanah"
-            showKelurahan={showKelurahan}
-            setShowKelurahan={setShowKelurahan}
-            showKecamatan={showKecamatan}
-            setShowKecamatan={setShowKecamatan}
-            showSudahSertifikat={showSudahSertifikat}
-            setShowSudahSertifikat={setShowSudahSertifikat}
-            showBelumSertifikat={showBelumSertifikat}
-            setShowBelumSertifikat={setShowBelumSertifikat}
-            data3dFilter={data3dFilter}
-            setData3dFilter={setData3dFilter}
-          />
-        </div>
+        <AssetLayerControl
+          embedded
+          activeLayer={activeLayer}
+          setActiveLayer={setActiveLayer}
+          panelTitle="Kontrol Layer"
+          bidangLabel="Bidang Tanah"
+          showKelurahan={showKelurahan}
+          setShowKelurahan={setShowKelurahan}
+          showKecamatan={showKecamatan}
+          setShowKecamatan={setShowKecamatan}
+          showSudahSertifikat={showSudahSertifikat}
+          setShowSudahSertifikat={setShowSudahSertifikat}
+          showBelumSertifikat={showBelumSertifikat}
+          setShowBelumSertifikat={setShowBelumSertifikat}
+          data3dFilter={data3dFilter}
+          setData3dFilter={setData3dFilter}
+        />
       </DropdownSection>
 
       <DropdownSection
         id="selection"
-        label="Selection Mode"
+        label="Filter Penyewaan"
         open={openSection === "selection"}
         onToggle={() => toggleSection("selection")}
       >
-        <div className="rounded-lg border border-border bg-surface p-2.5">
-          <AssetMapFilter
-            hideSearch
-            selectedSewaLayers={selectedSewaLayers}
-            onSewaLayerToggle={handleSewaLayerToggle}
-            onSearch={handleSearch}
-            onSelectAsset={handleSelectSearchAsset}
-            assets={assets}
-            searchResults={searchFilter.trim().length >= 2 ? mapSearchResults : null}
-            searchLoading={isMapSearchLoading}
-            showStatistics={false}
-          />
-        </div>
-      </DropdownSection>
-
-      <DropdownSection
-        id="navigation"
-        label="Navigation"
-        open={openSection === "navigation"}
-        onToggle={() => toggleSection("navigation")}
-      >
-        <p className="rounded-lg border border-border bg-surface px-3 py-2 text-[10px] leading-relaxed text-text-secondary">
-          Gunakan pencarian aset atau klik objek pada peta untuk mengarahkan tampilan.
-        </p>
-      </DropdownSection>
-
-      <DropdownSection
-        id="status"
-        label="Node Status"
-        open={openSection === "status"}
-        onToggle={() => toggleSection("status")}
-      >
-        <div className="rounded-lg border border-border bg-surface px-3 py-2.5" role="status" aria-live="polite">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              <span className="text-sm font-black text-text-primary">{filteredAssets.length}</span>
-              <span className="text-[10px] font-semibold text-text-muted">aset ditemukan</span>
-            </div>
-            {selectedKecamatanFilter && (
-              <button
-                type="button"
-                onClick={() => setSelectedKecamatanFilter("")}
-                className="shrink-0 rounded-md border border-border bg-surface-secondary px-2 py-1 text-[9px] font-bold text-text-secondary transition hover:bg-surface-tertiary hover:text-text-primary"
-              >
-                Reset
-              </button>
-            )}
-          </div>
-          {selectedKecamatanFilter && (
-            <p className="mt-2 text-[9px] font-bold text-accent">
-              Kecamatan {selectedKecamatanFilter}
-            </p>
-          )}
-        </div>
-      </DropdownSection>
-
-      <DropdownSection
-        id="tools"
-        label="Tools"
-        open={openSection === "tools"}
-        onToggle={() => toggleSection("tools")}
-      >
-        <p className="rounded-lg border border-border bg-surface px-3 py-2 text-[10px] leading-relaxed text-text-secondary">
-          Alat ukur tersedia setelah mode 3D diaktifkan.
-        </p>
+        <AssetMapFilter
+          hideSearch
+          selectedSewaLayers={selectedSewaLayers}
+          onSewaLayerToggle={handleSewaLayerToggle}
+          onSearch={handleSearch}
+          onSelectAsset={handleSelectSearchAsset}
+          assets={assets}
+          searchResults={searchFilter.trim().length >= 2 ? mapSearchResults : null}
+          searchLoading={isMapSearchLoading}
+          showStatistics={false}
+        />
       </DropdownSection>
 
       <DropdownSection

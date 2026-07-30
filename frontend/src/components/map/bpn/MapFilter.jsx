@@ -279,19 +279,21 @@ export default function MapFilter({
 
       {/* Filter Sewa — BPKA only */}
       {!searchOnly && isBPKAMode && selectedSewaLayers && onSewaLayerToggle && (
-        <div className="space-y-3">
-          <label className="text-xs font-semibold text-text-muted uppercase tracking-wide flex items-center gap-2">
-            <HandshakeIcon size={14} />
-            Filter Sewa
-          </label>
-          <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-2">
+          {!hideSearch && (
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
+              <HandshakeIcon size={14} />
+              Filter Sewa
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-1.5">
             {/* Tersedia / Sedia Disewakan */}
             <button
               onClick={() => onSewaLayerToggle("tersedia")}
-              className={`flex items-center gap-2 p-2.5 rounded-xl border-2 transition-all ${
+              className={`flex min-h-9 items-center gap-2 rounded-lg border px-2 transition-colors ${
                 selectedSewaLayers.tersedia
-                  ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-400"
-                  : "bg-surface border-border opacity-50"
+                  ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20"
+                  : "border-border bg-surface text-text-muted"
               }`}
             >
               <div className="w-5 h-5 rounded-md flex items-center justify-center bg-emerald-500">
@@ -310,10 +312,10 @@ export default function MapFilter({
             {/* Tersewa */}
             <button
               onClick={() => onSewaLayerToggle("tersewa")}
-              className={`flex items-center gap-2 p-2.5 rounded-xl border-2 transition-all ${
+              className={`flex min-h-9 items-center gap-2 rounded-lg border px-2 transition-colors ${
                 selectedSewaLayers.tersewa
-                  ? "bg-amber-50 dark:bg-amber-900/20 border-amber-400"
-                  : "bg-surface border-border opacity-50"
+                  ? "border-amber-400 bg-amber-50 dark:bg-amber-900/20"
+                  : "border-border bg-surface text-text-muted"
               }`}
             >
               <div className="w-5 h-5 rounded-md flex items-center justify-center bg-amber-500">
