@@ -6,6 +6,7 @@ import {
   Asset3dValidationError,
   normalizeAsset3dFields,
 } from "../utils/asset3d.js";
+import { getCentroidFromPolygonField } from "../utils/polygonCentroid.js";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -36,77 +37,6 @@ const withDbRetry = async (operation, retries = 2) => {
     }
   }
   throw lastError;
-};
-
-const toNumber = (value) => {
-  if (value === null || value === undefined || value === "") return null;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-};
-
-const getGeometryPoints = (geometry) => {
-  if (!geometry?.type || !geometry?.coordinates) return [];
-
-  if (geometry.type === "Point") {
-    return [geometry.coordinates];
-  }
-
-  if (geometry.type === "Polygon") {
-    return geometry.coordinates?.[0] || [];
-  }
-
-  if (geometry.type === "MultiPolygon") {
-    return geometry.coordinates?.[0]?.[0] || [];
-  }
-
-  return [];
-};
-
-const getCentroidFromGeometry = (geometry) => {
-  const points = getGeometryPoints(geometry);
-  if (!points.length) return { lat: null, lng: null };
-
-  let sumLng = 0;
-  let sumLat = 0;
-  let count = 0;
-
-  for (const point of points) {
-    if (!Array.isArray(point) || point.length < 2) continue;
-    const lng = toNumber(point[0]);
-    const lat = toNumber(point[1]);
-    if (lng === null || lat === null) continue;
-    sumLng += lng;
-    sumLat += lat;
-    count += 1;
-  }
-
-  if (!count) return { lat: null, lng: null };
-  return {
-    lat: sumLat / count,
-    lng: sumLng / count,
-  };
-};
-
-const getCentroidFromPolygonField = (polygon) => {
-  if (!polygon) return { lat: null, lng: null };
-
-  if (Array.isArray(polygon)) {
-    return getCentroidFromLatLngPolygon(polygon);
-  }
-
-  if (typeof polygon === "string") {
-    try {
-      return getCentroidFromPolygonField(JSON.parse(polygon));
-    } catch {
-      return { lat: null, lng: null };
-    }
-  }
-
-  if (polygon?.type || polygon?.coordinates) {
-    return getCentroidFromGeometry(polygon);
-  }
-
-  return { lat: null, lng: null };
 };
 
 const normalizeSumber = (value) => {

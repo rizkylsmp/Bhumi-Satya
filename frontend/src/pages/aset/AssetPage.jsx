@@ -25,6 +25,7 @@ import {
   CalendarIcon,
   BuildingsIcon,
   MapPinIcon,
+  NavigationArrowIcon,
   HandshakeIcon,
 } from "@phosphor-icons/react";
 
@@ -308,7 +309,7 @@ export default function AssetPage() {
     const key = colKey || column || children?.toString();
     return (
       <th
-        className={`relative px-4 py-4 text-left text-[11px] font-semibold text-text-muted uppercase tracking-wider ${
+        className={`relative px-3 py-3 text-left text-[10px] font-semibold text-text-muted uppercase tracking-wider ${
           sortable
             ? "cursor-pointer select-none hover:text-text-secondary transition-colors"
             : ""
@@ -384,7 +385,7 @@ export default function AssetPage() {
         />
 
         {/* Table Info Header */}
-        <div className="px-4 lg:px-6 py-4 border-b border-border flex items-center justify-between bg-surface-secondary/50">
+        <div className="flex items-center justify-between border-b border-border bg-surface-secondary/50 px-4 py-3 lg:px-6">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-text-primary">
               Daftar Aset Terdaftar
@@ -722,7 +723,7 @@ export default function AssetPage() {
 
                         {useCompactAssetTable ? (
                           <>
-                            <td className="px-3 py-3">
+                            <td className="px-2.5 py-2">
                               <span className="inline-flex items-center gap-2 px-2.5 py-1 bg-surface-secondary rounded-lg text-sm font-mono font-semibold text-text-primary">
                                 {asset.kode_aset || "-"}
                               </span>
@@ -901,49 +902,54 @@ export default function AssetPage() {
                                 {asset.kode_aset}
                               </span>
                             </td>
-                            <td className="px-3 py-3">
-                              <p className="line-clamp-2 text-sm font-semibold leading-5 text-text-primary">
+                            <td className="px-2.5 py-2">
+                              <p className="line-clamp-1 text-xs font-semibold leading-4 text-text-primary">
                                 {asset.nama_aset}
                               </p>
                               {asset.tahun_perolehan && (
-                                <span className="mt-1 inline-flex rounded-md bg-surface-secondary px-1.5 py-0.5 text-[9px] font-semibold text-text-muted">
+                                <span className="mt-0.5 inline-flex rounded-md bg-surface-secondary px-1.5 py-0.5 text-[8px] font-semibold text-text-muted">
                                   Perolehan {asset.tahun_perolehan}
                                 </span>
                               )}
                             </td>
-                            <td className="px-3 py-3">
-                              <div className="flex min-w-0 items-start gap-2">
+                            <td className="px-2.5 py-2">
+                              <div className="flex min-w-0 items-center gap-1.5">
                                 <MapPinIcon
                                   size={15}
                                   weight={hasCoords ? "fill" : "regular"}
                                   className={
                                     hasCoords
-                                      ? "mt-0.5 shrink-0 text-emerald-500"
-                                      : "mt-0.5 shrink-0 text-text-muted"
+                                      ? "shrink-0 text-emerald-500"
+                                      : "shrink-0 text-text-muted"
                                   }
                                 />
                                 <div className="min-w-0">
                                   <p
-                                    className="line-clamp-2 text-xs leading-4 text-text-secondary"
+                                    className="truncate text-[11px] leading-4 text-text-secondary"
                                     title={asset.lokasi}
                                   >
                                     {asset.lokasi || "Alamat belum diisi"}
                                   </p>
-                                  <p className="mt-1 truncate text-[10px] text-text-muted">
+                                  <p className="mt-0.5 truncate text-[9px] text-text-muted">
                                     {[asset.desa_kelurahan, asset.kecamatan]
                                       .filter(Boolean)
                                       .join(", ") || "-"}
                                   </p>
-                                  {hasCoords && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleShowOnMap(asset)}
-                                      className="mt-1 text-[10px] font-bold text-accent hover:underline"
-                                    >
-                                      Buka peta
-                                    </button>
-                                  )}
                                 </div>
+                                {hasCoords && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleShowOnMap(asset)}
+                                    title={`Lihat ${asset.nama_aset} di peta`}
+                                    aria-label={`Lihat ${asset.nama_aset} di peta`}
+                                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-accent/30 bg-accent/10 text-accent transition hover:border-accent/50 hover:bg-accent/15 focus-visible:ring-2 focus-visible:ring-accent"
+                                  >
+                                    <NavigationArrowIcon
+                                      size={12}
+                                      weight="bold"
+                                    />
+                                  </button>
+                                )}
                               </div>
                             </td>
                             <td className="hidden">
@@ -956,7 +962,7 @@ export default function AssetPage() {
                                 {asset.desa_kelurahan || "-"}
                               </span>
                             </td>
-                            <td className="px-3 py-3 text-right">
+                            <td className="px-2.5 py-2 text-right">
                               <p className="text-sm font-bold tabular-nums text-text-primary">
                                 {asset.luas
                                   ? formatNumber(Number(asset.luas))
@@ -966,9 +972,9 @@ export default function AssetPage() {
                                 m²
                               </span>
                             </td>
-                            <td className="px-3 py-3">
+                            <td className="px-2.5 py-2">
                               <span
-                                className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-bold ${
+                                className={`inline-flex rounded-md border px-1.5 py-0.5 text-[9px] font-bold ${
                                   isAssetCertified(asset)
                                     ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
                                     : "border-border bg-surface-secondary text-text-muted"
@@ -978,11 +984,11 @@ export default function AssetPage() {
                                   ? "Bersertifikat"
                                   : "Belum bersertifikat"}
                               </span>
-                              <p className="mt-1.5 truncate text-xs font-semibold text-text-secondary">
+                              <p className="mt-1 truncate text-[11px] font-semibold text-text-secondary">
                                 {asset.jenis_hak || "Hak belum diisi"}
                               </p>
                               <p
-                                className="mt-0.5 truncate font-mono text-[10px] text-text-muted"
+                                className="truncate font-mono text-[9px] text-text-muted"
                                 title={asset.nomor_sertifikat}
                               >
                                 {asset.nomor_sertifikat || "-"}
@@ -998,7 +1004,7 @@ export default function AssetPage() {
                                 {asset.kw || "-"}
                               </span>
                             </td>
-                            <td className="px-3 py-3 text-right whitespace-nowrap">
+                            <td className="px-2.5 py-2 text-right whitespace-nowrap">
                               <span className="text-xs font-semibold text-text-primary tabular-nums">
                                 {asset.nilai_aset
                                   ? formatCurrency(asset.nilai_aset)
@@ -1029,9 +1035,9 @@ export default function AssetPage() {
                                   (asset.polygon_bidang ? "ok" : "-")}
                               </span>
                             </td>
-                            <td className="px-3 py-3">
+                            <td className="px-2.5 py-2">
                               <span
-                                className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-bold ${
+                                className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] font-bold ${
                                   asset.status_sewa === "Tersewa"
                                     ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
                                     : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
@@ -1043,7 +1049,7 @@ export default function AssetPage() {
                                   : "Tidak tersewa"}
                               </span>
                               <p
-                                className="mt-1.5 line-clamp-2 text-[11px] leading-4 text-text-secondary"
+                                className="mt-1 truncate text-[10px] leading-4 text-text-secondary"
                                 title={asset.opd_pengguna}
                               >
                                 {asset.opd_pengguna || "Belum ada OPD pengguna"}
@@ -1065,7 +1071,7 @@ export default function AssetPage() {
 
                         {/* Sticky Aksi Column */}
                         <td
-                          className={`sticky right-0 z-20 w-[180px] border-l border-border/50 px-3 py-3 transition-colors ${
+                          className={`sticky right-0 z-20 w-[180px] border-l border-border/50 px-2.5 py-2 transition-colors ${
                             isHovered
                               ? "bg-accent/5 dark:bg-accent/10"
                               : "bg-surface"
@@ -1259,9 +1265,11 @@ export default function AssetPage() {
                               <button
                                 type="button"
                                 onClick={() => handleShowOnMap(asset)}
-                                className="rounded-md border border-accent/20 bg-accent/10 px-2 py-1 text-[9px] font-bold text-accent"
+                                title={`Lihat ${asset.nama_aset} di peta`}
+                                aria-label={`Lihat ${asset.nama_aset} di peta`}
+                                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-accent/30 bg-accent/10 text-accent"
                               >
-                                Buka peta
+                                <NavigationArrowIcon size={12} weight="bold" />
                               </button>
                             )}
                           </div>
