@@ -460,13 +460,8 @@ export default function AssetPage() {
         ) : (
           <>
             {/* Desktop Table */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table
-                className="w-full"
-                style={{
-                  minWidth: useCompactAssetTable ? "2820px" : "1900px",
-                }}
-              >
+            <div className="hidden xl:block">
+              <table className="w-full table-fixed">
                 <thead>
                   <tr className="bg-surface-secondary border-b border-border">
                     <TableHeader className="w-12">No</TableHeader>
@@ -609,24 +604,24 @@ export default function AssetPage() {
                         <TableHeader
                           sortable
                           column="kode_aset"
-                          className="min-w-[170px]"
+                          className="w-[13%]"
                         >
                           Kode Aset
                         </TableHeader>
                         <TableHeader
                           sortable
                           column="nama_aset"
-                          className="min-w-[220px]"
+                          className="w-[18%]"
                         >
                           Nama Aset
                         </TableHeader>
-                        <TableHeader className="min-w-[200px]">
+                        <TableHeader className="w-[19%]">
                           Lokasi
                         </TableHeader>
                         <TableHeader
                           sortable
                           column="kecamatan"
-                          className="min-w-[120px]"
+                          className="hidden"
                         >
                           Kecamatan
                         </TableHeader>
@@ -634,71 +629,71 @@ export default function AssetPage() {
                           sortable
                           column="desa_kelurahan"
                           colKey="desa_kelurahan"
-                          className="min-w-[120px]"
+                          className="hidden"
                         >
                           Kelurahan
                         </TableHeader>
                         <TableHeader
                           sortable
                           column="luas"
-                          className="min-w-[120px]"
+                          className="w-[9%] text-right"
                         >
-                          Luas (m²)
+                          Luas
                         </TableHeader>
                         <TableHeader
                           sortable
                           column="jenis_hak"
                           colKey="jenis_hak_bpn"
-                          className="min-w-[100px]"
+                          className="w-[15%]"
                         >
-                          Jenis Hak
+                          Legal
                         </TableHeader>
                         <TableHeader
                           sortable
                           column="nomor_sertifikat"
                           colKey="nosert_bpn"
-                          className="min-w-[150px]"
+                          className="hidden"
                         >
                           No Sertifikat
                         </TableHeader>
                         <TableHeader
                           sortable
                           column="kw"
-                          className="min-w-[70px]"
+                          className="hidden"
                         >
                           KW
                         </TableHeader>
                         <TableHeader
                           sortable
                           column="nilai_aset"
-                          className="min-w-[130px]"
+                          className="w-[13%] text-right"
                         >
-                          Nilai Aset
+                          Nilai
                         </TableHeader>
-                        <TableHeader className="min-w-[120px]">
+                        <TableHeader className="hidden">
                           Penyertifikatan
                         </TableHeader>
-                        <TableHeader className="min-w-[90px]">
+                        <TableHeader className="hidden">
                           Plotting
                         </TableHeader>
                         <TableHeader
                           sortable
                           column="opd_pengguna"
-                          className="min-w-[150px]"
+                          className="w-[15%]"
                         >
-                          OPD Pengguna
+                          Pemanfaatan
                         </TableHeader>
                         <TableHeader
                           sortable
                           column="tahun_perolehan"
-                          className="text-center min-w-[80px]"
+                          className="hidden"
                         >
                           Tahun
                         </TableHeader>
                       </>
                     )}
-                    <th className="sticky right-0 z-30 min-w-[180px] w-[180px] bg-surface-secondary px-3 py-3 text-center text-[11px] font-semibold text-text-muted uppercase tracking-wider border-l border-border/50 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.18)]">
-                      Aksi
+                    <th className="sticky right-0 z-30 w-[180px] bg-surface-secondary px-3 py-3 text-center text-[11px] font-semibold text-text-muted uppercase tracking-wider border-l border-border/50">
+                      Kelola
                     </th>
                   </tr>
                 </thead>
@@ -902,60 +897,115 @@ export default function AssetPage() {
                         ) : (
                           <>
                             <td className="px-3 py-3">
-                              <span className="inline-flex items-center gap-2 px-2.5 py-1 bg-surface-secondary rounded-lg text-sm font-mono font-semibold text-text-primary">
+                              <span className="inline-flex max-w-full truncate rounded-md border border-border bg-surface-secondary px-2 py-1 font-mono text-[11px] font-bold text-text-primary">
                                 {asset.kode_aset}
                               </span>
                             </td>
                             <td className="px-3 py-3">
-                              <span className="text-sm font-medium text-text-primary wrap-break-word max-w-[180px]">
+                              <p className="line-clamp-2 text-sm font-semibold leading-5 text-text-primary">
                                 {asset.nama_aset}
-                              </span>
+                              </p>
+                              {asset.tahun_perolehan && (
+                                <span className="mt-1 inline-flex rounded-md bg-surface-secondary px-1.5 py-0.5 text-[9px] font-semibold text-text-muted">
+                                  Perolehan {asset.tahun_perolehan}
+                                </span>
+                              )}
                             </td>
                             <td className="px-3 py-3">
-                              <span className="text-xs text-text-secondary wrap-break-word max-w-[200px] inline-block">
-                                {asset.lokasi || "-"}
-                              </span>
+                              <div className="flex min-w-0 items-start gap-2">
+                                <MapPinIcon
+                                  size={15}
+                                  weight={hasCoords ? "fill" : "regular"}
+                                  className={
+                                    hasCoords
+                                      ? "mt-0.5 shrink-0 text-emerald-500"
+                                      : "mt-0.5 shrink-0 text-text-muted"
+                                  }
+                                />
+                                <div className="min-w-0">
+                                  <p
+                                    className="line-clamp-2 text-xs leading-4 text-text-secondary"
+                                    title={asset.lokasi}
+                                  >
+                                    {asset.lokasi || "Alamat belum diisi"}
+                                  </p>
+                                  <p className="mt-1 truncate text-[10px] text-text-muted">
+                                    {[asset.desa_kelurahan, asset.kecamatan]
+                                      .filter(Boolean)
+                                      .join(", ") || "-"}
+                                  </p>
+                                  {hasCoords && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleShowOnMap(asset)}
+                                      className="mt-1 text-[10px] font-bold text-accent hover:underline"
+                                    >
+                                      Buka peta
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
                             </td>
-                            <td className="px-3 py-3">
+                            <td className="hidden">
                               <span className="text-sm text-text-secondary whitespace-nowrap">
                                 {asset.kecamatan || "-"}
                               </span>
                             </td>
-                            <td className="px-3 py-3">
+                            <td className="hidden">
                               <span className="text-sm text-text-secondary whitespace-nowrap">
                                 {asset.desa_kelurahan || "-"}
                               </span>
                             </td>
                             <td className="px-3 py-3 text-right">
-                              <span className="text-sm text-text-secondary tabular-nums">
+                              <p className="text-sm font-bold tabular-nums text-text-primary">
                                 {asset.luas
                                   ? formatNumber(Number(asset.luas))
                                   : "-"}
+                              </p>
+                              <span className="text-[10px] font-medium text-text-muted">
+                                m²
                               </span>
                             </td>
                             <td className="px-3 py-3">
-                              <span className="text-xs text-text-secondary whitespace-nowrap">
-                                {asset.jenis_hak || "-"}
+                              <span
+                                className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-bold ${
+                                  isAssetCertified(asset)
+                                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                    : "border-border bg-surface-secondary text-text-muted"
+                                }`}
+                              >
+                                {isAssetCertified(asset)
+                                  ? "Bersertifikat"
+                                  : "Belum bersertifikat"}
                               </span>
+                              <p className="mt-1.5 truncate text-xs font-semibold text-text-secondary">
+                                {asset.jenis_hak || "Hak belum diisi"}
+                              </p>
+                              <p
+                                className="mt-0.5 truncate font-mono text-[10px] text-text-muted"
+                                title={asset.nomor_sertifikat}
+                              >
+                                {asset.nomor_sertifikat || "-"}
+                              </p>
                             </td>
-                            <td className="px-3 py-3">
+                            <td className="hidden">
                               <span className="text-sm font-mono text-text-primary">
                                 {asset.nomor_sertifikat || "-"}
                               </span>
                             </td>
-                            <td className="px-3 py-3">
+                            <td className="hidden">
                               <span className="text-xs font-medium text-text-secondary whitespace-nowrap">
                                 {asset.kw || "-"}
                               </span>
                             </td>
                             <td className="px-3 py-3 text-right whitespace-nowrap">
-                              <span className="text-sm text-text-secondary tabular-nums">
+                              <span className="text-xs font-semibold text-text-primary tabular-nums">
                                 {asset.nilai_aset
                                   ? formatCurrency(asset.nilai_aset)
                                   : "-"}
                               </span>
                             </td>
-                            <td className="px-3 py-3">
+                            <td className="hidden">
                               {isAssetCertified(asset) ? (
                                 <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold">
                                   Bersertifikat
@@ -966,7 +1016,7 @@ export default function AssetPage() {
                                 </span>
                               )}
                             </td>
-                            <td className="px-3 py-3 text-center">
+                            <td className="hidden">
                               <span
                                 className={`text-xs font-medium ${
                                   asset.plotting_status === "ok" ||
@@ -980,11 +1030,26 @@ export default function AssetPage() {
                               </span>
                             </td>
                             <td className="px-3 py-3">
-                              <span className="text-xs text-text-secondary wrap-break-word max-w-[150px] inline-block">
-                                {asset.opd_pengguna || "-"}
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-bold ${
+                                  asset.status_sewa === "Tersewa"
+                                    ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                                    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                }`}
+                              >
+                                <HandshakeIcon size={11} weight="fill" />
+                                {asset.status_sewa === "Tersewa"
+                                  ? "Tersewa"
+                                  : "Tidak tersewa"}
                               </span>
+                              <p
+                                className="mt-1.5 line-clamp-2 text-[11px] leading-4 text-text-secondary"
+                                title={asset.opd_pengguna}
+                              >
+                                {asset.opd_pengguna || "Belum ada OPD pengguna"}
+                              </p>
                             </td>
-                            <td className="px-3 py-3 text-center">
+                            <td className="hidden">
                               <div className="flex items-center justify-center gap-1">
                                 <CalendarIcon
                                   size={14}
@@ -1000,7 +1065,7 @@ export default function AssetPage() {
 
                         {/* Sticky Aksi Column */}
                         <td
-                          className={`sticky right-0 z-20 min-w-[180px] w-[180px] border-l border-border/50 px-3 py-3 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.18)] transition-colors ${
+                          className={`sticky right-0 z-20 w-[180px] border-l border-border/50 px-3 py-3 transition-colors ${
                             isHovered
                               ? "bg-accent/5 dark:bg-accent/10"
                               : "bg-surface"
@@ -1038,7 +1103,7 @@ export default function AssetPage() {
             </div>
 
             {/* Mobile Card View */}
-            <div className="lg:hidden divide-y divide-border">
+            <div className="divide-y divide-border xl:hidden">
               {sortedAssets.map((asset, idx) => {
                 const hasCoords = asset.koordinat_lat && asset.koordinat_long;
                 const rowNumber = (currentPage - 1) * itemsPerPage + idx + 1;
@@ -1134,29 +1199,71 @@ export default function AssetPage() {
                         </>
                       ) : (
                         <>
-                          <div>
-                            <p className="text-[10px] font-medium text-text-muted uppercase tracking-wider mb-0.5">
-                              Tahun
+                          <div className="col-span-2 rounded-lg bg-surface-secondary p-2.5">
+                            <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-text-muted">
+                              Lokasi
                             </p>
-                            <p className="text-xs text-text-secondary">
-                              {asset.tahun_perolehan || "-"}
+                            <p className="line-clamp-2 text-xs text-text-secondary">
+                              {asset.lokasi || "Alamat belum diisi"}
                             </p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-medium text-text-muted uppercase tracking-wider mb-0.5">
-                              Kecamatan
-                            </p>
-                            <p className="text-xs text-text-secondary">
-                              {asset.kecamatan || "-"}
+                            <p className="mt-1 text-[10px] text-text-muted">
+                              {[asset.desa_kelurahan, asset.kecamatan]
+                                .filter(Boolean)
+                                .join(", ") || "-"}
                             </p>
                           </div>
                           <div>
-                            <p className="text-[10px] font-medium text-text-muted uppercase tracking-wider mb-0.5">
-                              Kelurahan
+                            <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-text-muted">
+                              Luas
                             </p>
-                            <p className="text-xs text-text-secondary">
-                              {asset.desa_kelurahan || "-"}
+                            <p className="text-xs font-semibold text-text-primary">
+                              {asset.luas
+                                ? `${formatNumber(Number(asset.luas))} m²`
+                                : "-"}
                             </p>
+                          </div>
+                          <div>
+                            <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-text-muted">
+                              Nilai
+                            </p>
+                            <p className="text-xs font-semibold text-text-primary">
+                              {asset.nilai_aset
+                                ? formatCurrency(asset.nilai_aset)
+                                : "-"}
+                            </p>
+                          </div>
+                          <div className="col-span-2 flex flex-wrap gap-1.5 pt-1">
+                            <span
+                              className={`rounded-md border px-2 py-1 text-[9px] font-bold ${
+                                isAssetCertified(asset)
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                  : "border-border bg-surface-secondary text-text-muted"
+                              }`}
+                            >
+                              {isAssetCertified(asset)
+                                ? "Bersertifikat"
+                                : "Belum bersertifikat"}
+                            </span>
+                            <span
+                              className={`rounded-md border px-2 py-1 text-[9px] font-bold ${
+                                asset.status_sewa === "Tersewa"
+                                  ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                              }`}
+                            >
+                              {asset.status_sewa === "Tersewa"
+                                ? "Tersewa"
+                                : "Tidak tersewa"}
+                            </span>
+                            {hasCoords && (
+                              <button
+                                type="button"
+                                onClick={() => handleShowOnMap(asset)}
+                                className="rounded-md border border-accent/20 bg-accent/10 px-2 py-1 text-[9px] font-bold text-accent"
+                              >
+                                Buka peta
+                              </button>
+                            )}
                           </div>
                         </>
                       )}
