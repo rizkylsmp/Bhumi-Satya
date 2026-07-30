@@ -1,6 +1,10 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useThemeStore } from "../stores/themeStore";
+import {
+  THOUSANDS_SEPARATORS,
+  useNumberFormatStore,
+} from "../stores/numberFormatStore";
 import { useAuthStore } from "../stores/authStore";
 import UserManagementPage from "./UserManagementPage";
 import {
@@ -29,6 +33,7 @@ import {
   CheckCircleIcon,
   CaretRightIcon,
   InfoIcon,
+  HashIcon,
 } from "@phosphor-icons/react";
 
 const INPUT_CLASS =
@@ -99,11 +104,18 @@ export default function PengaturanPage() {
   // Display settings
   const darkMode = useThemeStore((s) => s.darkMode);
   const setDarkMode = useThemeStore((s) => s.setDarkMode);
+  const thousandsSeparator = useNumberFormatStore(
+    (state) => state.thousandsSeparator,
+  );
+  const setThousandsSeparator = useNumberFormatStore(
+    (state) => state.setThousandsSeparator,
+  );
 
   const [displaySettings, setDisplaySettings] = useState({
     tema: darkMode ? "dark" : "light",
     itemPerHalaman: "10",
     formatTanggal: "DD/MM/YYYY",
+    pemisahRibuan: thousandsSeparator,
   });
 
   const tabs = [
@@ -127,6 +139,9 @@ export default function PengaturanPage() {
     setDisplaySettings((prev) => ({ ...prev, [field]: value }));
     if (field === "tema") {
       setDarkMode(value === "dark");
+    }
+    if (field === "pemisahRibuan") {
+      setThousandsSeparator(value);
     }
   };
 
@@ -287,7 +302,7 @@ export default function PengaturanPage() {
                     </h3>
                   </div>
                   <div className="space-y-4 pl-0 sm:pl-9.5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <FormField label="Email Admin" icon={EnvelopeIcon}>
                         <input
                           type="email"
@@ -737,6 +752,34 @@ export default function PengaturanPage() {
                           <option value="DD/MM/YYYY">DD/MM/YYYY</option>
                           <option value="MM/DD/YYYY">MM/DD/YYYY</option>
                           <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                        </select>
+                      </FormField>
+                      <FormField
+                        label="Pemisah Ribuan"
+                        icon={HashIcon}
+                        description={
+                          displaySettings.pemisahRibuan ===
+                          THOUSANDS_SEPARATORS.COMMA
+                            ? "Contoh: Rp 1,000,000"
+                            : "Contoh: Rp 1.000.000"
+                        }
+                      >
+                        <select
+                          value={displaySettings.pemisahRibuan}
+                          onChange={(e) =>
+                            handleDisplayChange(
+                              "pemisahRibuan",
+                              e.target.value,
+                            )
+                          }
+                          className={INPUT_CLASS}
+                        >
+                          <option value={THOUSANDS_SEPARATORS.COMMA}>
+                            Koma (1,000)
+                          </option>
+                          <option value={THOUSANDS_SEPARATORS.DOT}>
+                            Titik (1.000)
+                          </option>
                         </select>
                       </FormField>
                     </div>

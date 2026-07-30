@@ -29,24 +29,17 @@ import { useNavigate } from "react-router-dom";
 import { assetModel3dService } from "../../services/api";
 import { getAsset3dSummary, HEIGHT_QUALITY_CONFIG } from "../../utils/asset3dGeojson";
 import { useConfirm } from "../ui/confirmContext";
+import {
+  formatCurrency,
+  formatNumber,
+  formatNumberWithOptions,
+} from "../../utils/format";
 
 // Helper functions - moved outside component to prevent re-creation on every render
-const formatCurrency = (num) => {
-  if (!num) return "Rp 0";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(num);
-};
-
-const formatNumber = (num) => {
-  if (!num) return "0";
-  return new Intl.NumberFormat("id-ID").format(num);
-};
-
 const formatFileSizeKb = (bytes) =>
-  `${(Number(bytes) / 1024).toLocaleString("id-ID", { maximumFractionDigits: 1 })} KB`;
+  `${formatNumberWithOptions(Number(bytes) / 1024, {
+    maximumFractionDigits: 1,
+  })} KB`;
 
 const formatDate = (dateString) => {
   if (!dateString) return "-";
@@ -921,7 +914,7 @@ export default function AssetViewModal({
                                 )}
                               </div>
                               <p className="text-[11px] text-text-muted">
-                                {model.format}/{model.model_type} · {(Number(model.file_size_bytes) / 1024).toLocaleString("id-ID", { maximumFractionDigits: 1 })} KB · {model.location_long}, {model.location_lat}
+                                {model.format}/{model.model_type} · {formatFileSizeKb(model.file_size_bytes)} · {model.location_long}, {model.location_lat}
                               </p>
                               {model.manifest?.locationAssessment?.status === "warning" && (
                                 <p className="mt-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300" role="alert">
@@ -937,7 +930,7 @@ export default function AssetViewModal({
                                     {String(model.format).toUpperCase() === "3DTILES"
                                       ? "Tileset"
                                       : "GLB"}{" "}
-                                    {(Number(model.converted_size_bytes) / 1024).toLocaleString("id-ID", { maximumFractionDigits: 1 })} KB
+                                    {formatFileSizeKb(model.converted_size_bytes)}
                                   </span>
                                 )}
                               </div>

@@ -6,19 +6,15 @@ import {
   MapPinIcon,
   RulerIcon,
 } from "@phosphor-icons/react";
-
-const formatCurrency = (value) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-    notation: "compact",
-  }).format(Number(value) || 0);
+import {
+  formatCompactCurrency as formatCurrency,
+  formatNumberWithOptions,
+} from "../../utils/format";
 
 const formatArea = (value) =>
-  `${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(
-    Number(value) || 0,
-  )} m²`;
+  `${formatNumberWithOptions(Number(value) || 0, {
+    maximumFractionDigits: 2,
+  })} m²`;
 
 const columns = [
   {

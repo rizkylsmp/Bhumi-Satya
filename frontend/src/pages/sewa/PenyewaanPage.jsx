@@ -19,6 +19,7 @@ import {
   CurrencyDollarIcon,
   DownloadSimpleIcon,
 } from "@phosphor-icons/react";
+import { formatCurrency } from "../../utils/format";
 import toast from "react-hot-toast";
 import { sewaService } from "../../services/api";
 import Pagination from "../../components/asset/Pagination";
@@ -95,15 +96,6 @@ function formatDate(dateStr) {
     month: "short",
     year: "numeric",
   });
-}
-
-function formatCurrency(num) {
-  if (num === null || num === undefined || num === "") return "-";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(num);
 }
 
 function getLinkedRequest(item) {

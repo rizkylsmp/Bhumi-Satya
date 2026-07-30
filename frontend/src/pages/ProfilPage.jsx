@@ -2,6 +2,7 @@ import { createElement, useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../stores/authStore";
 import { authService, uploadService } from "../services/api";
+import { formatNumber } from "../utils/format";
 import {
   UserCircleIcon,
   LockIcon,
@@ -366,7 +367,7 @@ export default function ProfilPage() {
           <div className="relative hidden sm:flex items-center justify-end gap-3">
             {[
               { value: stats.totalLogin, label: "Login" },
-              { value: stats.aktivitas.toLocaleString(), label: "Aktivitas" },
+              { value: formatNumber(stats.aktivitas), label: "Aktivitas" },
               { value: stats.hariAktif, label: "Hari Aktif" },
             ].map((s) => (
               <div
@@ -446,7 +447,7 @@ export default function ProfilPage() {
           <div className="flex sm:hidden justify-center gap-2 mt-4">
             {[
               { value: stats.totalLogin, label: "Login" },
-              { value: stats.aktivitas.toLocaleString(), label: "Aktivitas" },
+              { value: formatNumber(stats.aktivitas), label: "Aktivitas" },
               { value: stats.hariAktif, label: "Hari Aktif" },
             ].map((s) => (
               <div

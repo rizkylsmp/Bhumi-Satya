@@ -44,10 +44,16 @@ const getModelFormat = (model = {}) =>
 const getModelUrl = (model = {}) =>
   model.converted_public_url || model.public_url || null;
 
-const setModelHoverColor = (target, hovered) => {
+const MODEL_VISUAL_STYLES = {
+  default: { color: "#ffffff", blendAmount: 0.18 },
+  hover: { color: "#38bdf8", blendAmount: 0.28 },
+  selected: { color: "#2563eb", blendAmount: 0.36 },
+};
+
+const setModelVisualState = (target, state = "default") => {
   if (!target || target.isDestroyed?.()) return;
-  const color = hovered ? "#334155" : "#ffffff";
-  const blendAmount = hovered ? 0.24 : 0.18;
+  const { color, blendAmount } =
+    MODEL_VISUAL_STYLES[state] || MODEL_VISUAL_STYLES.default;
   if (target instanceof Cesium3DTileset) {
     target.style = new Cesium3DTileStyle({
       color: `color('${color}')`,
@@ -104,7 +110,7 @@ const createModelMatrix = (model, location) => {
   );
 };
 
-const focusSpheres = (viewer, spheres, duration = 0.8) => {
+const focusSpheres = (viewer, spheres, duration = 0.8, close = false) => {
   if (!viewer || viewer.isDestroyed() || spheres.length === 0) return false;
   const sphere =
     spheres.length === 1
@@ -115,13 +121,18 @@ const focusSpheres = (viewer, spheres, duration = 0.8) => {
     offset: new HeadingPitchRange(
       CesiumMath.toRadians(25),
       CesiumMath.toRadians(-35),
-      Math.max(150, sphere.radius * 2.8),
+      Math.max(close ? 80 : 150, sphere.radius * (close ? 2.1 : 2.8)),
     ),
   });
   return true;
 };
 
-const focusCoordinates = (viewer, location, duration = 0.8) => {
+const focusCoordinates = (
+  viewer,
+  location,
+  duration = 0.8,
+  close = false,
+) => {
   if (!viewer || viewer.isDestroyed()) return false;
   const longitude = Number(location?.longitude);
   const latitude = Number(location?.latitude);
@@ -132,7 +143,7 @@ const focusCoordinates = (viewer, location, duration = 0.8) => {
     latitude,
     Number(location?.altitude) || 0,
   );
-  const range = Math.max(350, radius * 3.2);
+  const range = Math.max(close ? 180 : 350, radius * (close ? 2.4 : 3.2));
   const localFrame = Transforms.eastNorthUpToFixedFrame(target);
   const destination = Matrix4.multiplyByPoint(
     localFrame,
@@ -198,8 +209,11 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
   const basemapIdRef = useRef(basemapId);
   const targetSpheresRef = useRef([]);
   const targetSphereByLocationIdRef = useRef(new Map());
+  const targetModelByLocationIdRef = useRef(new Map());
   const pendingFocusLocationRef = useRef(null);
   const fallbackTargetRef = useRef(null);
+  const hoveredModelRef = useRef(null);
+  const selectedModelRef = useRef(null);
   const assetsRef = useRef(assets);
   const onFeatureClickRef = useRef(onFeatureClick);
   const onOtherLayerClickRef = useRef(onOtherLayerClick);
@@ -296,14 +310,31 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
         pendingFocusLocationRef.current = location;
         const viewer = viewerRef.current;
         if (!viewer || viewer.isDestroyed()) return Boolean(location);
-        if (focusCoordinates(viewer, location)) {
-          pendingFocusLocationRef.current = null;
-          return true;
+        const targetModel = location?.id
+          ? targetModelByLocationIdRef.current.get(String(location.id))
+          : null;
+        if (targetModel) {
+          const previousSelected = selectedModelRef.current;
+          selectedModelRef.current = targetModel;
+          if (previousSelected && previousSelected !== targetModel) {
+            setModelVisualState(
+              previousSelected,
+              previousSelected === hoveredModelRef.current
+                ? "hover"
+                : "default",
+            );
+          }
+          setModelVisualState(targetModel, "selected");
+          viewer.scene.requestRender();
         }
         const targetSphere = location?.id
           ? targetSphereByLocationIdRef.current.get(String(location.id))
           : null;
-        if (targetSphere && focusSpheres(viewer, [targetSphere])) {
+        if (targetSphere && focusSpheres(viewer, [targetSphere], 0.8, true)) {
+          pendingFocusLocationRef.current = null;
+          return true;
+        }
+        if (focusCoordinates(viewer, location, 0.8, Boolean(location))) {
           pendingFocusLocationRef.current = null;
           return true;
         }
@@ -313,6 +344,16 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           return true;
         }
         return false;
+      },
+      clearSelection() {
+        const viewer = viewerRef.current;
+        const previousSelected = selectedModelRef.current;
+        selectedModelRef.current = null;
+        setModelVisualState(
+          previousSelected,
+          previousSelected === hoveredModelRef.current ? "hover" : "default",
+        );
+        if (viewer && !viewer.isDestroyed()) viewer.scene.requestRender();
       },
       setView(mode) {
         const viewer = viewerRef.current;
@@ -401,9 +442,9 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     let viewer;
     let resizeObserver;
     let clickHandler;
-    let hoveredModel;
     const targetSpheres = [];
     const targetSphereByLocationId = new Map();
+    const targetModelByLocationId = new Map();
 
     const initialize = async () => {
       onStatusChangeRef.current?.({
@@ -519,13 +560,14 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
             }
             tileset.assetId = model.assetId;
             viewer.scene.primitives.add(tileset);
-            setModelHoverColor(tileset, false);
+            setModelVisualState(tileset);
             targetSpheres.push(tileset.boundingSphere);
             if (model.locationId) {
               targetSphereByLocationId.set(
                 String(model.locationId),
                 tileset.boundingSphere,
               );
+              targetModelByLocationId.set(String(model.locationId), tileset);
             }
           } else {
             const location = resolveModelOffsetLocation(model);
@@ -549,13 +591,14 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
             primitive.assetId = model.assetId;
             viewer.scene.primitives.add(primitive);
             await waitForModelReady(primitive);
-            setModelHoverColor(primitive, false);
+            setModelVisualState(primitive);
             targetSpheres.push(primitive.boundingSphere);
             if (model.locationId) {
               targetSphereByLocationId.set(
                 String(model.locationId),
                 primitive.boundingSphere,
               );
+              targetModelByLocationId.set(String(model.locationId), primitive);
             }
           }
           loaded += 1;
@@ -578,18 +621,27 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
 
       targetSpheresRef.current = targetSpheres;
       targetSphereByLocationIdRef.current = targetSphereByLocationId;
+      targetModelByLocationIdRef.current = targetModelByLocationId;
       const pendingLocation = pendingFocusLocationRef.current;
       const pendingSphere = pendingLocation?.id
         ? targetSphereByLocationId.get(String(pendingLocation.id))
         : null;
-      if (!cancelled && pendingLocation && focusCoordinates(
+      const pendingModel = pendingLocation?.id
+        ? targetModelByLocationId.get(String(pendingLocation.id))
+        : null;
+      if (pendingModel) {
+        selectedModelRef.current = pendingModel;
+        setModelVisualState(pendingModel, "selected");
+      }
+      if (!cancelled && pendingSphere) {
+        focusSpheres(viewer, [pendingSphere], 0.7, true);
+        pendingFocusLocationRef.current = null;
+      } else if (!cancelled && pendingLocation && focusCoordinates(
         viewer,
         pendingLocation,
         0.7,
+        true,
       )) {
-        pendingFocusLocationRef.current = null;
-      } else if (!cancelled && pendingSphere) {
-        focusSpheres(viewer, [pendingSphere], 0.7);
         pendingFocusLocationRef.current = null;
       } else if (!cancelled && detailedModels.length > 0 && focusCoordinates(
         viewer,
@@ -616,8 +668,14 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       clickHandler = new ScreenSpaceEventHandler(viewer.scene.canvas);
       clickHandler.setInputAction((movement) => {
         if (analysisToolRef.current) {
-          setModelHoverColor(hoveredModel, false);
-          hoveredModel = null;
+          const previousHovered = hoveredModelRef.current;
+          hoveredModelRef.current = null;
+          setModelVisualState(
+            previousHovered,
+            previousHovered === selectedModelRef.current
+              ? "selected"
+              : "default",
+          );
           viewer.scene.canvas.style.cursor = "crosshair";
           return;
         }
@@ -626,11 +684,22 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           (picked?.primitive?.assetId && picked.primitive) ||
           (picked?.tileset?.assetId && picked.tileset) ||
           null;
-        if (nextHoveredModel === hoveredModel) return;
-        setModelHoverColor(hoveredModel, false);
-        hoveredModel = nextHoveredModel;
-        setModelHoverColor(hoveredModel, true);
-        viewer.scene.canvas.style.cursor = hoveredModel ? "pointer" : "";
+        if (nextHoveredModel === hoveredModelRef.current) return;
+        const previousHovered = hoveredModelRef.current;
+        hoveredModelRef.current = nextHoveredModel;
+        setModelVisualState(
+          previousHovered,
+          previousHovered === selectedModelRef.current
+            ? "selected"
+            : "default",
+        );
+        setModelVisualState(
+          nextHoveredModel,
+          nextHoveredModel === selectedModelRef.current
+            ? "selected"
+            : "hover",
+        );
+        viewer.scene.canvas.style.cursor = nextHoveredModel ? "pointer" : "";
         viewer.scene.requestRender();
       }, ScreenSpaceEventType.MOUSE_MOVE);
       clickHandler.setInputAction((movement) => {
@@ -665,8 +734,27 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           }
           return;
         }
-        if (asset) onFeatureClickRef.current?.(asset);
-        else onOtherLayerClickRef.current?.();
+        if (asset) {
+          const pickedModel =
+            (picked?.primitive?.assetId && picked.primitive) ||
+            (picked?.tileset?.assetId && picked.tileset) ||
+            null;
+          const previousSelected = selectedModelRef.current;
+          selectedModelRef.current = pickedModel;
+          if (previousSelected && previousSelected !== pickedModel) {
+            setModelVisualState(
+              previousSelected,
+              previousSelected === hoveredModelRef.current
+                ? "hover"
+                : "default",
+            );
+          }
+          setModelVisualState(pickedModel, "selected");
+          viewer.scene.requestRender();
+          onFeatureClickRef.current?.(asset);
+        } else {
+          onOtherLayerClickRef.current?.();
+        }
       }, ScreenSpaceEventType.LEFT_CLICK);
     };
 
@@ -685,11 +773,13 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     return () => {
       cancelled = true;
       clickHandler?.destroy();
-      setModelHoverColor(hoveredModel, false);
       resizeObserver?.disconnect();
       targetSpheresRef.current = [];
       targetSphereByLocationIdRef.current = new Map();
+      targetModelByLocationIdRef.current = new Map();
       fallbackTargetRef.current = null;
+      hoveredModelRef.current = null;
+      selectedModelRef.current = null;
       viewerRef.current = null;
       if (viewer && !viewer.isDestroyed()) viewer.destroy();
     };

@@ -13,15 +13,7 @@ import {
 import { permintaanService, sewaService } from "../../services/api";
 import { useAuthStore } from "../../stores/authStore";
 import Pagination from "../../components/asset/Pagination";
-
-function formatCurrency(num) {
-  if (num === null || num === undefined || num === "") return "-";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(num);
-}
+import { formatCurrency } from "../../utils/format";
 
 function getImage(item) {
   const source = item.foto_sewa || item.aset?.foto_aset;

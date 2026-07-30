@@ -22,6 +22,7 @@ import {
   ProhibitIcon,
   MapPinIcon,
 } from "@phosphor-icons/react";
+import { formatCurrency, formatNumber } from "../../utils/format";
 
 // ==================== STATUS CONFIGS ====================
 
@@ -105,17 +106,6 @@ const getStatusHukumConfig = (statusHukum) => {
   );
 };
 
-// ==================== FORMAT HELPERS ====================
-
-const formatCurrency = (num) => {
-  if (!num) return "-";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(num);
-};
-
 const formatDate = (dateString) => {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleDateString("id-ID", {
@@ -176,7 +166,7 @@ const renderCell = (value, column, asset) => {
       return (
         <div className="flex items-center justify-end gap-1.5">
           <span className="text-sm font-semibold text-text-primary">
-            {parseFloat(value || 0).toLocaleString("id-ID")}
+            {formatNumber(parseFloat(value || 0))}
           </span>
           <span className="text-xs text-text-muted">m²</span>
         </div>

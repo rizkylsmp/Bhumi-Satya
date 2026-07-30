@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react";
 import { sewaService } from "../../services/api";
 import Pagination from "../../components/asset/Pagination";
+import { formatCurrency, formatNumber } from "../../utils/format";
 
 function formatDate(dateStr) {
   if (!dateStr) return "-";
@@ -22,15 +23,6 @@ function formatDate(dateStr) {
     month: "short",
     year: "numeric",
   });
-}
-
-function formatCurrency(num) {
-  if (num === null || num === undefined || num === "") return "-";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(num);
 }
 
 function getImage(item) {
@@ -370,7 +362,7 @@ function SewaCard({ item }) {
             <p className="text-text-muted">Luas</p>
             <p className="font-semibold text-text-primary truncate">
               {item.aset?.luas
-                ? `${Number(item.aset.luas).toLocaleString("id-ID")} m2`
+                ? `${formatNumber(Number(item.aset.luas))} m2`
                 : "-"}
             </p>
           </div>

@@ -31,7 +31,7 @@ export function formatDate(date, options = {}) {
 export function formatCurrency(amount, showSymbol = true) {
   if (amount === null || amount === undefined || isNaN(amount)) return "-";
 
-  const formatted = new Intl.NumberFormat("id-ID", {
+  const formatted = new Intl.NumberFormat(getNumberLocale(), {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
@@ -48,10 +48,64 @@ export function formatCurrency(amount, showSymbol = true) {
 export function formatNumber(value, decimals = 0) {
   if (value === null || value === undefined || isNaN(value)) return "-";
 
-  return new Intl.NumberFormat("id-ID", {
+  return new Intl.NumberFormat(getNumberLocale(), {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(value);
+}
+
+export function formatNumberWithOptions(value, options = {}) {
+  if (value === null || value === undefined || isNaN(value)) return "-";
+  return new Intl.NumberFormat(getNumberLocale(), options).format(value);
+}
+
+export function formatCompactCurrency(amount, showSymbol = true) {
+  if (amount === null || amount === undefined || isNaN(amount)) return "-";
+
+  const formatted = new Intl.NumberFormat(getNumberLocale(), {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(Number(amount));
+
+  return showSymbol ? `Rp ${formatted}` : formatted;
+}
+
+export function formatEditableNumber(value, separator) {
+  if (value === null || value === undefined || value === "") return "";
+
+  const activeSeparator =
+    separator || useNumberFormatStore.getState().thousandsSeparator;
+  const decimalSeparator =
+    activeSeparator === THOUSANDS_SEPARATORS.DOT ? "," : ".";
+  const normalized = String(value).replace(",", ".");
+  const [integerPart, fractionPart] = normalized.split(".");
+  const sign = integerPart.startsWith("-") ? "-" : "";
+  const digits = integerPart.replace(/\D/g, "") || "0";
+  const grouped = digits.replace(
+    /\B(?=(\d{3})+(?!\d))/g,
+    activeSeparator,
+  );
+
+  return fractionPart === undefined
+    ? `${sign}${grouped}`
+    : `${sign}${grouped}${decimalSeparator}${fractionPart.replace(/\D/g, "")}`;
+}
+
+export function parseEditableNumber(value, separator) {
+  if (value === null || value === undefined || value === "") return "";
+
+  const activeSeparator =
+    separator || useNumberFormatStore.getState().thousandsSeparator;
+  const decimalSeparator =
+    activeSeparator === THOUSANDS_SEPARATORS.DOT ? "," : ".";
+  const withoutGroups = String(value).split(activeSeparator).join("");
+  const normalized = withoutGroups.replace(decimalSeparator, ".");
+  const cleaned = normalized.replace(/[^\d.-]/g, "");
+  const [integerPart, ...fractionParts] = cleaned.split(".");
+
+  return fractionParts.length
+    ? `${integerPart}.${fractionParts.join("")}`
+    : integerPart;
 }
 
 /**
@@ -88,3 +142,13 @@ export function formatRelativeTime(date) {
   if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} bulan yang lalu`;
   return `${Math.floor(diffInSeconds / 31536000)} tahun yang lalu`;
 }
+import {
+  THOUSANDS_SEPARATORS,
+  useNumberFormatStore,
+} from "../stores/numberFormatStore";
+
+const getNumberLocale = () =>
+  useNumberFormatStore.getState().thousandsSeparator ===
+  THOUSANDS_SEPARATORS.DOT
+    ? "id-ID"
+    : "en-US";

@@ -36,7 +36,7 @@ import {
 import { sewaService, petaService, authService } from "../services/api";
 import { useAuthStore } from "../stores/authStore";
 import { useSessionStore } from "../stores/sessionStore";
-import { formatDate } from "../utils/format";
+import { formatDate, formatNumber } from "../utils/format";
 import { normalizeMapMarkers } from "../utils/mapAssets";
 import AssetMapDisplay from "../components/map/AssetMapDisplay";
 import SewaPolygonMap from "../components/sewa/SewaPolygonMap";
@@ -64,10 +64,10 @@ function AssetDetailModal({ item, onClose, onApply }) {
   const wilayah = [aset.desa_kelurahan, aset.kecamatan]
     .filter(Boolean)
     .join(", ");
-  const luas = aset.luas ? Number(aset.luas).toLocaleString("id-ID") : null;
+  const luas = aset.luas ? formatNumber(Number(aset.luas)) : null;
   const polygonData = item.polygon_sewa || aset.polygon_bidang;
   const luasPolygon = polygonData?.properties?.luas
-    ? Number(polygonData.properties.luas).toLocaleString("id-ID")
+    ? formatNumber(Number(polygonData.properties.luas))
     : null;
 
   return (
@@ -363,9 +363,9 @@ function AssetCard({ item, onClick }) {
             <span className="text-xs text-text-muted flex items-center gap-1 min-w-0">
               <RulerIcon size={12} weight="bold" className="shrink-0" />
               <span className="truncate">
-                {Number(
-                  aset.luas || item.polygon_sewa?.properties?.luas,
-                ).toLocaleString("id-ID")}{" "}
+                {formatNumber(
+                  Number(aset.luas || item.polygon_sewa?.properties?.luas),
+                )}{" "}
                 m²
               </span>
             </span>

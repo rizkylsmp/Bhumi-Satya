@@ -16,6 +16,7 @@ import {
   CurrencyDollarIcon,
   CalendarIcon,
 } from "@phosphor-icons/react";
+import { formatCurrency, formatNumber } from "../../utils/format";
 import { asetService, uploadService } from "../../services/api";
 import { normalizePolygonToGeometry } from "../../utils/geojsonExport";
 import SewaPolygonMap from "./SewaPolygonMap";
@@ -45,16 +46,6 @@ const RENT_PERIOD_DIVISORS = {
   Tahunan: 1,
   "Sekali Bayar": 1,
 };
-
-function formatCurrency(num) {
-  const value = Number(num || 0);
-  if (!value) return "-";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(value);
-}
 
 function countBillingPeriods(startDate, endDate, periode) {
   if (!startDate || !endDate) return 0;
@@ -609,7 +600,7 @@ export default function SewaFormModal({
                       <RulerIcon size={13} className="text-text-muted" />
                       <span className="text-text-muted">Luas:</span>{" "}
                       <span className="text-text-primary">
-                        {Number(selectedAset.luas).toLocaleString("id-ID")} m²
+                        {formatNumber(Number(selectedAset.luas))} m²
                       </span>
                     </div>
                   )}

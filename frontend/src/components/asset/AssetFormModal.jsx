@@ -8,6 +8,7 @@ import FormFileUpload from "../form/FormFileUpload";
 import AssetCoordinatePicker from "../map/AssetCoordinatePicker";
 import AssetPolygonDrawer from "../map/AssetPolygonDrawer";
 import { extractGeojsonPolygonPoints as parseGeojsonPolygonPoints } from "../../utils/geojsonExport";
+import { formatNumberWithOptions } from "../../utils/format";
 import {
   ClipboardTextIcon,
   ScalesIcon,
@@ -106,7 +107,9 @@ const Building3dFields = ({
           </p>
           {modelFile && (
             <p className="mt-1 text-xs font-medium text-accent" aria-live="polite">
-              {(modelFile.size / 1024).toLocaleString("id-ID", { maximumFractionDigits: 1 })} KB · KMZ
+              {formatNumberWithOptions(modelFile.size / 1024, {
+                maximumFractionDigits: 1,
+              })} KB · KMZ
             </p>
           )}
         </div>
@@ -514,6 +517,7 @@ export default function AssetFormModal({
     buildInitialFormData(),
   );
   const [polygonImportFileName, setPolygonImportFileName] = useState("");
+  const [polygonImportVersion, setPolygonImportVersion] = useState(0);
   const [model3dFile, setModel3dFile] = useState(null);
 
   // Update form when assetData changes (for edit mode)
@@ -726,6 +730,25 @@ export default function AssetFormModal({
     }
   };
 
+  const handleAssetPhotoChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const hasValidExtension = /\.(jpe?g|png|webp)$/i.test(file.name);
+    if (!hasValidExtension) {
+      toast.error("Foto harus berformat JPG, JPEG, PNG, atau WebP");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Ukuran foto maksimal 10 MB");
+      event.target.value = "";
+      return;
+    }
+
+    handleInputChange(event);
+  };
+
   const handleMultipleFiles = (e) => {
     const { name, files } = e.target;
     setFormData((prev) => ({
@@ -740,7 +763,7 @@ export default function AssetFormModal({
 
     try {
       const text = await file.text();
-      const polygon = parseGeojsonPolygonPoints(text);
+      const polygon = await parseGeojsonPolygonPoints(text);
       if (!polygon) {
         toast.error("File GeoJSON tidak memiliki polygon yang valid");
         return;
@@ -750,11 +773,12 @@ export default function AssetFormModal({
       setFormData((prev) => ({
         ...prev,
         polygon_bidang: polygon,
-        koordinat_lat: prev.koordinat_lat || centroid?.lat || "",
-        koordinat_long: prev.koordinat_long || centroid?.lng || "",
+        koordinat_lat: centroid?.lat || prev.koordinat_lat || "",
+        koordinat_long: centroid?.lng || prev.koordinat_long || "",
         _polygon_imported: true,
       }));
       setPolygonImportFileName(file.name);
+      setPolygonImportVersion((version) => version + 1);
       toast.success(
         centroid
           ? "Polygon dan koordinat peta berhasil diimpor dari GeoJSON"
@@ -762,7 +786,13 @@ export default function AssetFormModal({
       );
     } catch (error) {
       console.error("Error importing GeoJSON:", error);
-      toast.error("Gagal membaca file GeoJSON");
+      toast.error(
+        error?.code === "INVALID_GEOJSON_COORDINATES"
+          ? "Koordinat harus WGS84 (EPSG:4326). Ekspor ulang GeoJSON dengan CRS tersebut."
+          : error?.code === "UNSUPPORTED_GEOJSON_CRS"
+            ? `${error.message}. Ekspor ulang menggunakan EPSG:4326.`
+          : "Gagal membaca file GeoJSON",
+      );
     } finally {
       e.target.value = "";
     }
@@ -1745,8 +1775,8 @@ export default function AssetFormModal({
                   <FormFileUpload
                     label="Foto Kondisi Eksisting"
                     name="foto_aset"
-                    onChange={handleInputChange}
-                    accept="image/*"
+                    onChange={handleAssetPhotoChange}
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp,image/x-webp"
                     size="lg"
                   />
                 </div>
@@ -1813,6 +1843,7 @@ export default function AssetFormModal({
 
                   <AssetPolygonDrawer
                     polygonData={formData.polygon_bidang}
+                    revealKey={polygonImportVersion}
                     onPolygonChange={(polygon) => {
                       setFormData((prev) => ({
                         ...prev,

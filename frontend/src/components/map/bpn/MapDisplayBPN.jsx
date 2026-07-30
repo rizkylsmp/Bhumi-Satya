@@ -38,6 +38,10 @@ import {
   BASEMAP_OPTIONS,
   DEFAULT_BASEMAP_ID,
 } from "../basemapOptions";
+import {
+  formatCurrency,
+  formatNumberWithOptions,
+} from "../../../utils/format";
 import "./mapLibreStyles.css";
 
 const CERTIFIED_STATUS = "Telah Bersertifikat";
@@ -836,10 +840,12 @@ const MapDisplayBPN = ({
         upKey.includes("HARGA") ||
         upKey.includes("NILBULAT")
       ) {
-        return `Rp ${asNumber.toLocaleString("id-ID")}`;
+        return formatCurrency(asNumber);
       }
       if (upKey.includes("LUAS") || upKey.includes("AREA")) {
-        return `${asNumber.toLocaleString("id-ID")} m2`;
+        return `${formatNumberWithOptions(asNumber, {
+          maximumFractionDigits: 2,
+        })} m2`;
       }
     }
 
@@ -1398,6 +1404,7 @@ const MapDisplayBPN = ({
     lastClearSelectionKeyRef.current = clearSelectionKey;
     clearSelectedBidangState();
     closeMapPopup();
+    cesiumMapRef.current?.clearSelection();
   }, [clearSelectionKey, clearSelectedBidangState]);
 
   const getHighlightCoords = (asset) => {
@@ -1445,9 +1452,35 @@ const MapDisplayBPN = ({
     const assetLongitude = Number(
       asset?.koordinat_long ?? asset?.longitude ?? asset?.lng,
     );
+    const ring = normalizePolygonRing(
+      asset?.polygon ?? asset?.polygon_bidang,
+    );
+    const hasValidAssetPoint =
+      Number.isFinite(assetLatitude) && Number.isFinite(assetLongitude);
+
+    if (ring?.length >= 3) {
+      const bounds = new maplibregl.LngLatBounds();
+      ring.forEach(([lng, lat]) => bounds.extend([lng, lat]));
+
+      const pointMatchesPolygon =
+        hasValidAssetPoint &&
+        assetLongitude >= bounds.getWest() &&
+        assetLongitude <= bounds.getEast() &&
+        assetLatitude >= bounds.getSouth() &&
+        assetLatitude <= bounds.getNorth();
+
+      if (!bounds.isEmpty() && !pointMatchesPolygon) {
+        map.current.fitBounds(bounds, {
+          padding: { top: 36, right: 36, bottom: 36, left: 36 },
+          maxZoom: 18,
+          duration: 1200,
+        });
+        return;
+      }
+    }
+
     if (
-      Number.isFinite(assetLatitude) &&
-      Number.isFinite(assetLongitude)
+      hasValidAssetPoint
     ) {
       map.current.flyTo({
         center: [assetLongitude, assetLatitude],
@@ -1457,9 +1490,6 @@ const MapDisplayBPN = ({
       return;
     }
 
-    const ring = normalizePolygonRing(
-      asset?.polygon ?? asset?.polygon_bidang,
-    );
     if (ring?.length >= 3) {
       const bounds = new maplibregl.LngLatBounds();
       ring.forEach(([lng, lat]) => bounds.extend([lng, lat]));
@@ -2612,12 +2642,36 @@ const MapDisplayBPN = ({
   };
 
   const focusDetailedModel = useCallback((location = null) => {
+    const targetAsset = location?.assetId
+      ? roleAssets.find(
+          (asset) =>
+            String(asset?.id_aset || asset?.id) === String(location.assetId),
+        )
+      : null;
+    const targetModel = location?.modelId
+      ? detailedModels3d.find(
+          (candidate) =>
+            String(candidate?.id_model_3d) === String(location.modelId),
+        ) || null
+      : null;
+    const selectFocusedAsset = () => {
+      if (!location || !targetAsset) return;
+      closeMapPopup();
+      onFeatureClickRef.current?.(
+        targetModel
+          ? { ...targetAsset, active_model_3d: targetModel }
+          : targetAsset,
+      );
+    };
+
     if (isAsset3dMode && cesiumMapRef.current) {
-      return cesiumMapRef.current.focus(location);
+      const focused = cesiumMapRef.current.focus(location);
+      selectFocusedAsset();
+      return focused;
     }
     if (!map.current) return false;
-    const model = detailedModels3d[0];
-    const fallbackAsset = roleAssets[0];
+    const model = targetModel || detailedModels3d[0];
+    const fallbackAsset = targetAsset || roleAssets[0];
     const fallbackLongitude = Number(
       fallbackAsset?.koordinat_long ?? fallbackAsset?.lng ?? fallbackAsset?.longitude,
     );
@@ -2645,7 +2699,10 @@ const MapDisplayBPN = ({
       location?.latitude ?? modelLocation?.latitude ?? fallbackCoords?.[1],
     );
     if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return false;
-    const targetZoom = getModelFocusZoom(model);
+    const targetZoom = Math.min(
+      19,
+      getModelFocusZoom(model) + (location ? 0.75 : 0),
+    );
     map.current.flyTo({
       center: [longitude, latitude],
       zoom: targetZoom,
@@ -2654,6 +2711,7 @@ const MapDisplayBPN = ({
       duration: 1200,
       essential: true,
     });
+    selectFocusedAsset();
     return true;
   }, [detailedModels3d, isAsset3dMode, roleAssets]);
 

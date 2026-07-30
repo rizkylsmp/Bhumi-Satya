@@ -12,6 +12,11 @@ import {
   YAxis,
 } from "recharts";
 import {
+  formatCompactCurrency,
+  formatCurrency as formatFullCurrency,
+  formatNumber,
+} from "../../utils/format";
+import {
   CaretRightIcon,
   BuildingsIcon,
   ClipboardTextIcon,
@@ -40,16 +45,10 @@ const CHART_COLORS = {
   slate: "#64748b",
 };
 
-const formatNumber = (value) =>
-  new Intl.NumberFormat("id-ID").format(Number(value) || 0);
-
 const formatCurrency = (value, compact = false) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-    notation: compact ? "compact" : "standard",
-  }).format(Number(value) || 0);
+  compact
+    ? formatCompactCurrency(Number(value) || 0)
+    : formatFullCurrency(Number(value) || 0);
 
 const getPercentage = (value, total) =>
   total ? Math.round((Number(value || 0) / total) * 100) : 0;

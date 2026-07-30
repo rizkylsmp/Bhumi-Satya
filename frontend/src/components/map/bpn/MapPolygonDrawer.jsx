@@ -106,10 +106,19 @@ const createVertexElement = (isDrawing) => {
   return marker;
 };
 
+const fitMapToPoints = (map, points, duration = 0) => {
+  if (!map || !Array.isArray(points) || points.length < 2) return;
+
+  const bounds = new maplibregl.LngLatBounds();
+  points.forEach((point) => bounds.extend(toLngLat(point)));
+  map.fitBounds(bounds, { padding: 40, maxZoom: 18, duration });
+};
+
 function MapLibrePolygonCanvas({
   points,
   isDrawing,
   center,
+  fitRequestKey,
   onAddPoint,
   onMovePoint,
   onRemovePoint,
@@ -119,6 +128,7 @@ function MapLibrePolygonCanvas({
   const markersRef = useRef([]);
   const isDrawingRef = useRef(isDrawing);
   const onAddPointRef = useRef(onAddPoint);
+  const lastFitRequestRef = useRef(0);
 
   const clearMarkers = useCallback(() => {
     markersRef.current.forEach((m) => m.remove());
@@ -243,11 +253,7 @@ function MapLibrePolygonCanvas({
       syncGeometry(points);
       syncMarkers(points, isDrawingRef.current);
 
-      if (points.length >= 2) {
-        const bounds = new maplibregl.LngLatBounds();
-        points.forEach((point) => bounds.extend(toLngLat(point)));
-        map.fitBounds(bounds, { padding: 40, maxZoom: 18, duration: 0 });
-      }
+      fitMapToPoints(map, points);
     });
 
     map.on("click", (e) => {
@@ -292,6 +298,18 @@ function MapLibrePolygonCanvas({
     mapRef.current.easeTo({ center: [center[1], center[0]], duration: 400 });
   }, [center, points.length]);
 
+  useEffect(() => {
+    if (
+      !fitRequestKey ||
+      fitRequestKey === lastFitRequestRef.current ||
+      !mapRef.current
+    ) {
+      return;
+    }
+    lastFitRequestRef.current = fitRequestKey;
+    fitMapToPoints(mapRef.current, points, 500);
+  }, [fitRequestKey, points]);
+
   return <div ref={containerRef} className="w-full h-full" />;
 }
 
@@ -301,12 +319,14 @@ export default function MapPolygonDrawer({
   label = "Gambar Polygon Bidang Tanah",
   centerLat,
   centerLng,
+  revealKey = 0,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [points, setPoints] = useState([]);
   const [savedPoints, setSavedPoints] = useState([]); // backup for cancel
+  const lastRevealKeyRef = useRef(0);
 
   const defaultCenter = DEFAULT_MAP_CENTER_LAT_LNG;
   const parsedLat = toNumber(centerLat);
@@ -339,6 +359,15 @@ export default function MapPolygonDrawer({
 
     setPoints((prev) => (prev.length ? [] : prev));
   }, [polygonData]);
+
+  useEffect(() => {
+    if (!revealKey || revealKey === lastRevealKeyRef.current) return;
+    lastRevealKeyRef.current = revealKey;
+    if (isFullscreen) return;
+    // An imported polygon should be visible immediately without another click.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsExpanded(true);
+  }, [revealKey, isFullscreen]);
 
   // Sync changes to parent
   const syncToParent = useCallback(
@@ -661,6 +690,7 @@ export default function MapPolygonDrawer({
               points={points}
               isDrawing={isDrawing}
               center={mapCenter}
+              fitRequestKey={revealKey}
               onAddPoint={handleAddPoint}
               onMovePoint={handleVertexDrag}
               onRemovePoint={handleRemoveVertex}
@@ -763,6 +793,7 @@ export default function MapPolygonDrawer({
               points={points}
               isDrawing={isDrawing}
               center={mapCenter}
+              fitRequestKey={revealKey}
               onAddPoint={handleAddPoint}
               onMovePoint={handleVertexDrag}
               onRemovePoint={handleRemoveVertex}

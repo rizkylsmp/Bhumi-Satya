@@ -6,6 +6,10 @@ import {
   geometryAreaSquareMeters,
   lineDistanceMeters,
 } from "./mapAnalysis";
+import {
+  THOUSANDS_SEPARATORS,
+  useNumberFormatStore,
+} from "../stores/numberFormatStore";
 
 describe("map analysis utilities", () => {
   it("calculates distance between coordinates", () => {
@@ -32,6 +36,15 @@ describe("map analysis utilities", () => {
       points: [[112.9, -7.64], [112.901, -7.64]],
     });
     expect(collection.features).toHaveLength(3);
+
+    useNumberFormatStore.setState({
+      thousandsSeparator: THOUSANDS_SEPARATORS.COMMA,
+    });
+    expect(formatMetricValue(1250, "m")).toBe("1.25 km");
+
+    useNumberFormatStore.setState({
+      thousandsSeparator: THOUSANDS_SEPARATORS.DOT,
+    });
     expect(formatMetricValue(1250, "m")).toBe("1,25 km");
   });
 });

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, Fragment } from "react";
 import toast from "react-hot-toast";
 import { riwayatService } from "../services/api";
+import { formatNumber } from "../utils/format";
 import {
   ArrowsClockwiseIcon,
   ChartBarIcon,
@@ -382,7 +383,7 @@ export default function RiwayatPage() {
             <div className="flex items-start justify-between">
               <div>
                 <div className="text-xl sm:text-2xl font-bold text-text-primary">
-                  {stat.value.toLocaleString()}
+                  {formatNumber(stat.value)}
                 </div>
                 <div className="text-xs sm:text-sm text-text-tertiary mt-1">
                   {stat.label}
@@ -466,7 +467,7 @@ export default function RiwayatPage() {
             <div>
               <h3 className="font-semibold text-text-primary">Log Aktivitas</h3>
               <span className="text-xs text-text-tertiary">
-                {pagination.totalData?.toLocaleString() || 0} total aktivitas
+                {formatNumber(pagination.totalData || 0)} total aktivitas
               </span>
             </div>
           </div>

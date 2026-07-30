@@ -29,38 +29,104 @@ const ensureClosedRing = (ring) => {
   return closed;
 };
 
-const normalizeLngLatPoint = (point) => {
+const createCoordinateError = () => {
+  const error = new Error(
+    "Koordinat GeoJSON harus menggunakan CRS WGS84 (EPSG:4326)",
+  );
+  error.code = "INVALID_GEOJSON_COORDINATES";
+  return error;
+};
+
+const getEpsgCode = (geojson) => {
+  const crsName =
+    geojson?.crs?.properties?.name ||
+    geojson?.crs?.name ||
+    geojson?.properties?.crs;
+  const match = String(crsName || "").match(/EPSG(?::|::)(\d+)/i);
+  return match ? Number(match[1]) : 4326;
+};
+
+const createCoordinateTransformer = async (geojson) => {
+  const epsgCode = getEpsgCode(geojson);
+  if (epsgCode === 4326) return null;
+
+  const isNorthernUtm = epsgCode >= 32601 && epsgCode <= 32660;
+  const isSouthernUtm = epsgCode >= 32701 && epsgCode <= 32760;
+  if (!isNorthernUtm && !isSouthernUtm && epsgCode !== 3857) {
+    const error = new Error(`CRS EPSG:${epsgCode} belum didukung`);
+    error.code = "UNSUPPORTED_GEOJSON_CRS";
+    throw error;
+  }
+
+  const sourceCrs =
+    epsgCode === 3857
+      ? "EPSG:3857"
+      : [
+          "+proj=utm",
+          `+zone=${epsgCode % 100}`,
+          isSouthernUtm ? "+south" : "",
+          "+datum=WGS84",
+          "+units=m",
+          "+no_defs",
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+  const { default: proj4 } = await import("proj4");
+  return (coordinate) => proj4(sourceCrs, "EPSG:4326", coordinate);
+};
+
+const normalizeLngLatPoint = (point, transformCoordinate = null) => {
   if (Array.isArray(point) && point.length >= 2) {
     const first = toNumber(point[0]);
     const second = toNumber(point[1]);
     if (first === null || second === null) return null;
 
+    if (transformCoordinate) {
+      const [lng, lat] = transformCoordinate([first, second]);
+      if (
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lng) ||
+        Math.abs(lat) > 90 ||
+        Math.abs(lng) > 180
+      ) {
+        throw createCoordinateError();
+      }
+      return [lng, lat];
+    }
+
     // Bhumi Satya form polygons are stored as [lat, lng]. GeoJSON uses [lng, lat].
-    const looksLikeLatLng =
-      Math.abs(first) <= 90 &&
-      Math.abs(second) <= 180 &&
-      (Math.abs(second) > 90 || Math.abs(first) < Math.abs(second));
-    return looksLikeLatLng ? [second, first] : [first, second];
+    const isGeojsonOrder = Math.abs(first) <= 180 && Math.abs(second) <= 90;
+    const isFormOrder = Math.abs(first) <= 90 && Math.abs(second) <= 180;
+
+    if (isGeojsonOrder && !isFormOrder) return [first, second];
+    if (isFormOrder && !isGeojsonOrder) return [second, first];
+    if (isGeojsonOrder) return [first, second];
+
+    throw createCoordinateError();
   }
 
   const lat = toNumber(point?.lat ?? point?.latitude);
   const lng = toNumber(point?.lng ?? point?.longitude);
-  return lat !== null && lng !== null ? [lng, lat] : null;
+  if (lat === null || lng === null) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    throw createCoordinateError();
+  }
+  return [lng, lat];
 };
 
-export const extractGeojsonPolygonPoints = (geojson) => {
-  const data = safeParseJson(geojson);
+const extractPolygonPoints = (data, transformCoordinate) => {
   if (!data) return null;
 
   if (data.type === "FeatureCollection") {
     const polygonFeature = data.features?.find((feature) =>
       ["Polygon", "MultiPolygon"].includes(feature?.geometry?.type),
     );
-    return extractGeojsonPolygonPoints(polygonFeature);
+    return extractPolygonPoints(polygonFeature, transformCoordinate);
   }
 
   if (data.type === "Feature") {
-    return extractGeojsonPolygonPoints(data.geometry);
+    return extractPolygonPoints(data.geometry, transformCoordinate);
   }
 
   let ring = null;
@@ -76,7 +142,7 @@ export const extractGeojsonPolygonPoints = (geojson) => {
 
   const points = (ring || [])
     .map((coord) => {
-      const normalized = normalizeLngLatPoint(coord);
+      const normalized = normalizeLngLatPoint(coord, transformCoordinate);
       if (!normalized) return null;
       return [normalized[1], normalized[0]];
     })
@@ -86,6 +152,12 @@ export const extractGeojsonPolygonPoints = (geojson) => {
     points.pop();
   }
   return points.length >= 3 ? points : null;
+};
+
+export const extractGeojsonPolygonPoints = async (geojson) => {
+  const data = safeParseJson(geojson);
+  const transformCoordinate = await createCoordinateTransformer(data);
+  return extractPolygonPoints(data, transformCoordinate);
 };
 
 export const normalizePolygonToGeometry = (polygon) => {

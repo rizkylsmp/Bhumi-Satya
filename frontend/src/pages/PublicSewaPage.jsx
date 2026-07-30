@@ -17,6 +17,10 @@ import {
 import BrandMark from "../components/shared/BrandMark";
 import Pagination from "../components/asset/Pagination";
 import { sewaService } from "../services/api";
+import {
+  formatCurrency as formatRupiah,
+  formatNumber,
+} from "../utils/format";
 
 function getPhotos(item) {
   const source = item.foto_sewa || item.aset?.foto_aset;
@@ -35,11 +39,7 @@ function getPhotos(item) {
 function formatCurrency(value) {
   const amount = Number(value);
   if (!Number.isFinite(amount) || amount <= 0) return "Hubungi pengelola";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return formatRupiah(amount);
 }
 
 export default function PublicSewaPage() {
@@ -418,7 +418,7 @@ function RentalCard({ item, onClick }) {
             <span className="flex items-center gap-1.5">
               <RulerIcon size={14} weight="bold" className="text-accent" />
               {Number(aset.luas) > 0
-                ? `${Number(aset.luas).toLocaleString("id-ID")} m²`
+                ? `${formatNumber(Number(aset.luas))} m²`
                 : "Luas belum ada"}
             </span>
             <span className="flex items-center justify-end gap-1.5 text-right">
@@ -505,7 +505,7 @@ function RentalDetail({ item, onClose, onLogin }) {
               label="Luas aset"
               value={
                 Number(aset.luas) > 0
-                  ? `${Number(aset.luas).toLocaleString("id-ID")} m²`
+                  ? `${formatNumber(Number(aset.luas))} m²`
                   : "-"
               }
             />

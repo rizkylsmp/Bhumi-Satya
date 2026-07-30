@@ -5,14 +5,7 @@ import {
   CurrencyCircleDollarIcon,
   ReceiptIcon,
 } from "@phosphor-icons/react";
-
-const formatCurrency = (value) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-    notation: "compact",
-  }).format(Number(value) || 0);
+import { formatCompactCurrency as formatCurrency } from "../../utils/format";
 
 const columns = [
   {

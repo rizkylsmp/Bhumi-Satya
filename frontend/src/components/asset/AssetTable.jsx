@@ -1,6 +1,7 @@
 import { useState } from "react";
 import useColumnResize from "../../hooks/useColumnResize";
 import ActionButtons from "./ActionButtons";
+import { formatNumber } from "../../utils/format";
 import {
   ShieldCheckIcon,
   GavelIcon,
@@ -400,7 +401,7 @@ export default function AssetTable({
                 <td className="px-4 py-4 text-right">
                   <div className="flex items-center justify-end gap-1.5">
                     <span className="text-sm font-semibold text-text-primary">
-                      {parseFloat(asset.luas || 0).toLocaleString("id-ID")}
+                      {formatNumber(parseFloat(asset.luas || 0))}
                     </span>
                     <span className="text-xs text-text-muted">m²</span>
                   </div>

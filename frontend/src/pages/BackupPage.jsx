@@ -4,6 +4,7 @@ import { backupService } from "../services/api";
 import { useAuthStore } from "../stores/authStore";
 import { hasPermission } from "../utils/permissions";
 import { useConfirm } from "../components/ui/confirmContext";
+import { formatNumber } from "../utils/format";
 import {
   WarningCircleIcon,
   CalendarBlankIcon,
@@ -104,7 +105,7 @@ export default function BackupPage() {
             ? new Date(bk.lastBackup.createdAt).toLocaleString("id-ID")
             : "-",
           ukuranDatabase: bk.totalSize ? formatBytes(bk.totalSize) : "-",
-          totalRecord: totalRecords.toLocaleString(),
+          totalRecord: formatNumber(totalRecords),
           statusSistem: "Normal",
         });
       }

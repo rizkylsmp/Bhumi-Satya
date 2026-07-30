@@ -23,6 +23,12 @@ const toNumber = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 
+const isValidLatitude = (value) =>
+  value !== null && value >= -90 && value <= 90;
+
+const isValidLongitude = (value) =>
+  value !== null && value >= -180 && value <= 180;
+
 const createSelectedMarkerElement = () => {
   const marker = document.createElement("div");
   marker.style.width = "24px";
@@ -119,7 +125,8 @@ export default function MapCoordinatePicker({
 }) {
   const parsedLat = toNumber(latitude);
   const parsedLng = toNumber(longitude);
-  const hasValidCoords = parsedLat !== null && parsedLng !== null;
+  const hasValidCoords =
+    isValidLatitude(parsedLat) && isValidLongitude(parsedLng);
   const [isExpanded, setIsExpanded] = useState(!hasValidCoords);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [tempCoords, setTempCoords] = useState(null);
@@ -138,7 +145,7 @@ export default function MapCoordinatePicker({
     if (!tempCoords) return null;
     const lat = toNumber(tempCoords.lat);
     const lng = toNumber(tempCoords.lng);
-    if (lat === null || lng === null) return null;
+    if (!isValidLatitude(lat) || !isValidLongitude(lng)) return null;
     return { lat, lng };
   }, [tempCoords]);
 

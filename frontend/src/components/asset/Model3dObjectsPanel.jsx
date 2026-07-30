@@ -10,6 +10,7 @@ import {
   TagIcon,
 } from "@phosphor-icons/react";
 import { assetModel3dService } from "../../services/api";
+import { formatNumberWithOptions } from "../../utils/format";
 
 const getError = (error, fallback) =>
   error?.response?.data?.error || error?.response?.data?.message || fallback;
@@ -18,7 +19,7 @@ const displayValue = (value, suffix = "") => {
   if (value === null || value === undefined || value === "") return "—";
   const numeric = Number(value);
   if (suffix && Number.isFinite(numeric)) {
-    return `${numeric.toLocaleString("id-ID", {
+    return `${formatNumberWithOptions(numeric, {
       maximumFractionDigits: 3,
     })} ${suffix}`;
   }

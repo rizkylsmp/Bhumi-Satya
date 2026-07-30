@@ -20,12 +20,16 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { buildAssetPopupData, hasPopupValue } from "../../../utils/assetPopupData";
+import {
+  formatCurrency,
+  formatNumberWithOptions,
+} from "../../../utils/format";
 
 const formatNumber = (value, suffix = "") => {
   if (!hasPopupValue(value)) return null;
   const numeric = Number(value);
   const formatted = Number.isFinite(numeric)
-    ? numeric.toLocaleString("id-ID", { maximumFractionDigits: 2 })
+    ? formatNumberWithOptions(numeric, { maximumFractionDigits: 2 })
     : String(value);
   return suffix ? `${formatted} ${suffix}` : formatted;
 };
@@ -34,11 +38,7 @@ const formatValue = (item) => {
   if (item.format === "currency") {
     const numeric = Number(item.value);
     return Number.isFinite(numeric)
-      ? new Intl.NumberFormat("id-ID", {
-          style: "currency",
-          currency: "IDR",
-          maximumFractionDigits: 0,
-        }).format(numeric)
+      ? formatCurrency(numeric)
       : String(item.value);
   }
   if (item.format === "area") return formatNumber(item.value, "m²");

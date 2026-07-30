@@ -79,7 +79,7 @@ export default function AssetDetailPanel({
     <aside
       ref={panelRef}
       aria-label={`Detail ${asset.nama_aset || asset.nama || "aset"}`}
-      className="absolute left-3 right-3 top-4 z-20 max-h-[calc(100vh-6rem)] overflow-hidden overflow-y-auto rounded-2xl border border-border bg-surface/97 shadow-2xl backdrop-blur-md sm:left-[calc(50%_-_6rem)] sm:right-auto sm:w-80"
+      className="absolute bottom-20 left-3 right-3 top-auto z-20 max-h-[calc(100vh-7rem)] overflow-hidden overflow-y-auto rounded-2xl border border-border bg-surface/97 shadow-2xl backdrop-blur-md sm:bottom-20 sm:left-auto sm:right-5 sm:w-80"
       style={{ transform: `translate3d(${offset.x}px, ${offset.y}px, 0)` }}
     >
       <AssetPopupCard

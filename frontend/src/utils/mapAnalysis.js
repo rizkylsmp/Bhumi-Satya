@@ -80,16 +80,16 @@ export const formatMetricValue = (value, unit) => {
   const number = Number(value);
   if (!Number.isFinite(number)) return "-";
   if (unit === "m" && number >= 1000) {
-    return `${(number / 1000).toLocaleString("id-ID", {
+    return `${formatNumberWithOptions(number / 1000, {
       maximumFractionDigits: 2,
     })} km`;
   }
   if (unit === "m²" && number >= 10000) {
-    return `${(number / 10000).toLocaleString("id-ID", {
+    return `${formatNumberWithOptions(number / 10000, {
       maximumFractionDigits: 2,
     })} ha`;
   }
-  return `${number.toLocaleString("id-ID", {
+  return `${formatNumberWithOptions(number, {
     maximumFractionDigits: number < 10 ? 2 : 1,
   })} ${unit}`;
 };
@@ -126,3 +126,4 @@ export const buildAnalysisFeatureCollection = ({
 
   return { type: "FeatureCollection", features };
 };
+import { formatNumberWithOptions } from "./format";

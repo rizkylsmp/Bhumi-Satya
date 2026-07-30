@@ -1,3 +1,9 @@
+import { useNumberFormatStore } from "../../stores/numberFormatStore";
+import {
+  formatEditableNumber,
+  parseEditableNumber,
+} from "../../utils/format";
+
 export default function FormInput({
   label,
   name,
@@ -10,7 +16,13 @@ export default function FormInput({
   step,
   min,
   max,
+  groupThousands,
 }) {
+  const thousandsSeparator = useNumberFormatStore(
+    (state) => state.thousandsSeparator,
+  );
+  const shouldGroupThousands =
+    groupThousands ?? (type === "number" && /\(Rp\)/i.test(label || ""));
   const sizeClasses = {
     sm: "px-3 py-1.5 text-xs",
     md: "px-3 py-2 text-sm",
@@ -25,11 +37,29 @@ export default function FormInput({
       </label>
       <input
         id={name}
-        type={type}
+        type={shouldGroupThousands ? "text" : type}
+        inputMode={shouldGroupThousands ? "decimal" : undefined}
         name={name}
         placeholder={placeholder}
-        value={value}
-        onChange={onChange}
+        value={
+          shouldGroupThousands
+            ? formatEditableNumber(value, thousandsSeparator)
+            : value
+        }
+        onChange={
+          shouldGroupThousands
+            ? (event) =>
+                onChange({
+                  target: {
+                    name,
+                    value: parseEditableNumber(
+                      event.target.value,
+                      thousandsSeparator,
+                    ),
+                  },
+                })
+            : onChange
+        }
         step={step}
         min={min}
         max={max}

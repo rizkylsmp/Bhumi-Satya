@@ -12,6 +12,7 @@ import { downloadAssetPdf } from "../../utils/pdfExport";
 import { downloadAssetGeojson } from "../../utils/geojsonExport";
 import { useConfirm } from "../../components/ui/confirmContext";
 import useColumnResize from "../../hooks/useColumnResize";
+import { formatCurrency, formatNumber } from "../../utils/format";
 import {
   DatabaseIcon,
   PlusIcon,
@@ -759,7 +760,7 @@ export default function AssetPage() {
                             <td className="px-3 py-3 text-right">
                               <span className="text-sm text-text-secondary tabular-nums">
                                 {asset.luas
-                                  ? Number(asset.luas).toLocaleString("id-ID")
+                                  ? formatNumber(Number(asset.luas))
                                   : "-"}
                               </span>
                             </td>
@@ -806,9 +807,7 @@ export default function AssetPage() {
                             <td className="px-3 py-3 text-right">
                               <span className="text-sm text-text-secondary tabular-nums">
                                 {asset.luas_kib
-                                  ? Number(asset.luas_kib).toLocaleString(
-                                      "id-ID",
-                                    )
+                                  ? formatNumber(Number(asset.luas_kib))
                                   : "-"}
                               </span>
                             </td>
@@ -830,14 +829,14 @@ export default function AssetPage() {
                             <td className="px-3 py-3 text-right whitespace-nowrap">
                               <span className="text-sm text-text-secondary tabular-nums">
                                 {asset.harga_perolehan
-                                  ? `Rp ${Number(asset.harga_perolehan).toLocaleString("id-ID")}`
+                                  ? formatCurrency(asset.harga_perolehan)
                                   : "-"}
                               </span>
                             </td>
                             <td className="px-3 py-3 text-right whitespace-nowrap">
                               <span className="text-sm font-medium text-text-secondary tabular-nums">
                                 {asset.nilai_aset
-                                  ? `Rp ${Number(asset.nilai_aset).toLocaleString("id-ID")}`
+                                  ? formatCurrency(asset.nilai_aset)
                                   : "-"}
                               </span>
                             </td>
@@ -930,7 +929,7 @@ export default function AssetPage() {
                             <td className="px-3 py-3 text-right">
                               <span className="text-sm text-text-secondary tabular-nums">
                                 {asset.luas
-                                  ? Number(asset.luas).toLocaleString("id-ID")
+                                  ? formatNumber(Number(asset.luas))
                                   : "-"}
                               </span>
                             </td>
@@ -952,7 +951,7 @@ export default function AssetPage() {
                             <td className="px-3 py-3 text-right whitespace-nowrap">
                               <span className="text-sm text-text-secondary tabular-nums">
                                 {asset.nilai_aset
-                                  ? `Rp ${Number(asset.nilai_aset).toLocaleString("id-ID")}`
+                                  ? formatCurrency(asset.nilai_aset)
                                   : "-"}
                               </span>
                             </td>
@@ -1100,7 +1099,7 @@ export default function AssetPage() {
                             </p>
                             <p className="text-xs text-text-secondary">
                               {asset.luas
-                                ? Number(asset.luas).toLocaleString("id-ID")
+                                ? formatNumber(Number(asset.luas))
                                 : "-"}
                             </p>
                           </div>
@@ -1118,7 +1117,7 @@ export default function AssetPage() {
                             </p>
                             <p className="text-xs text-text-secondary">
                               {asset.nilai_aset
-                                ? `Rp ${Number(asset.nilai_aset).toLocaleString("id-ID")}`
+                                ? formatCurrency(asset.nilai_aset)
                                 : "-"}
                             </p>
                           </div>

@@ -1035,18 +1035,22 @@ export const update = async (req, res) => {
       updateData.pajak_status = updateData.nop ? "Terverifikasi" : null;
     }
 
-    // Update timestamp
-    if (
-      Object.prototype.hasOwnProperty.call(updateData, "polygon_bidang") &&
-      (!updateData.koordinat_lat || !updateData.koordinat_long)
-    ) {
+    const polygonWasImported = updateData._polygon_imported === true;
+    delete updateData._polygon_imported;
+
+    if (Object.prototype.hasOwnProperty.call(updateData, "polygon_bidang")) {
       const polygonCentroid = getCentroidFromPolygonField(
         updateData.polygon_bidang,
       );
       if (polygonCentroid.lat && polygonCentroid.lng) {
-        updateData.koordinat_lat = updateData.koordinat_lat || polygonCentroid.lat;
+        updateData.koordinat_lat =
+          polygonWasImported || !updateData.koordinat_lat
+            ? polygonCentroid.lat
+            : updateData.koordinat_lat;
         updateData.koordinat_long =
-          updateData.koordinat_long || polygonCentroid.lng;
+          polygonWasImported || !updateData.koordinat_long
+            ? polygonCentroid.lng
+            : updateData.koordinat_long;
       }
     }
 

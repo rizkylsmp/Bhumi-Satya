@@ -33,18 +33,14 @@ function formatCurrency(value) {
   if (value === null || value === undefined || value === "") return "-";
   const number = Number(value);
   if (!Number.isFinite(number)) return sanitizeText(value);
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(number);
+  return formatRupiah(number);
 }
 
 function formatNumber(value, suffix = "") {
   if (value === null || value === undefined || value === "") return "-";
   const number = Number(value);
   if (!Number.isFinite(number)) return sanitizeText(value);
-  return `${number.toLocaleString("id-ID")}${suffix}`;
+  return `${formatNumeric(number)}${suffix}`;
 }
 
 function makeFilename(prefix, value) {
@@ -288,3 +284,7 @@ export function downloadSewaPdf(sewa) {
 
   triggerPdfDownload(makeFilename("penyewaan", sewa?.no_lot || sewa?.id_sewa || subtitle), buildPdf({ title, subtitle, sections }));
 }
+import {
+  formatCurrency as formatRupiah,
+  formatNumber as formatNumeric,
+} from "./format";

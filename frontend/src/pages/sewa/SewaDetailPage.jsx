@@ -25,6 +25,7 @@ import {
   CaretRightIcon,
   StorefrontIcon,
 } from "@phosphor-icons/react";
+import { formatCurrency, formatNumber } from "../../utils/format";
 import toast from "react-hot-toast";
 import { sewaService } from "../../services/api";
 import { useConfirm } from "../../components/ui/confirmContext";
@@ -42,15 +43,6 @@ function formatDate(dateStr) {
     month: "long",
     year: "numeric",
   });
-}
-
-function formatCurrency(num) {
-  if (!num) return "-";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(num);
 }
 
 const PERIOD_MONTHS = {
@@ -768,7 +760,7 @@ export default function SewaDetailPage() {
                 label="Luas"
                 value={
                   aset?.luas
-                    ? `${Number(aset.luas).toLocaleString("id-ID")} m²`
+                    ? `${formatNumber(Number(aset.luas))} m²`
                     : null
                 }
               />
