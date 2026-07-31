@@ -973,6 +973,7 @@ export default function LandingPage() {
               showKecamatan
               showSudahSertifikat
               showBelumSertifikat
+              popupSectionScope="general"
             />
             <div className="pointer-events-none absolute bottom-4 left-4 z-20">
               <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-slate-950/75 px-3 py-2.5 text-white shadow-xl backdrop-blur-xl">

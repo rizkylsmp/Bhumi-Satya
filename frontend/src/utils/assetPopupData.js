@@ -72,7 +72,6 @@ export const buildAssetPopupData = (asset = {}, modelOverride = null) => {
     ["Harga Perolehan", asset.harga_perolehan, "currency"],
     ["Penggunaan KIB", asset.penggunaan_kib],
     ["Tanggal Scan", asset.tanggal_scan],
-    ["Status Plotting", asset.plotting_status],
   ]
     .filter(([, value]) => hasPopupValue(value))
     .map(([label, value, format]) => ({
@@ -102,15 +101,20 @@ export const buildAssetPopupData = (asset = {}, modelOverride = null) => {
     asset.longitude,
     asset.lng,
   );
+  const hasCoordinate =
+    hasPopupValue(latitude) && hasPopupValue(longitude);
+  const hasParcelPolygon = Boolean(asset.polygon_bidang || asset.polygon);
+  const hasBuildingFootprint = Boolean(asset.building_footprint);
   const spatial = [
     ["NIB", asset.nib],
     ["Kode Wilayah (KW)", asset.kw],
+    ["Status Plotting", asset.plotting_status],
+    ["Luas Bidang", firstValue(asset.luas_lapangan, asset.luas), "area"],
     ["Latitude", latitude, "coordinate"],
     ["Longitude", longitude, "coordinate"],
-    [
-      "Polygon Bidang",
-      asset.polygon_bidang || asset.polygon ? "Tersedia" : null,
-    ],
+    ["CRS Koordinat", hasCoordinate ? "WGS 84 (EPSG:4326)" : null],
+    ["Polygon Bidang", hasParcelPolygon ? "Tersedia" : null],
+    ["Tapak Bangunan", hasBuildingFootprint ? "Tersedia" : null],
     ["Sumber Data", asset.sumber],
   ]
     .filter(([, value]) => hasPopupValue(value))

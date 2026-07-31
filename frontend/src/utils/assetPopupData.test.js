@@ -112,7 +112,29 @@ describe("asset popup data", () => {
       { label: "Kode Wilayah (KW)", value: "KW1" },
       { label: "Latitude", value: "-7.8101", format: "coordinate" },
       { label: "Longitude", value: "110.3612", format: "coordinate" },
+      { label: "CRS Koordinat", value: "WGS 84 (EPSG:4326)" },
       { label: "Polygon Bidang", value: "Tersedia" },
+    ]);
+  });
+
+  it("includes supporting 2D spatial attributes when available", () => {
+    const result = buildAssetPopupData({
+      nib: "NIB-001",
+      plotting_status: "Sudah diplot",
+      luas: "875.25",
+      building_footprint: {
+        type: "Polygon",
+        coordinates: [],
+      },
+      sumber: "Survei lapangan",
+    });
+
+    expect(result.spatial).toEqual([
+      { label: "NIB", value: "NIB-001" },
+      { label: "Status Plotting", value: "Sudah diplot" },
+      { label: "Luas Bidang", value: "875.25", format: "area" },
+      { label: "Tapak Bangunan", value: "Tersedia" },
+      { label: "Sumber Data", value: "Survei lapangan" },
     ]);
   });
 });

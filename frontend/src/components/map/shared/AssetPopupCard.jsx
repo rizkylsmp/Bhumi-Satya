@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   ArrowRightIcon,
+  ArrowSquareOutIcon,
   ArrowsInSimpleIcon,
   ArrowsOutSimpleIcon,
   BuildingsIcon,
@@ -54,14 +55,38 @@ const formatValue = (item) => {
   return String(item.value);
 };
 
-function DetailRow({ label, value, format }) {
+function DetailRow({ label, value, format, href = null }) {
+  const formattedValue = formatValue({ value, format });
+
   return (
     <div className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-3 border-b border-border/50 px-3 py-2.5 last:border-b-0">
       <dt className="text-[9px] font-bold uppercase tracking-wide text-text-muted">
         {label}
       </dt>
       <dd className="min-w-0 break-words text-right text-[11px] font-semibold leading-relaxed text-text-primary">
-        {formatValue({ value, format })}
+        {href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={
+              label === "Google Maps"
+                ? "Buka lokasi di Google Maps"
+                : `Buka ${label}`
+            }
+            title="Buka lokasi di Google Maps"
+            className="inline-flex items-center justify-end gap-1 text-sky-600 underline decoration-sky-400/50 underline-offset-2 transition-colors hover:text-blue-700 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:text-sky-400 dark:hover:text-sky-300"
+          >
+            <span>{formattedValue}</span>
+            <ArrowSquareOutIcon
+              size={10}
+              weight="bold"
+              className="shrink-0"
+            />
+          </a>
+        ) : (
+          formattedValue
+        )}
       </dd>
     </div>
   );
@@ -165,6 +190,27 @@ function ModelDetails({ model, statusLabel }) {
   );
 }
 
+function SpatialDataGroup({ icon: Icon, title, summary, children }) {
+  return (
+    <div className="border-b border-border/50 last:border-b-0">
+      <div className="flex items-center gap-2 bg-surface-secondary/65 px-3 py-2">
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
+          <Icon size={11} weight="duotone" />
+        </span>
+        <span className="text-[8px] font-black uppercase tracking-[0.08em] text-text-primary">
+          {title}
+        </span>
+        {summary && (
+          <span className="ml-auto text-[7px] font-semibold text-text-muted">
+            {summary}
+          </span>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export default function AssetPopupCard({
   asset,
   model = null,
@@ -174,15 +220,49 @@ export default function AssetPopupCard({
   isDragging = false,
   preview = false,
   showModel3d = true,
+  visibleSectionIds = null,
 }) {
   const [openSections, setOpenSections] = useState(() => new Set(["general"]));
 
   if (!asset) return null;
 
   const popup = buildAssetPopupData(asset, model);
+  const latitude = Number(
+    popup.spatial.find((item) => item.label === "Latitude")?.value,
+  );
+  const longitude = Number(
+    popup.spatial.find((item) => item.label === "Longitude")?.value,
+  );
+  const googleMapsUrl =
+    Number.isFinite(latitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    Number.isFinite(longitude) &&
+    longitude >= -180 &&
+    longitude <= 180
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          `${latitude},${longitude}`,
+        )}`
+      : null;
+  const spatialRows = googleMapsUrl
+    ? popup.spatial.flatMap((item) =>
+        item.label === "Longitude"
+          ? [
+              item,
+              {
+                label: "Google Maps",
+                value: "Buka lokasi",
+                href: googleMapsUrl,
+              },
+            ]
+          : [item],
+      )
+    : popup.spatial;
   const modelStatusLabel = popup.model.active
     ? "Ditampilkan di peta"
     : "Preview versi belum aktif";
+  const hasSpatial2d = spatialRows.length > 0;
+  const hasSpatial3d = showModel3d && popup.model.available;
   const sections = [
     {
       id: "general",
@@ -223,8 +303,13 @@ export default function AssetPopupCard({
       id: "spatial",
       icon: MapTrifoldIcon,
       title: "Data Spasial",
-      summary: `${popup.spatial.length} informasi`,
-      visible: popup.spatial.length > 0,
+      summary:
+        hasSpatial2d && hasSpatial3d
+          ? "Data 2D & 3D"
+          : hasSpatial3d
+            ? "Data 3D"
+            : "Data 2D",
+      visible: hasSpatial2d || hasSpatial3d,
     },
     {
       id: "tax",
@@ -233,16 +318,11 @@ export default function AssetPopupCard({
       summary: `${popup.tax.length} informasi`,
       visible: popup.tax.length > 0,
     },
-    {
-      id: "model",
-      icon: CubeIcon,
-      title: "Model 3D",
-      summary: [popup.model.lod, popup.model.format]
-        .filter(hasPopupValue)
-        .join(" · "),
-      visible: showModel3d && popup.model.available,
-    },
-  ].filter((section) => section.visible);
+  ].filter(
+    (section) =>
+      section.visible &&
+      (!visibleSectionIds || visibleSectionIds.includes(section.id)),
+  );
   const allExpanded =
     sections.length > 0 &&
     sections.every((section) => openSections.has(section.id));
@@ -360,18 +440,42 @@ export default function AssetPopupCard({
                 )}
               </>
             )}
-            {section.id === "model" && (
-              <ModelDetails
-                model={popup.model}
-                statusLabel={modelStatusLabel}
-              />
+            {section.id === "spatial" && (
+              <>
+                {hasSpatial2d && (
+                  <SpatialDataGroup
+                    icon={MapPinIcon}
+                    title="Data 2D"
+                    summary={`${spatialRows.length} informasi`}
+                  >
+                    <dl>
+                      {spatialRows.map((item) => (
+                        <DetailRow key={item.label} {...item} />
+                      ))}
+                    </dl>
+                  </SpatialDataGroup>
+                )}
+                {hasSpatial3d && (
+                  <SpatialDataGroup
+                    icon={CubeIcon}
+                    title="Data 3D"
+                    summary={[popup.model.lod, popup.model.format]
+                      .filter(hasPopupValue)
+                      .join(" · ")}
+                  >
+                    <ModelDetails
+                      model={popup.model}
+                      statusLabel={modelStatusLabel}
+                    />
+                  </SpatialDataGroup>
+                )}
+              </>
             )}
             {[
               "legal",
               "physical",
               "kib",
               "administrative",
-              "spatial",
               "tax",
             ].includes(section.id) && (
               <dl>

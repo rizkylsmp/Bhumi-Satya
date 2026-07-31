@@ -660,6 +660,7 @@ export default function MapPage({ publicMode = false }) {
           onFeatureClick={(asset) => setSelectedPanelAsset(asset)}
           onOtherLayerClick={() => setSelectedPanelAsset(null)}
           clearSelectionKey={mapSelectionClearKey}
+          popupSectionScope={publicMode ? "general" : "all"}
           showControls={false}
           activeLayer={activeLayer}
           showMarkers={showMarkers}
@@ -701,8 +702,9 @@ export default function MapPage({ publicMode = false }) {
             key={selectedPanelAsset.id_aset || selectedPanelAsset.id}
             asset={selectedPanelAsset}
             onClose={handleCloseSelectedPanel}
-            onViewDetail={handleViewDetail}
+            onViewDetail={publicMode ? null : handleViewDetail}
             showModel3d={sidePanelMode === "3d"}
+            visibleSectionIds={publicMode ? ["general"] : null}
           />
         )}
       </div>

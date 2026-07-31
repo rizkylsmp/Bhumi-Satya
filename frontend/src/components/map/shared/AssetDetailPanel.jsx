@@ -6,6 +6,7 @@ export default function AssetDetailPanel({
   onClose,
   onViewDetail,
   showModel3d = false,
+  visibleSectionIds = null,
 }) {
   const panelRef = useRef(null);
   const dragRef = useRef(null);
@@ -87,6 +88,7 @@ export default function AssetDetailPanel({
         onClose={onClose}
         onViewDetail={onViewDetail}
         showModel3d={showModel3d}
+        visibleSectionIds={visibleSectionIds}
         isDragging={isDragging}
         headerProps={{
           title: "Tahan dan geser untuk memindahkan popup",

@@ -1,5 +1,6 @@
 import { createElement, useState } from "react";
 import {
+  ArrowSquareOutIcon,
   ArrowsOutIcon,
   BuildingsIcon,
   CaretDownIcon,
@@ -560,12 +561,25 @@ export default function Model3dControlPanel({
                     <p className="text-[9px] font-extrabold uppercase tracking-wide opacity-75">
                       {analysisResult.label}
                     </p>
-                    <p className="mt-0.5 break-words text-base font-black">
-                      {analysisResult.value}
-                    </p>
-                    {analysisResult.detail && (
-                      <p className="mt-1 text-[9px] font-medium leading-relaxed opacity-80">
-                        {analysisResult.detail}
+                    {analysisResult.mapsUrl ? (
+                      <a
+                        href={analysisResult.mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Buka koordinat terpilih di Google Maps"
+                        title="Buka di Google Maps"
+                        className="mt-0.5 inline-flex items-center gap-1.5 break-words text-base font-black underline decoration-current/40 underline-offset-2 transition-opacity hover:opacity-75 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"
+                      >
+                        <span>{analysisResult.value}</span>
+                        <ArrowSquareOutIcon
+                          size={13}
+                          weight="bold"
+                          className="shrink-0"
+                        />
+                      </a>
+                    ) : (
+                      <p className="mt-0.5 break-words text-base font-black">
+                        {analysisResult.value}
                       </p>
                     )}
                   </div>

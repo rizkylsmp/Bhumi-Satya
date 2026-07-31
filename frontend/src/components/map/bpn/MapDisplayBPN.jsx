@@ -346,9 +346,11 @@ const buildBidangPopupFromAsset = (asset, isBPKAMode) => {
     return {
       KODE_ASET: asset?.kode_aset || "-",
       NAMA_ASET: asset?.nama_aset || "-",
+      JENIS_ASET: asset?.jenis_aset || "-",
       NIB: asset?.nib || "-",
       "TIPE HAK": asset?.jenis_hak || "-",
       LUAS: asset?.luas_lapangan || asset?.luas || null,
+      TAHUN_PEROLEHAN: asset?.tahun_perolehan || "-",
       PENGGUNAAN: asset?.penggunaan_saat_ini || "-",
       KELURAHAN: asset?.desa_kelurahan || "-",
       KECAMATAN: asset?.kecamatan || "-",
@@ -364,6 +366,7 @@ const buildBidangPopupFromAsset = (asset, isBPKAMode) => {
   return {
     KODE_ASET: asset?.kode_aset || "-",
     NAMA_ASET: asset?.nama_aset || "-",
+    JENIS_ASET: asset?.jenis_aset || "-",
     "STATUS SERTIFIKAT": certificateStatus,
     STATUS: asset?.status || "-",
     JENIS_MASALAH: asset?.jenis_masalah || "-",
@@ -371,6 +374,7 @@ const buildBidangPopupFromAsset = (asset, isBPKAMode) => {
     "NOMOR HAK": asset?.nomor_sertifikat || "-",
     "TIPE HAK": asset?.jenis_hak || "-",
     LUAS: asset?.luas || null,
+    TAHUN_PEROLEHAN: asset?.tahun_perolehan || "-",
     PENGGUNAAN: asset?.penggunaan_saat_ini || "-",
     KW: asset?.kw || "-",
     KELURAHAN: asset?.desa_kelurahan || "-",
@@ -401,6 +405,7 @@ const MapDisplayBPN = ({
   onFeatureClick = null,
   onOtherLayerClick = null,
   clearSelectionKey = null,
+  popupSectionScope = "all",
   // External control props (used when showControls=false)
   activeLayer: activeLayerProp,
   showKelurahan: showKelurahanProp,
@@ -860,8 +865,29 @@ const MapDisplayBPN = ({
       "_calculated_height",
     ]);
     const preferredKeys = getPreferredPopupKeys(layerId, isBPKAMode);
+    const publicGeneralKeys = new Set([
+      "KODE_ASET",
+      "NAMA_ASET",
+      "JENIS_ASET",
+      "LUAS",
+      "TAHUN_PEROLEHAN",
+      "LOKASI",
+      "KETERANGAN",
+    ]);
+    const isAssetLayer = [
+      "bidang_tanah_fill",
+      "asset-buildings-3d-layer",
+      "asset-dots-circle",
+      "asset-dots-label",
+    ].includes(layerId);
     const availableKeys = Object.keys(properties || {}).filter(
-      (key) => !ignored.has(key),
+      (key) =>
+        !ignored.has(key) &&
+        (
+          popupSectionScope !== "general" ||
+          !isAssetLayer ||
+          publicGeneralKeys.has(key)
+        ),
     );
 
     const orderedKeys = [
@@ -1149,7 +1175,9 @@ const MapDisplayBPN = ({
           status: "success",
           label: "Koordinat titik",
           value: `${event.lngLat.lat.toFixed(7)}, ${event.lngLat.lng.toFixed(7)}`,
-          detail: "Format latitude, longitude (WGS 84 / EPSG:4326).",
+          mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+            `${event.lngLat.lat},${event.lngLat.lng}`,
+          )}`,
         },
       });
       return true;
@@ -1165,13 +1193,11 @@ const MapDisplayBPN = ({
               status: "success",
               label: "Titik awal dipilih",
               value: "Klik titik berikutnya",
-              detail: "Anda dapat menambahkan lebih dari dua titik untuk mengukur rute.",
             }
           : {
               status: "success",
               label: "Total jarak",
               value: formatMetricValue(totalDistance, "m"),
-              detail: `${nextPoints.length} titik · ${nextPoints.length - 1} segmen pengukuran`,
             },
       });
       return true;
@@ -1185,7 +1211,6 @@ const MapDisplayBPN = ({
           status: "error",
           label: tool === "height" ? "Tinggi belum terbaca" : "Volume belum terbaca",
           value: "Pilih bangunan 3D",
-          detail: "Klik tepat pada bangunan atau model 3D yang memiliki metadata ukuran.",
         },
       });
       return true;
@@ -1208,15 +1233,11 @@ const MapDisplayBPN = ({
               status: "success",
               label: `Tinggi · ${assetName}`,
               value: formatMetricValue(height, "m"),
-              detail: heightData?.height
-                ? `Berdasarkan metadata aset (${heightData.quality || "indikatif"}).`
-                : "Estimasi berdasarkan kotak batas model 3D.",
             }
           : {
               status: "error",
               label: "Metadata tinggi belum tersedia",
               value: assetName,
-              detail: "Isi tinggi bangunan atau konversi ulang model agar kotak batas dapat dibaca.",
             },
       });
       return true;
@@ -1239,13 +1260,11 @@ const MapDisplayBPN = ({
             status: "success",
             label: `Volume · ${assetName}`,
             value: formatMetricValue(volume, "m³"),
-            detail: "Estimasi berdasarkan volume kotak batas model 3D.",
           }
         : {
             status: "error",
             label: "Data volume belum cukup",
             value: assetName,
-            detail: "Konversi model dengan metadata kotak batas untuk menghitung volume.",
           },
     });
     return true;
