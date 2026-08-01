@@ -1,7 +1,8 @@
 services:
   migrate:
-    image: ${BACKEND_IMAGE:-ghcr.io/rizkylsmp/bhumi-satya-backend:main}
-    pull_policy: always
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     command: ["npm", "run", "db:migrate"]
     restart: "no"
     exclude_from_hc: true
@@ -14,8 +15,9 @@ services:
     cpus: 0.5
 
   backend:
-    image: ${BACKEND_IMAGE:-ghcr.io/rizkylsmp/bhumi-satya-backend:main}
-    pull_policy: always
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     restart: unless-stopped
     init: true
     depends_on:
@@ -63,8 +65,9 @@ services:
     cpus: 1.5
 
   frontend:
-    image: ${FRONTEND_IMAGE:-ghcr.io/rizkylsmp/bhumi-satya-frontend:main}
-    pull_policy: always
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     restart: unless-stopped
     init: true
     depends_on:

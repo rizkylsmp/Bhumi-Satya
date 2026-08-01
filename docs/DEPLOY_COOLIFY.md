@@ -1,8 +1,9 @@
 # Deployment Bhumi Satya dengan Coolify
 
 Panduan ini ditujukan untuk VPS Ubuntu Server 24.04 LTS dengan 2 vCPU, RAM 4 GB,
-dan storage 60 GB. Image aplikasi dibangun di GitHub Actions agar proses build
-tidak membebani VPS. Coolify hanya menarik image dari GHCR dan menjalankannya.
+dan storage 60 GB. Coolify mengambil source dari GitHub, membangun image di VPS,
+kemudian menjalankan aplikasi menggunakan Docker Compose. Swap 4 GB disiapkan
+sebagai pengaman lonjakan memori selama build.
 
 ## Arsitektur
 
@@ -46,22 +47,11 @@ curl -fsSL https://cdn.coollabs.io/coolify/install.sh | sudo bash
 Segera buka alamat dashboard yang ditampilkan installer dan buat akun admin.
 Jangan memasang aaPanel atau reverse proxy lain pada server yang sama.
 
-## 3. Aktifkan GitHub Container Registry
+## 3. Hubungkan GitHub
 
-Workflow `.github/workflows/deploy-coolify.yml` memublikasikan dua image:
-
-```text
-ghcr.io/rizkylsmp/bhumi-satya-frontend:main
-ghcr.io/rizkylsmp/bhumi-satya-backend:main
-```
-
-Jalankan workflow pertama melalui tab **Actions** di GitHub. Untuk cara paling
-sederhana, ubah visibilitas kedua package GHCR menjadi public. Jika package
-tetap private, tambahkan registry credential GHCR ke Coolify menggunakan token
-GitHub yang hanya memiliki izin `read:packages`.
-
-Setiap build juga menghasilkan tag berdasarkan commit SHA. Tag tersebut dapat
-digunakan untuk rollback tanpa membangun ulang aplikasi.
+Hubungkan akun GitHub melalui GitHub App di Coolify dan berikan akses hanya ke
+repository `rizkylsmp/Bhumi-Satya`. Repository tetap boleh bersifat private.
+Tidak diperlukan GitHub Actions, GHCR, atau token package terpisah.
 
 ## 4. Buat resource di Coolify
 
@@ -70,8 +60,8 @@ digunakan untuk rollback tanpa membangun ulang aplikasi.
 3. Isi lokasi Compose dengan `/compose.coolify.yaml`.
 4. Pasang domain `https://bhumisatya.web.id` pada service `frontend` port 80.
 5. Jangan memasang domain atau port publik pada service `backend` dan `migrate`.
-6. Nonaktifkan auto-deploy langsung dari push GitHub. Deployment akan dipicu
-   oleh workflow setelah kedua image baru selesai dipublikasikan.
+6. Aktifkan **Auto Deploy** untuk branch `main`.
+7. Batasi deployment paralel menjadi satu agar build tidak saling berebut RAM.
 
 ## 5. Isi environment variables
 
@@ -113,26 +103,21 @@ DB_POOL_MAX=3
 NODE_OPTIONS=--max-old-space-size=1536
 ```
 
-## 6. Hubungkan workflow ke Coolify
+## 6. Auto-deploy Coolify
 
-Setelah resource berhasil dibuat, buka menu webhook/API deployment pada
-Coolify. Tambahkan dua repository secret berikut di GitHub melalui
-**Settings > Secrets and variables > Actions**:
-
-```text
-COOLIFY_WEBHOOK_URL
-COOLIFY_TOKEN
-```
+GitHub App Coolify memasang webhook repository secara otomatis. Tidak ada
+repository secret deployment yang perlu disimpan di GitHub.
 
 Mulai saat itu alurnya adalah:
 
 1. Push ke branch `main`.
-2. GitHub menjalankan test dan build.
-3. GitHub memublikasikan image baru ke GHCR.
-4. GitHub memanggil webhook Coolify.
-5. Coolify menarik image baru, menjalankan migrasi, dan mengganti container.
+2. GitHub mengirim webhook ke Coolify.
+3. Coolify mengambil commit terbaru.
+4. Coolify membangun frontend dan backend di VPS.
+5. Coolify menjalankan migrasi dan mengganti container aplikasi.
 
-Jika test atau build gagal, deployment tidak dijalankan.
+Jika build atau migrasi gagal, container lama tetap menjadi acuan untuk
+investigasi dan deployment ditandai gagal di Coolify.
 
 ## 7. Pemeriksaan setelah deployment
 
@@ -145,14 +130,7 @@ Jika test atau build gagal, deployment tidak dijalankan.
 
 ## Rollback
 
-Salin SHA commit terakhir yang stabil, kemudian ubah sementara nilai berikut di
-Coolify dan lakukan redeploy:
-
-```dotenv
-FRONTEND_IMAGE=ghcr.io/rizkylsmp/bhumi-satya-frontend:SHA_COMMIT
-BACKEND_IMAGE=ghcr.io/rizkylsmp/bhumi-satya-backend:SHA_COMMIT
-```
-
-Kembalikan tag keduanya menjadi `main` setelah masalah pada versi terbaru sudah
-diperbaiki.
-
+Pilih deployment terakhir yang stabil pada riwayat deployment Coolify lalu
+lakukan redeploy. Jika diperlukan, ubah commit sumber sementara ke SHA yang
+stabil, deploy ulang, kemudian kembalikan sumber ke branch `main` setelah
+masalah diperbaiki.
