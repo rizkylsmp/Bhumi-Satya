@@ -1,0 +1,82 @@
+services:
+  migrate:
+    image: ${BACKEND_IMAGE:-ghcr.io/rizkylsmp/bhumi-satya-backend:main}
+    pull_policy: always
+    command: ["npm", "run", "db:migrate"]
+    restart: "no"
+    exclude_from_hc: true
+    environment:
+      NODE_ENV: production
+      LOAD_DOTENV: "false"
+      DATABASE_URL: ${DATABASE_URL:?}
+      DB_SSL: ${DB_SSL:-true}
+    mem_limit: 512m
+    cpus: 0.5
+
+  backend:
+    image: ${BACKEND_IMAGE:-ghcr.io/rizkylsmp/bhumi-satya-backend:main}
+    pull_policy: always
+    restart: unless-stopped
+    init: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    expose:
+      - "5000"
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 5000
+      LOAD_DOTENV: "false"
+      NODE_OPTIONS: ${NODE_OPTIONS:---max-old-space-size=1536}
+      DATABASE_URL: ${DATABASE_URL:?}
+      DB_SSL: ${DB_SSL:-true}
+      DB_POOL_MAX: ${DB_POOL_MAX:-3}
+      DB_POOL_MIN: ${DB_POOL_MIN:-0}
+      JWT_SECRET: ${JWT_SECRET:?}
+      JWT_EXPIRE: ${JWT_EXPIRE:-2h}
+      FRONTEND_URL: ${FRONTEND_URL:-https://bhumisatya.web.id}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      WHATSAPP_API_URL: ${WHATSAPP_API_URL:-}
+      WHATSAPP_API_TOKEN: ${WHATSAPP_API_TOKEN:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      SUPABASE_BUCKET: ${SUPABASE_BUCKET:-backups}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:5000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    mem_limit: 2g
+    cpus: 1.5
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/rizkylsmp/bhumi-satya-frontend:main}
+    pull_policy: always
+    restart: unless-stopped
+    init: true
+    depends_on:
+      backend:
+        condition: service_healthy
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    mem_limit: 256m
+    cpus: 0.5

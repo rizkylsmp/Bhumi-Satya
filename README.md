@@ -174,7 +174,13 @@ Bhumi-Satya/
 
 ---
 
-## 🌐 Deployment (Vercel)
+## 🌐 Deployment
+
+Untuk VPS Ubuntu 24.04 LTS dengan Coolify dan auto-deploy dari GitHub, gunakan
+[panduan deployment Coolify](docs/DEPLOY_COOLIFY.md). Konfigurasi ini membangun
+image di GitHub Actions agar proses build tidak membebani VPS produksi.
+
+### Vercel (opsi lama)
 
 ### Backend
 
