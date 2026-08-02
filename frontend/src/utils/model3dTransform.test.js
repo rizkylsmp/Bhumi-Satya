@@ -17,6 +17,18 @@ describe("model 3D position offsets", () => {
     expect(result.altitude).toBe(8);
   });
 
+  it("does not interpret missing coordinates as the location 0,0", () => {
+    const result = resolveModelOffsetLocation({
+      location_long: null,
+      location_lat: "",
+      offset_x_m: 25,
+      offset_y_m: 25,
+    });
+
+    expect(Number.isNaN(result.longitude)).toBe(true);
+    expect(Number.isNaN(result.latitude)).toBe(true);
+  });
+
   it("zooms out enough to show a large imported KMZ model", () => {
     expect(getModelFocusZoom({
       converted_bounds: { radius: 230 },

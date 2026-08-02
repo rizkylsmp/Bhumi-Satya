@@ -78,6 +78,13 @@ There is no root `test` or `lint` script. Run the package-level commands above.
 - Changes spanning the API contract must verify both the backend response shape and all frontend consumers.
 - Add or update tests for permission rules, authentication/session behavior, and service logic when those areas change.
 
+## Changelog management
+
+- Maintain user-facing development history in `frontend/src/data/changelog.js`; do not create or display application release numbers unless the user requests versioning again.
+- Add only notable features, improvements, and fixes that actually exist in Git history. Use the real completion date and keep the newest entry first.
+- Keep changelog wording short, understandable to non-technical users, and grouped by month on the Documentation page.
+- A regular commit or push does not require a changelog entry when it only changes internal implementation without a user-visible effect.
+
 ## Working-tree hygiene
 
 - Do not modify or discard unrelated user changes.

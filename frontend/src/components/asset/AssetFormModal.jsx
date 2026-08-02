@@ -652,49 +652,37 @@ export default function AssetFormModal({
   ];
 
   const kecamatanOptions = [
-    { value: "Bugul Kidul", label: "Bugul Kidul" },
-    { value: "Gadingrejo", label: "Gadingrejo" },
-    { value: "Panggungrejo", label: "Panggungrejo" },
-    { value: "Purworejo", label: "Purworejo" },
+    { value: "Danurejan", label: "Danurejan" },
+    { value: "Gedongtengen", label: "Gedongtengen" },
+    { value: "Gondokusuman", label: "Gondokusuman" },
+    { value: "Gondomanan", label: "Gondomanan" },
+    { value: "Jetis", label: "Jetis" },
+    { value: "Kotagede", label: "Kotagede" },
+    { value: "Kraton", label: "Kraton" },
+    { value: "Mantrijeron", label: "Mantrijeron" },
+    { value: "Mergangsan", label: "Mergangsan" },
+    { value: "Ngampilan", label: "Ngampilan" },
+    { value: "Pakualaman", label: "Pakualaman" },
+    { value: "Tegalrejo", label: "Tegalrejo" },
+    { value: "Umbulharjo", label: "Umbulharjo" },
+    { value: "Wirobrajan", label: "Wirobrajan" },
   ];
 
   const kelurahanByKecamatan = {
-    "Bugul Kidul": [
-      "Bakalan",
-      "Blandongan",
-      "Bugul Kidul",
-      "Kepel",
-      "Krampyangan",
-      "Tapaan",
-    ],
-    Gadingrejo: [
-      "Bukir",
-      "Gadingrejo",
-      "Gentong",
-      "Krapyakrejo",
-      "Petahunan",
-      "Randusari",
-      "Sebani",
-    ],
-    Panggungrejo: [
-      "Kandangsapi",
-      "Karangketug",
-      "Mandaranrejo",
-      "Panggungrejo",
-      "Pekuncen",
-      "Petamanan",
-      "Trajeng",
-    ],
-    Purworejo: [
-      "Kebonagung",
-      "Kebonsari",
-      "Pohjentrek",
-      "Purutrejo",
-      "Purworejo",
-      "Sekargadung",
-      "Tembokrejo",
-      "Wirogunan",
-    ],
+    Danurejan: ["Bausasran", "Suryatmajan", "Tegalpanggung"],
+    Gedongtengen: ["Pringgokusuman", "Sosromenduran"],
+    Gondokusuman: ["Baciro", "Demangan", "Klitren", "Kotabaru", "Terban"],
+    Gondomanan: ["Ngupasan", "Prawirodirjan"],
+    Jetis: ["Bumijo", "Cokrodiningratan", "Gowongan"],
+    Kotagede: ["Prenggan", "Purbayan", "Rejowinangun"],
+    Kraton: ["Kadipaten", "Panembahan", "Patehan"],
+    Mantrijeron: ["Gedongkiwo", "Mantrijeron", "Suryodiningratan"],
+    Mergangsan: ["Brontokusuman", "Keparakan", "Wirogunan"],
+    Ngampilan: ["Ngampilan", "Notoprajan"],
+    Pakualaman: ["Gunungketur", "Purwokinanti"],
+    Tegalrejo: ["Bener", "Karangwaru", "Kricak", "Tegalrejo"],
+    Umbulharjo: ["Giwangan", "Muja Muju", "Pandeyan", "Semaki", "Sorosutan", "Tahunan", "Warungboto"],
+    Wirobrajan: ["Pakuncen", "Patangpuluhan", "Wirobrajan"],
   };
 
   const getKelurahanOptions = (kecamatan) => {
@@ -998,8 +986,8 @@ export default function AssetFormModal({
       icon: ReceiptIcon,
     },
     administratif: {
-      title: "Edit Keuangan",
-      subtitle: "Perbarui informasi nilai dan pengelolaan keuangan",
+      title: "Edit Administratif",
+      subtitle: "Perbarui informasi administratif dan pengelolaan aset",
       icon: CurrencyDollarIcon,
     },
     spasial: {
@@ -1275,7 +1263,7 @@ export default function AssetFormModal({
                   <div className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                     <SectionHeader
                       icon={FolderOpenIcon}
-                      title="Data KIB dan Keuangan"
+                      title="Data KIB dan Administratif"
                     />
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -1961,12 +1949,12 @@ export default function AssetFormModal({
                   </div>
                 )}
 
-              {/* ========== DATA KEUANGAN ========== */}
+              {/* ========== DATA ADMINISTRATIF ========== */}
               {!isLegacyCompactForm && isFullForm && (
                 <div id="administratif" role="tabpanel" aria-labelledby="form-tab-administratif" hidden={isPage && activeSection !== "administratif"} data-form-section="administratif" className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                   <SectionHeader
                     icon={CurrencyDollarIcon}
-                    title="Data Keuangan"
+                    title="Data Administratif"
                   />
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -2009,7 +1997,7 @@ export default function AssetFormModal({
                 <div id="administratif" role="tabpanel" aria-labelledby="form-tab-administratif" hidden={isPage && activeSection !== "administratif"} data-form-section="administratif" className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                   <SectionHeader
                     icon={CurrencyDollarIcon}
-                    title="Keuangan"
+                    title="Administratif"
                   />
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

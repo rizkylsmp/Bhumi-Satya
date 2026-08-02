@@ -2,12 +2,32 @@ const EARTH_RADIUS_METERS = 6378137;
 const toRadians = (degrees) => Number(degrees) * Math.PI / 180;
 const toDegrees = (radians) => Number(radians) * 180 / Math.PI;
 
+const toFiniteNumber = (value) => {
+  if (
+    value === null
+    || value === undefined
+    || (typeof value === "string" && value.trim() === "")
+  ) {
+    return Number.NaN;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+};
+
 export const resolveModelOffsetLocation = (model = {}) => {
-  const latitude = Number(model.location_lat);
-  const longitude = Number(model.location_long);
+  const latitude = toFiniteNumber(model.location_lat);
+  const longitude = toFiniteNumber(model.location_long);
   const eastOffset = Number(model.offset_x_m) || 0;
   const northOffset = Number(model.offset_y_m) || 0;
   const verticalOffset = Number(model.offset_z_m) || 0;
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return {
+      longitude: Number.NaN,
+      latitude: Number.NaN,
+      altitude: (Number(model.altitude_m) || 0) + verticalOffset,
+    };
+  }
 
   return {
     longitude: longitude + toDegrees(

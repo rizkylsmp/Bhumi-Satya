@@ -40,6 +40,16 @@ function matchesSearch(value, term, termDigits) {
 }
 
 function hasCoordinatePair(latitude, longitude) {
+  if (
+    latitude === null
+    || latitude === undefined
+    || longitude === null
+    || longitude === undefined
+    || String(latitude).trim() === ""
+    || String(longitude).trim() === ""
+  ) {
+    return false;
+  }
   return Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude));
 }
 

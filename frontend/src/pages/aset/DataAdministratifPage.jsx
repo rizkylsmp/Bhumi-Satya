@@ -116,8 +116,8 @@ const statsCards = (assets, totalItems, assetStats) => {
 export default function DataAdministratifPage() {
   return (
     <SubstansiAssetPage
-      title="Keuangan"
-      subtitle="Keuangan dan pengelolaan aset."
+      title="Administratif"
+      subtitle="Data administratif dan pengelolaan aset."
       icon={CurrencyDollarIcon}
       iconColor="from-violet-500 to-violet-600"
       columns={columns}

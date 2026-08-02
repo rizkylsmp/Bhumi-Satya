@@ -75,10 +75,24 @@ const collectCoordinatePairs = (value, pairs = []) => {
   return pairs;
 };
 
+const parseCoordinate = (value, min, max) => {
+  if (
+    value === null
+    || value === undefined
+    || (typeof value === "string" && value.trim() === "")
+  ) {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= min && parsed <= max
+    ? parsed
+    : null;
+};
+
 const resolveAssetLocation = (asset) => {
-  const latitude = Number(asset.koordinat_lat);
-  const longitude = Number(asset.koordinat_long);
-  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+  const latitude = parseCoordinate(asset.koordinat_lat, -90, 90);
+  const longitude = parseCoordinate(asset.koordinat_long, -180, 180);
+  if (latitude !== null && longitude !== null) {
     return { latitude, longitude };
   }
 

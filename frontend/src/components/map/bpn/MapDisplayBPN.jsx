@@ -535,12 +535,14 @@ const MapDisplayBPN = ({
           : [null];
 
       return activeModels.map((model, modelIndex) => {
-        const rawLatitude = Number(
-          asset?.koordinat_lat ?? asset?.latitude ?? asset?.lat ?? model?.location_lat,
-        );
-        const rawLongitude = Number(
-          asset?.koordinat_long ?? asset?.longitude ?? asset?.lng ?? model?.location_long,
-        );
+        const rawLatitude = parseCoordinateValue(model?.location_lat)
+          ?? parseCoordinateValue(
+            asset?.koordinat_lat ?? asset?.latitude ?? asset?.lat,
+          );
+        const rawLongitude = parseCoordinateValue(model?.location_long)
+          ?? parseCoordinateValue(
+            asset?.koordinat_long ?? asset?.longitude ?? asset?.lng,
+          );
         const offsetLocation = resolveModelOffsetLocation({
           ...model,
           location_lat: rawLatitude,
@@ -642,21 +644,25 @@ const MapDisplayBPN = ({
           : fallbackPoints.length > 0
             ? fallbackPoints.reduce((sum, point) => sum + point[1], 0) / fallbackPoints.length
             : null;
-        return activeModels.map((model) => ({
-          ...model,
-          assetId: asset?.id_aset || asset?.id,
-          locationId: `model-${model.id_model_3d}`,
-          location_lat: fallbackLatitude ?? model.location_lat,
-          location_long: fallbackLongitude ?? model.location_long,
-        }));
+        return activeModels.map((model) => {
+          const modelLatitude = parseCoordinateValue(model.location_lat);
+          const modelLongitude = parseCoordinateValue(model.location_long);
+          return {
+            ...model,
+            assetId: asset?.id_aset || asset?.id,
+            locationId: `model-${model.id_model_3d}`,
+            location_lat: modelLatitude ?? fallbackLatitude,
+            location_long: modelLongitude ?? fallbackLongitude,
+          };
+        });
       })
       .filter((model) => (model?.public_url || model?.converted_public_url)
         && (
           visible3dLocationIdSet === null
           || visible3dLocationIdSet.has(String(model.locationId))
         )
-        && Number.isFinite(Number(model.location_lat))
-        && Number.isFinite(Number(model.location_long))),
+        && parseCoordinateValue(model.location_lat) !== null
+        && parseCoordinateValue(model.location_long) !== null),
     [visible3dAssets, visible3dLocationIdSet],
   );
   const tiledAssetIds = useMemo(
@@ -1108,18 +1114,14 @@ const MapDisplayBPN = ({
     return currentAssets
       .map((asset) => {
         const model = asset?.active_model_3d;
-        const rawLongitude = Number(
-          asset?.koordinat_long ??
-            asset?.longitude ??
-            asset?.lng ??
-            model?.location_long,
-        );
-        const rawLatitude = Number(
-          asset?.koordinat_lat ??
-            asset?.latitude ??
-            asset?.lat ??
-            model?.location_lat,
-        );
+        const rawLongitude = parseCoordinateValue(model?.location_long)
+          ?? parseCoordinateValue(
+            asset?.koordinat_long ?? asset?.longitude ?? asset?.lng,
+          );
+        const rawLatitude = parseCoordinateValue(model?.location_lat)
+          ?? parseCoordinateValue(
+            asset?.koordinat_lat ?? asset?.latitude ?? asset?.lat,
+          );
         if (!Number.isFinite(rawLongitude) || !Number.isFinite(rawLatitude)) {
           return null;
         }

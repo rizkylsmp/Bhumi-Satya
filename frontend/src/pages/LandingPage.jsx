@@ -1234,21 +1234,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ==================== FOOTER ==================== */}
-      <footer className="bg-accent dark:bg-surface border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <BrandMark className="h-6 w-6 rounded-md text-[8px]" />
-            <span className="text-xs text-surface/70 dark:text-text-muted">
-              Bhumi Satya
-            </span>
-          </div>
-          <span className="text-xs text-surface/50 dark:text-text-muted">
-            Digital Twin
-          </span>
-        </div>
-      </footer>
-
       {/* ==================== LOGIN SIDE PANEL ==================== */}
       <div
         className={`fixed top-0 right-0 h-full z-50 transition-all duration-500 ease-out ${

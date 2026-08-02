@@ -49,6 +49,7 @@ const NotifikasiPage = lazyWithRetry(() => import("../pages/NotifikasiPage"));
 const BackupPage = lazyWithRetry(() => import("../pages/BackupPage"));
 const ProfilPage = lazyWithRetry(() => import("../pages/ProfilPage"));
 const PengaturanPage = lazyWithRetry(() => import("../pages/PengaturanPage"));
+const DokumentasiPage = lazyWithRetry(() => import("../pages/DokumentasiPage"));
 const UserManagementPage = lazyWithRetry(() => import("../pages/UserManagementPage"));
 const AssetPage = lazyWithRetry(() => import("../pages/aset/AssetPage"));
 const AssetFormPage = lazyWithRetry(() => import("../pages/aset/AssetFormPage"));
@@ -145,6 +146,14 @@ const router = createHashRouter([
         element: (
           <LazyPage>
             <PublicMapPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: "/dokumentasi",
+        element: (
+          <LazyPage>
+            <DokumentasiPage />
           </LazyPage>
         ),
       },

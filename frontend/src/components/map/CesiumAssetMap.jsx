@@ -50,6 +50,28 @@ const MODEL_VISUAL_STYLES = {
   selected: { color: "#2563eb", blendAmount: 0.36 },
 };
 
+const POLYGON_STYLES = {
+  "Telah Bersertifikat": {
+    fill: "#0ea5e9",
+    outline: "#0369a1",
+  },
+  "Belum Bersertifikat": {
+    fill: "#ef4444",
+    outline: "#dc2626",
+  },
+  default: {
+    fill: "#9ca3af",
+    outline: "#6b7280",
+  },
+};
+
+const getPolygonStyle = (entity) => {
+  const status = String(
+    getPropertyValue(entity?.properties?.["STATUS SERTIFIKAT"]) || "",
+  ).trim();
+  return POLYGON_STYLES[status] || POLYGON_STYLES.default;
+};
+
 const setModelVisualState = (target, state = "default") => {
   if (!target || target.isDestroyed?.()) return;
   const { color, blendAmount } =
@@ -524,11 +546,23 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       if (showPolygons && polygonGeoJson?.features?.length) {
         const polygons = await GeoJsonDataSource.load(polygonGeoJson, {
           clampToGround: true,
-          fill: Color.fromCssColorString("#38bdf8").withAlpha(0.12),
-          stroke: Color.fromCssColorString("#0284c7").withAlpha(0.9),
-          strokeWidth: 2,
+          fill: Color.fromCssColorString(POLYGON_STYLES.default.fill).withAlpha(
+            0.15,
+          ),
+          stroke: Color.fromCssColorString(POLYGON_STYLES.default.outline),
+          strokeWidth: 1,
         });
         if (cancelled) return;
+        polygons.entities.values.forEach((entity) => {
+          if (!entity.polygon) return;
+          const style = getPolygonStyle(entity);
+          entity.polygon.material = Color.fromCssColorString(
+            style.fill,
+          ).withAlpha(0.15);
+          entity.polygon.outline = true;
+          entity.polygon.outlineColor = Color.fromCssColorString(style.outline);
+          entity.polygon.outlineWidth = 1;
+        });
         await viewer.dataSources.add(polygons);
         fallbackTargetRef.current ||= polygons;
       }

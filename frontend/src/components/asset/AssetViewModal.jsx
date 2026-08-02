@@ -150,7 +150,7 @@ const DETAIL_NAV_ITEMS = [
   { id: "detail-data-legal", label: "Legal" },
   { id: "detail-data-fisik", label: "Fisik" },
   { id: "detail-data-kib", label: "KIB" },
-  { id: "detail-data-administratif-keuangan", label: "Keuangan" },
+  { id: "detail-data-administratif", label: "Administratif" },
   { id: "detail-data-spasial", label: "Spasial" },
   { id: "detail-data-bangunan-3d", label: "3D" },
 ];
@@ -707,12 +707,12 @@ export default function AssetViewModal({
                 />
               </Section>
 
-              {/* Keuangan */}
+              {/* Administratif */}
               <Section
-                title="Keuangan"
+                title="Administratif"
                 icon={CurrencyDollarIcon}
                 columns={3}
-                hidden={activeDetailTab !== "detail-data-administratif-keuangan"}
+                hidden={activeDetailTab !== "detail-data-administratif"}
               >
                 <InfoItem
                   label="Nilai Aset"
@@ -737,7 +737,7 @@ export default function AssetViewModal({
 
               {/* Data Sewa */}
               {(asset.status_sewa || asset.penyewa_aktif) && (
-                <Section title="Data Sewa" icon={BuildingsIcon} columns={3} hidden={activeDetailTab !== "detail-data-administratif-keuangan"}>
+                <Section title="Data Sewa" icon={BuildingsIcon} columns={3} hidden={activeDetailTab !== "detail-data-administratif"}>
                   <InfoItem label="Status Sewa" value={asset.status_sewa} />
                   <InfoItem label="Penyewa Aktif" value={asset.penyewa_aktif} />
                   <InfoItem

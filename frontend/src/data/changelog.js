@@ -1,0 +1,101 @@
+export const changelogEntries = [
+  {
+    id: "stable-imported-model-position",
+    date: "2026-08-02",
+    type: "perbaikan",
+    title: "Menstabilkan posisi model 3D hasil impor",
+    summary:
+      "Koordinat model dari KMZ kini tetap konsisten antara preview dan Digital Twin, sementara GLB tanpa georeferensi mengikuti lokasi aset.",
+    area: "Kelola 3D",
+  },
+  {
+    id: "coolify-deployment",
+    date: "2026-08-01",
+    type: "peningkatan",
+    title: "Menyiapkan deployment Bhumi Satya di Coolify",
+    summary:
+      "Konfigurasi produksi disederhanakan agar frontend dan backend dapat dipublikasikan sebagai satu aplikasi.",
+    area: "Deployment",
+  },
+  {
+    id: "native-build",
+    date: "2026-08-01",
+    type: "perbaikan",
+    title: "Menstabilkan proses build produksi",
+    summary:
+      "Proses build native digunakan untuk mengurangi kendala instalasi pada lingkungan deployment.",
+    area: "Deployment",
+  },
+  {
+    id: "map-popup-analysis",
+    date: "2026-07-31",
+    type: "peningkatan",
+    title: "Menyempurnakan popup dan alat analisis peta",
+    summary:
+      "Informasi aset dan alat ukur peta dibuat lebih ringkas serta mudah digunakan.",
+    area: "Digital Twin",
+  },
+  {
+    id: "map-layer-controls",
+    date: "2026-07-31",
+    type: "peningkatan",
+    title: "Menyederhanakan kontrol layer Digital Twin",
+    summary:
+      "Kontrol Level of Detail, layer, navigasi, dan tools ditata ulang dalam panel yang lebih efisien.",
+    area: "Digital Twin",
+  },
+  {
+    id: "polygon-centroid",
+    date: "2026-07-31",
+    type: "perbaikan",
+    title: "Memperbaiki posisi titik tengah polygon",
+    summary:
+      "Perhitungan centroid dibuat lebih stabil dan tampilan tabel data dibuat lebih padat.",
+    area: "Peta 2D",
+  },
+  {
+    id: "data-center-popup",
+    date: "2026-07-30",
+    type: "peningkatan",
+    title: "Merapikan pusat data dan popup aset",
+    summary:
+      "Tabel pusat data dan tampilan informasi aset disederhanakan agar lebih mudah dipindai.",
+    area: "Pusat Data",
+  },
+  {
+    id: "spatial-import",
+    date: "2026-07-30",
+    type: "peningkatan",
+    title: "Meningkatkan proses impor data spasial",
+    summary:
+      "Impor data peta diperkuat dan format angka diselaraskan pada seluruh tampilan terkait.",
+    area: "Data Spasial",
+  },
+  {
+    id: "kib-tax-data",
+    date: "2026-07-29",
+    type: "fitur",
+    title: "Menambahkan Data KIB dan Data Pajak",
+    summary:
+      "Halaman, navigasi, serta alur pengelolaan Data KIB dan Pajak tersedia di pusat data.",
+    area: "Pusat Data",
+  },
+  {
+    id: "popup-3d-attributes",
+    date: "2026-07-29",
+    type: "perbaikan",
+    title: "Menyelaraskan popup peta dengan atribut 3D",
+    summary:
+      "Data aset dan atribut model 3D kini ditampilkan secara konsisten pada popup.",
+    area: "Kelola 3D",
+  },
+  {
+    id: "digital-twin-3d",
+    date: "2026-07-29",
+    type: "fitur",
+    title: "Mengembangkan pengelolaan model dan peta 3D",
+    summary:
+      "Digital Twin memperoleh dukungan pengelolaan model, kontrol peta, dan tampilan bangunan 3D.",
+    area: "Digital Twin",
+  },
+];

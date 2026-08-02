@@ -21,11 +21,23 @@ import {
   getBasemapOption,
 } from "./basemapOptions";
 
+const optionalCoordinate = (value) => {
+  if (
+    value === null
+    || value === undefined
+    || (typeof value === "string" && value.trim() === "")
+  ) {
+    return Number.NaN;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+};
+
 const assetLocation = (asset = {}) => ({
-  longitude: Number(
+  longitude: optionalCoordinate(
     asset.koordinat_long ?? asset.lng ?? asset.longitude,
   ),
-  latitude: Number(
+  latitude: optionalCoordinate(
     asset.koordinat_lat ?? asset.lat ?? asset.latitude,
   ),
   altitude: Number(asset.building_base_elevation_m) || 0,

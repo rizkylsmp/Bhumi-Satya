@@ -14,7 +14,6 @@ import {
   TagIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import BrandMark from "../components/shared/BrandMark";
 import Pagination from "../components/asset/Pagination";
 import { sewaService } from "../services/api";
 import {
@@ -297,20 +296,6 @@ export default function PublicSewaPage() {
           </div>
         </section>
       </main>
-
-      <footer className="border-t border-border bg-accent dark:bg-surface">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 sm:flex-row sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2">
-            <BrandMark className="h-6 w-6 rounded-md text-[8px]" />
-            <span className="text-xs text-surface/70 dark:text-text-muted">
-              Bhumi Satya
-            </span>
-          </div>
-          <span className="text-xs text-surface/50 dark:text-text-muted">
-            Digital Twin
-          </span>
-        </div>
-      </footer>
 
       {selectedItem && (
         <RentalDetail
