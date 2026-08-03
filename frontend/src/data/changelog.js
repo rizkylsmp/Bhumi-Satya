@@ -1,5 +1,14 @@
 export const changelogEntries = [
   {
+    id: "blackbox-testing-guide",
+    date: "2026-08-03",
+    type: "peningkatan",
+    title: "Menambahkan panduan pengujian blackbox",
+    summary:
+      "Daftar pengujian inti disiapkan dalam format Excel agar hasil aktual dan status pemeriksaan sistem dapat dicatat dengan mudah.",
+    area: "Dokumentasi",
+  },
+  {
     id: "stable-imported-model-position",
     date: "2026-08-02",
     type: "perbaikan",

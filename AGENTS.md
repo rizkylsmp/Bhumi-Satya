@@ -81,6 +81,7 @@ There is no root `test` or `lint` script. Run the package-level commands above.
 ## Changelog management
 
 - Maintain user-facing development history in `frontend/src/data/changelog.js`; do not create or display application release numbers unless the user requests versioning again.
+- **Warning:** before running any `git commit` or `git push`, update `frontend/src/data/changelog.js` first so every user-facing change included in the commit is recorded. Do not commit or push while the changelog is out of sync.
 - Add only notable features, improvements, and fixes that actually exist in Git history. Use the real completion date and keep the newest entry first.
 - Keep changelog wording short, understandable to non-technical users, and grouped by month on the Documentation page.
 - A regular commit or push does not require a changelog entry when it only changes internal implementation without a user-visible effect.
