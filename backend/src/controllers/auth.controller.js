@@ -6,6 +6,7 @@ import { User, Riwayat, Notifikasi } from "../models/index.js";
 import AuditService from "../services/audit.service.js";
 import NotificationService from "../services/notification.service.js";
 import LoginOtpService from "../services/loginOtp.service.js";
+import { shouldBypassMasyarakatOtp } from "../utils/loginPolicy.js";
 import { getClientIp } from "../utils/requestIp.js";
 
 const ADMIN_ROLES = new Set(["admin"]);
@@ -154,8 +155,9 @@ export const login = async (req, res) => {
       });
     }
 
-    // Non-admin users, including masyarakat, must verify login with OTP.
-    if (shouldRequireLoginOtp(user.role)) {
+    // OTP masyarakat can be disabled temporarily through the deployment environment.
+    const bypassMasyarakatOtp = shouldBypassMasyarakatOtp(user.role);
+    if (!bypassMasyarakatOtp && shouldRequireLoginOtp(user.role)) {
       const channel = getLoginOtpChannel(user.role, otpChannel);
       const code = LoginOtpService.generateCode();
       const otpToken = jwt.sign(
@@ -191,7 +193,7 @@ export const login = async (req, res) => {
       });
     }
 
-    if (user.mfa_enabled && user.mfa_secret) {
+    if (!bypassMasyarakatOtp && user.mfa_enabled && user.mfa_secret) {
       // Issue a short-lived MFA token (5 min) so the user can complete MFA
       const mfaToken = jwt.sign(
         { id_user: user.id_user, purpose: "mfa" },
@@ -214,7 +216,7 @@ export const login = async (req, res) => {
     );
 
     // Send MFA warning notification once per day if not enabled
-    if (!user.mfa_enabled) {
+    if (!bypassMasyarakatOtp && !user.mfa_enabled) {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
       const alreadySent = await Notifikasi.findOne({

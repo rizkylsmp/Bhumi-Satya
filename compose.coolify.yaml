@@ -37,6 +37,7 @@ services:
       DB_POOL_MIN: ${DB_POOL_MIN:-0}
       JWT_SECRET: ${JWT_SECRET:?}
       JWT_EXPIRE: ${JWT_EXPIRE:-2h}
+      MASYARAKAT_LOGIN_OTP_ENABLED: ${MASYARAKAT_LOGIN_OTP_ENABLED:-false}
       FRONTEND_URL: ${FRONTEND_URL:-https://bhumisatya.web.id}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}

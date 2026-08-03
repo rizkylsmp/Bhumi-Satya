@@ -48,6 +48,7 @@ PORT=5000
 DATABASE_URL=postgresql://username:password@localhost:5432/bhumi_satya
 JWT_SECRET=your-secret-key
 SMTP_HOST=smtp.example.com
+MASYARAKAT_LOGIN_OTP_ENABLED=false
 SMTP_PORT=587
 SMTP_USER=mailer@example.com
 SMTP_PASS=your-mail-password
