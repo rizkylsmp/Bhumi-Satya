@@ -69,7 +69,7 @@ const sortOptions = [
 ];
 const DEFAULT_SORT = "created_at:DESC";
 const CATALOG_COLUMN_WIDTHS = {
-  kode_3d: 150,
+  kode_3d: 190,
   nama: 250,
   lokasi: 240,
   data_bangunan: 230,
@@ -138,10 +138,10 @@ function AddAssetDialog({ open, onClose, onAdded }) {
   }, [fetchCandidates]);
 
   const addAsset = async (asset) => {
-    setAddingId(asset.id_aset);
+    setAddingId(asset.kode_2d);
     try {
-      const response = await aset3dCatalogService.create(asset.id_aset);
-      toast.success(response.data?.message || "Aset berhasil ditambahkan");
+      const response = await aset3dCatalogService.create(asset.kode_2d);
+      toast.success(response.data?.message || "Bangunan 3D berhasil ditambahkan");
       await fetchCandidates();
       onAdded();
     } catch (error) {
@@ -159,8 +159,8 @@ function AddAssetDialog({ open, onClose, onAdded }) {
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-surface"><PlusIcon size={18} weight="bold" /></span>
             <div>
-              <h2 id="add-asset-3d-title" className="text-base font-black text-text-primary">Cari dan Tambahkan Aset</h2>
-              <p className="mt-1 text-[10px] text-text-muted">Hanya aset yang belum terdaftar di Kelola 3D yang ditampilkan.</p>
+              <h2 id="add-asset-3d-title" className="text-base font-black text-text-primary">Pilih Bidang Tanah 2D</h2>
+              <p className="mt-1 text-[10px] text-text-muted">Satu bidang 2D dapat memiliki beberapa bangunan dengan kode 3D berbeda.</p>
             </div>
           </div>
           <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted hover:bg-surface-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-accent" aria-label="Tutup dialog">
@@ -170,9 +170,9 @@ function AddAssetDialog({ open, onClose, onAdded }) {
 
         <div className="border-b border-border p-4">
           <label className="relative block">
-            <span className="sr-only">Cari aset berdasarkan kode, nama, lokasi, atau OPD</span>
+            <span className="sr-only">Cari bidang berdasarkan kode 2D, kode aset, nama, atau lokasi</span>
             <MagnifyingGlassIcon size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input autoFocus type="search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Cari kode aset, nama, lokasi, atau OPD…" className="h-11 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-4 text-xs font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
+            <input autoFocus type="search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Cari kode 2D, kode aset, nama, atau lokasi…" className="h-11 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-4 text-xs font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
           </label>
         </div>
 
@@ -182,22 +182,26 @@ function AddAssetDialog({ open, onClose, onAdded }) {
           ) : items.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border px-6 py-12 text-center">
               <BuildingsIcon size={30} className="mx-auto text-text-muted" />
-              <p className="mt-3 text-xs font-black text-text-primary">Aset tidak ditemukan</p>
-              <p className="mt-1 text-[10px] text-text-muted">Coba kata kunci lain atau aset tersebut sudah masuk Kelola 3D.</p>
+              <p className="mt-3 text-xs font-black text-text-primary">Bidang 2D tidak ditemukan</p>
+              <p className="mt-1 text-[10px] text-text-muted">Coba kata kunci lain atau tambahkan bidang melalui Pusat Data.</p>
             </div>
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               {items.map((asset) => (
-                <article key={asset.id_aset} className="flex min-w-0 items-start gap-3 rounded-xl border border-border bg-surface p-3.5 transition hover:border-accent/40 hover:shadow-sm">
+                <article key={asset.kode_2d} className="flex min-w-0 items-start gap-3 rounded-xl border border-border bg-surface p-3.5 transition hover:border-accent/40 hover:shadow-sm">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent"><BuildingsIcon size={19} weight="duotone" /></span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[10px] font-black text-accent">{asset.kode_aset}</p>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="rounded-md bg-accent/10 px-2 py-1 font-mono text-[9px] font-black text-accent">{asset.kode_2d}</span>
+                      <span className="truncate text-[9px] font-bold text-text-muted">Aset {asset.kode_aset}</span>
+                    </div>
                     <p className="mt-0.5 truncate text-[11px] font-extrabold text-text-primary">{asset.nama_aset}</p>
                     <p className="mt-1 flex items-center gap-1 truncate text-[9px] text-text-muted"><MapPinIcon size={10} /> {asset.lokasi || asset.desa_kelurahan || "Lokasi belum diisi"}</p>
+                    <p className="mt-1 text-[8px] font-bold text-text-muted">{asset.building_count || 0} bangunan 3D terdaftar</p>
                   </div>
-                  <button type="button" disabled={addingId === asset.id_aset} onClick={() => addAsset(asset)} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60">
-                    {addingId === asset.id_aset ? <ArrowsClockwiseIcon size={13} className="animate-spin" /> : <PlusIcon size={13} weight="bold" />}
-                    Tambah
+                  <button type="button" disabled={addingId === asset.kode_2d} onClick={() => addAsset(asset)} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60">
+                    {addingId === asset.kode_2d ? <ArrowsClockwiseIcon size={13} className="animate-spin" /> : <PlusIcon size={13} weight="bold" />}
+                    Bangunan
                   </button>
                 </article>
               ))}
@@ -290,8 +294,8 @@ export default function Kelola3dPage() {
     const approved = await confirm({
       title: "Hapus Aset 3D?",
       message: item.model_count > 0
-        ? `${item.kode_3d} akan dihapus dari Kelola 3D dan ${item.model_count} versi model akan diarsipkan. Data aset di Pusat Data tetap tersimpan.`
-        : `${item.kode_3d} akan dihapus dari Kelola 3D. Data aset di Pusat Data tetap tersimpan.`,
+        ? `${item.kode_3d} dan ${item.model_count} versi modelnya akan dihapus permanen. Bidang 2D dan data aset tetap tersimpan.`
+        : `${item.kode_3d} akan dihapus permanen. Bidang 2D dan data aset tetap tersimpan.`,
       confirmText: "Hapus Aset 3D",
       variant: "danger",
     });
@@ -390,7 +394,7 @@ export default function Kelola3dPage() {
                 className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-accent px-3 text-xs font-bold text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
               >
                 <PlusIcon size={15} weight="bold" />
-                Cari & Tambah Aset
+                Tambah Bangunan 3D
               </button>
             )}
           </div>
@@ -492,7 +496,7 @@ export default function Kelola3dPage() {
               <thead>
                 <tr className="border-b border-border bg-linear-to-r from-surface-secondary to-surface">
                   {[
-                    ["kode_3d", "Kode 3D"],
+                    ["kode_3d", "Bidang 2D / Bangunan 3D"],
                     ["nama", "Nama / Kategori"],
                     ["lokasi", "Lokasi"],
                     ["data_bangunan", "Data Bangunan"],
@@ -530,10 +534,10 @@ export default function Kelola3dPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {loading ? [1, 2, 3, 4, 5].map((item) => <tr key={item}><td colSpan="9" className="px-4 py-3"><div className="h-14 animate-pulse rounded-lg bg-surface-secondary" /></td></tr>) : items.length === 0 ? (
-                  <tr><td colSpan="9" className="px-6 py-14 text-center"><CubeIcon size={32} className="mx-auto text-text-muted" /><p className="mt-3 text-xs font-black text-text-primary">Belum ada aset di Kelola 3D</p><p className="mt-1 text-[10px] text-text-muted">Gunakan tombol Cari & Tambah Aset untuk memulai.</p></td></tr>
+                  <tr><td colSpan="9" className="px-6 py-14 text-center"><CubeIcon size={32} className="mx-auto text-text-muted" /><p className="mt-3 text-xs font-black text-text-primary">Belum ada bangunan di Kelola 3D</p><p className="mt-1 text-[10px] text-text-muted">Pilih bidang 2D lalu tambahkan bangunan 3D pertama.</p></td></tr>
                 ) : sortedItems.map((item) => (
                   <tr key={item.kode_3d} className="group transition hover:bg-accent/[0.025]">
-                    <td className="px-4 py-3"><span className="inline-flex rounded-lg bg-violet-50 px-2.5 py-1.5 font-mono text-[10px] font-black text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">{item.kode_3d}</span></td>
+                    <td className="px-4 py-3"><p className="font-mono text-[9px] font-bold text-text-muted">{item.kode_2d || "Kode 2D —"}</p><span className="mt-1 inline-flex rounded-lg bg-violet-50 px-2.5 py-1.5 font-mono text-[10px] font-black text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">{item.kode_3d}</span></td>
                     <td className="px-4 py-3"><p className="max-w-64 truncate text-[10px] font-bold text-text-primary">{item.asset?.nama_aset || "Nama aset belum diisi"}</p><p className="mt-1 text-[8px] font-bold uppercase text-text-muted">{item.asset?.kode_aset || "—"} · {item.category || "Bangunan"} · {item.model_format || "Tanpa model"}</p></td>
                     <td className="px-4 py-3"><p className="flex max-w-64 items-center gap-1 truncate text-[9px] text-text-secondary"><MapPinIcon size={10} /> {item.asset?.lokasi || item.asset?.desa_kelurahan || "—"}</p><p className="mt-1 max-w-64 truncate text-[8px] text-text-muted">{item.asset?.opd_pengguna || "OPD belum diisi"}</p></td>
                     <td className="px-4 py-3">

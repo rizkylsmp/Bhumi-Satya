@@ -562,7 +562,7 @@ export default function Kelola3dDetailPage() {
     }
     setModelsLoading(true);
     try {
-      const response = await assetModel3dService.list(assetId);
+      const response = await assetModel3dService.list(assetId, catalog?.kode_3d);
       const nextModels = response.data?.data || [];
       setModels(nextModels);
       const available = nextModels.filter(
@@ -590,7 +590,7 @@ export default function Kelola3dDetailPage() {
     } finally {
       setModelsLoading(false);
     }
-  }, []);
+  }, [catalog?.kode_3d]);
 
   useEffect(() => {
     fetchModels(selectedAssetId);
@@ -645,6 +645,7 @@ export default function Kelola3dDetailPage() {
     try {
       const uploadResponse = await assetModel3dService.upload(
         selectedAssetId,
+        catalog?.kode_3d,
         file,
         importLod,
       );
@@ -895,8 +896,8 @@ export default function Kelola3dDetailPage() {
       title: "Hapus Aset 3D?",
       message:
         activeModels.length > 0
-          ? `${catalog.kode_3d} akan dihapus dari Kelola 3D dan ${activeModels.length} versi model akan diarsipkan. Data aset di Pusat Data tetap tersimpan.`
-          : `${catalog.kode_3d} akan dihapus dari Kelola 3D. Data aset di Pusat Data tetap tersimpan.`,
+          ? `${catalog.kode_3d} dan seluruh versi modelnya akan dihapus permanen. Bidang 2D dan data aset tetap tersimpan.`
+          : `${catalog.kode_3d} akan dihapus permanen. Bidang 2D dan data aset tetap tersimpan.`,
       confirmText: "Hapus Aset 3D",
       type: "danger",
     });
@@ -1068,8 +1069,9 @@ export default function Kelola3dDetailPage() {
               </div>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-5">
                 {[
+                  { label: "Kode 2D", value: catalog?.kode_2d || "—" },
                   { label: "Kode 3D", value: catalog?.kode_3d || "—" },
                   { label: "Versi model", value: activeModels.length },
                   { label: "Diarsipkan", value: archivedModels.length },

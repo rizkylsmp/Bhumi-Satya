@@ -1,5 +1,5 @@
 import { Op, Sequelize } from "sequelize";
-import { Aset, User, SewaAset } from "../models/index.js";
+import { Aset, Aset2dCatalog, User, SewaAset, sequelize } from "../models/index.js";
 import AuditService from "../services/audit.service.js";
 import NotificationService from "../services/notification.service.js";
 import {
@@ -164,6 +164,11 @@ export const getAll = async (req, res) => {
         { kecamatan: { [Op.iLike]: `%${search}%` } },
         { desa_kelurahan: { [Op.iLike]: `%${search}%` } },
         { opd_pengguna: { [Op.iLike]: `%${search}%` } },
+        Sequelize.literal(`EXISTS (
+          SELECT 1 FROM "aset_2d_catalog" parcel_search
+          WHERE parcel_search."id_aset" = "Aset"."id_aset"
+            AND parcel_search."kode_2d" ILIKE ${Sequelize.escape(`%${search}%`)}
+        )`),
       ];
     }
 
@@ -239,6 +244,12 @@ export const getAll = async (req, res) => {
             ],
             required: false,
           },
+          {
+            model: Aset2dCatalog,
+            as: "catalog2d",
+            attributes: ["kode_2d", "status"],
+            required: false,
+          },
         ],
       }),
     );
@@ -253,6 +264,8 @@ export const getAll = async (req, res) => {
         plain.sewa_berakhir = activeSewa.tanggal_berakhir;
       }
       delete plain.sewas;
+      plain.kode_2d = plain.catalog2d?.kode_2d || null;
+      delete plain.catalog2d;
       return plain;
     });
 
@@ -653,6 +666,12 @@ export const getById = async (req, res) => {
           as: "creator",
           attributes: ["id_user", "nama_lengkap", "username"],
         },
+        {
+          model: Aset2dCatalog,
+          as: "catalog2d",
+          attributes: ["kode_2d", "status"],
+          required: false,
+        },
       ],
     });
 
@@ -665,7 +684,11 @@ export const getById = async (req, res) => {
 
     res.json({
       success: true,
-      data: asset,
+      data: {
+        ...asset.toJSON(),
+        kode_2d: asset.catalog2d?.kode_2d || null,
+        catalog2d: undefined,
+      },
     });
   } catch (error) {
     console.error("Error fetching asset:", error);
@@ -807,7 +830,8 @@ export const create = async (req, res) => {
       model_3d_accuracy_m,
     });
 
-    const newAset = await Aset.create({
+    const newAset = await sequelize.transaction(async (transaction) => {
+      const createdAsset = await Aset.create({
       kode_aset,
       nama_aset,
       lokasi: lokasi || "-",
@@ -885,7 +909,16 @@ export const create = async (req, res) => {
       sumber: normalizeSumber(sumber) || undefined,
       created_by: req.user.id_user,
       created_at: new Date(),
-      updated_at: new Date(),
+        updated_at: new Date(),
+      }, { transaction });
+      await Aset2dCatalog.create({
+        kode_2d: `2D-${String(createdAsset.id_aset).padStart(6, "0")}`,
+        id_aset: createdAsset.id_aset,
+        status: "active",
+        created_at: new Date(),
+        updated_at: new Date(),
+      }, { transaction });
+      return createdAsset;
     });
 
     // Log audit
@@ -908,7 +941,10 @@ export const create = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Aset berhasil ditambahkan",
-      data: newAset,
+      data: {
+        ...newAset.toJSON(),
+        kode_2d: `2D-${String(newAset.id_aset).padStart(6, "0")}`,
+      },
     });
   } catch (error) {
     console.error("Error creating asset:", error);

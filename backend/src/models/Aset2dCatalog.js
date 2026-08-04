@@ -1,10 +1,10 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
 
-const Aset3dCatalog = sequelize.define(
-  "Aset3dCatalog",
+const Aset2dCatalog = sequelize.define(
+  "Aset2dCatalog",
   {
-    kode_3d: {
+    kode_2d: {
       type: DataTypes.STRING(40),
       primaryKey: true,
       allowNull: false,
@@ -12,19 +12,12 @@ const Aset3dCatalog = sequelize.define(
     id_aset: {
       type: DataTypes.INTEGER,
       allowNull: false,
-    },
-    kode_2d: {
-      type: DataTypes.STRING(40),
-      allowNull: false,
+      unique: true,
     },
     status: {
       type: DataTypes.STRING(20),
       allowNull: false,
       defaultValue: "active",
-    },
-    created_by: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -37,7 +30,7 @@ const Aset3dCatalog = sequelize.define(
       defaultValue: DataTypes.NOW,
     },
   },
-  { tableName: "aset_3d_catalog", timestamps: false },
+  { tableName: "aset_2d_catalog", timestamps: false },
 );
 
-export default Aset3dCatalog;
+export default Aset2dCatalog;

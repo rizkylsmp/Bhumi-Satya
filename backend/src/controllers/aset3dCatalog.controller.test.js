@@ -5,6 +5,7 @@ import { csvCell, serializeCatalog } from "./aset3dCatalog.controller.js";
 test("serializes catalog management fields from the active model", () => {
   const value = serializeCatalog({
     kode_3d: "3D-000001",
+    kode_2d: "2D-000001",
     status: "active",
     created_at: "2026-07-01",
     updated_at: "2026-07-02",
@@ -15,6 +16,7 @@ test("serializes catalog management fields from the active model", () => {
       koordinat_lat: -7.6,
       models3d: [{
         id_model_3d: 7,
+        kode_3d: "3D-000001",
         is_active: true,
         status: "ready",
         review_status: "active",
@@ -28,6 +30,7 @@ test("serializes catalog management fields from the active model", () => {
   });
 
   assert.equal(value.category, "Bangunan");
+  assert.equal(value.kode_2d, "2D-000001");
   assert.equal(value.model_status, "active");
   assert.equal(value.center_x, 112.9);
   assert.equal(value.center_y, -7.7);

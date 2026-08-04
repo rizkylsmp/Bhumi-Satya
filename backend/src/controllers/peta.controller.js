@@ -1,6 +1,7 @@
 import { Op } from "sequelize";
 import {
   Aset,
+  Aset2dCatalog,
   Aset3dCatalog,
   AsetModel3d,
   SewaAset,
@@ -118,6 +119,7 @@ export const getModel3dTileset = async (req, res) => {
       attributes: [
         "id_model_3d",
         "id_aset",
+        "kode_3d",
         "lod",
         "version",
         "format",
@@ -258,9 +260,15 @@ export const getPublicMarkers = async (req, res) => {
       ],
       include: [
         {
+          model: Aset2dCatalog,
+          as: "catalog2d",
+          attributes: ["kode_2d"],
+          required: false,
+        },
+        {
           model: Aset3dCatalog,
-          as: "catalog3d",
-          attributes: ["kode_3d"],
+          as: "catalogs3d",
+          attributes: ["kode_3d", "kode_2d"],
           required: false,
         },
         {
@@ -274,6 +282,7 @@ export const getPublicMarkers = async (req, res) => {
           as: "models3d",
           attributes: [
             "id_model_3d",
+            "kode_3d",
             "lod",
             "version",
             "format",
@@ -321,7 +330,9 @@ export const getPublicMarkers = async (req, res) => {
         id: plain.id_aset,
         kode: plain.kode_aset,
         kode_aset: plain.kode_aset,
-        kode_3d: plain.catalog3d?.kode_3d || null,
+        kode_3d: plain.catalogs3d?.[0]?.kode_3d || null,
+        kode_3d_list: (plain.catalogs3d || []).map((catalog) => catalog.kode_3d),
+        kode_2d: plain.catalog2d?.kode_2d || plain.catalogs3d?.[0]?.kode_2d || null,
         nib: plain.nib || null,
         nama: plain.nama_aset,
         nama_aset: plain.nama_aset,
@@ -544,9 +555,15 @@ export const getMarkers = async (req, res) => {
       ],
       include: [
         {
+          model: Aset2dCatalog,
+          as: "catalog2d",
+          attributes: ["kode_2d"],
+          required: false,
+        },
+        {
           model: Aset3dCatalog,
-          as: "catalog3d",
-          attributes: ["kode_3d"],
+          as: "catalogs3d",
+          attributes: ["kode_3d", "kode_2d"],
           required: false,
         },
         {
@@ -560,6 +577,7 @@ export const getMarkers = async (req, res) => {
           as: "models3d",
           attributes: [
             "id_model_3d",
+            "kode_3d",
             "lod",
             "version",
             "format",
@@ -613,7 +631,9 @@ export const getMarkers = async (req, res) => {
       return {
         id: plain.id_aset,
         kode: plain.kode_aset,
-        kode_3d: plain.catalog3d?.kode_3d || null,
+        kode_3d: plain.catalogs3d?.[0]?.kode_3d || null,
+        kode_3d_list: (plain.catalogs3d || []).map((catalog) => catalog.kode_3d),
+        kode_2d: plain.catalog2d?.kode_2d || plain.catalogs3d?.[0]?.kode_2d || null,
         nib: plain.nib || null,
         nama: plain.nama_aset,
         lokasi: plain.lokasi,

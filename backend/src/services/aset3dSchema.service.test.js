@@ -8,7 +8,9 @@ describe("aset3d schema initializer", () => {
     const initialize = createAset3dSchemaInitializer({
       query: async (sql) => {
         queryCount += 1;
+        assert.match(sql, /CREATE TABLE IF NOT EXISTS "aset_2d_catalog"/);
         assert.match(sql, /CREATE TABLE IF NOT EXISTS "aset_3d_catalog"/);
+        assert.match(sql, /UNIQUE \("kode_3d", "lod", "version"\)/);
       },
     });
 

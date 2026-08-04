@@ -72,10 +72,7 @@ const receiveObjectCsv = (req, res, next) => {
 
 // All routes require authentication
 router.use(authMiddleware);
-router.use(
-  "/:id/models-3d",
-  ensureAset3dCatalogSchemaMiddleware,
-);
+router.use(ensureAset3dCatalogSchemaMiddleware);
 
 // GET routes
 router.get("/", canViewAset, AsetController.getAll);

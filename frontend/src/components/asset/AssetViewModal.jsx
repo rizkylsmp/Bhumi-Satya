@@ -590,8 +590,8 @@ export default function AssetViewModal({
                 hidden={activeDetailTab !== "detail-identitas-aset"}
               >
                 <InfoItem label="Kode Aset" value={asset.kode_aset} highlight />
+                <InfoItem label="Kode Bidang 2D" value={asset.kode_2d} highlight />
                 <InfoItem label="Nama Aset" value={asset.nama_aset} highlight />
-                <InfoItem label="ID Aset" value={asset.id_aset} />
                 <InfoItem label="Kode BMD" value={asset.kode_bmd} />
                 <InfoItem label="Jenis Aset" value={asset.jenis_aset} />
                 <InfoItem label="Asal Data (audit)" value={asset.sumber} />

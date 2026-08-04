@@ -1,5 +1,14 @@
 export const changelogEntries = [
   {
+    id: "parcel-2d-building-3d-hierarchy",
+    date: "2026-08-04",
+    type: "fitur",
+    title: "Memisahkan kode bidang 2D dan bangunan 3D",
+    summary:
+      "Setiap bidang tanah kini memiliki kode 2D sendiri dan dapat menampung beberapa bangunan berkode 3D beserta versi modelnya secara terpisah.",
+    area: "Kelola 3D",
+  },
+  {
     id: "map-search-overlay",
     date: "2026-08-04",
     type: "fitur",

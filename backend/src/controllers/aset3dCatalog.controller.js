@@ -1,12 +1,14 @@
 import { Op, Sequelize } from "sequelize";
 import {
   Aset,
+  Aset2dCatalog,
   Aset3dCatalog,
   AsetModel3d,
   sequelize,
 } from "../models/index.js";
 import AuditService from "../services/audit.service.js";
 import { createKode3dCandidate } from "../utils/asset3dCatalog.js";
+import { deleteFromSupabase } from "../utils/r2Storage.js";
 
 const toPositiveInteger = (value, fallback, maximum = 100) => {
   const parsed = Number.parseInt(value, 10);
@@ -82,6 +84,7 @@ const assetAttributes = [
 
 const modelAttributes = [
   "id_model_3d",
+  "kode_3d",
   "lod",
   "version",
   "is_active",
@@ -102,13 +105,16 @@ const modelAttributes = [
 export const serializeCatalog = (record) => {
   const value = record.toJSON ? record.toJSON() : record;
   const models = (value.aset?.models3d || []).filter(
-    (model) => !model.archived_at && model.status !== "archived",
+    (model) => model.kode_3d === value.kode_3d
+      && !model.archived_at
+      && model.status !== "archived",
   );
   const activeModel = models.find((model) => model.is_active) || models[0] || null;
   const centerX = activeModel?.location_long ?? value.aset?.koordinat_long ?? null;
   const centerY = activeModel?.location_lat ?? value.aset?.koordinat_lat ?? null;
   return {
     kode_3d: value.kode_3d,
+    kode_2d: value.kode_2d,
     status: value.status,
     created_by: value.created_by,
     created_at: value.created_at,
@@ -148,12 +154,13 @@ const catalogOrder = (sort, order) => {
     return [[{ model: Aset, as: "aset" }, sort, direction]];
   }
   if (sort === "kode_3d") return [["kode_3d", direction]];
+  if (sort === "kode_2d") return [["kode_2d", direction]];
   if (sort === "status") return [["status", direction]];
   if (sort === "model_updated_at") {
     return [[Sequelize.literal(`COALESCE((
       SELECT MAX(sort_model."updated_at")
       FROM "aset_model_3d" sort_model
-      WHERE sort_model."id_aset" = "Aset3dCatalog"."id_aset"
+      WHERE sort_model."kode_3d" = "Aset3dCatalog"."kode_3d"
         AND sort_model."archived_at" IS NULL
     ), "Aset3dCatalog"."updated_at")`), direction]];
   }
@@ -163,7 +170,7 @@ const catalogOrder = (sort, order) => {
     return [[Sequelize.literal(`COALESCE((
       SELECT center_sort."${modelColumn}"
       FROM "aset_model_3d" center_sort
-      WHERE center_sort."id_aset" = "Aset3dCatalog"."id_aset"
+      WHERE center_sort."kode_3d" = "Aset3dCatalog"."kode_3d"
         AND center_sort."archived_at" IS NULL
       ORDER BY center_sort."is_active" DESC, center_sort."version" DESC
       LIMIT 1
@@ -186,6 +193,7 @@ const buildCatalogWhere = (query) => {
   if (search) {
     where[Op.or] = [
       { kode_3d: { [Op.iLike]: `%${search}%` } },
+      { kode_2d: { [Op.iLike]: `%${search}%` } },
       { "$aset.kode_aset$": { [Op.iLike]: `%${search}%` } },
       { "$aset.nama_aset$": { [Op.iLike]: `%${search}%` } },
       { "$aset.lokasi$": { [Op.iLike]: `%${search}%` } },
@@ -196,7 +204,7 @@ const buildCatalogWhere = (query) => {
     const exists = modelStatus === "with_model" ? "EXISTS" : "NOT EXISTS";
     conditions.push(Sequelize.literal(`${exists} (
       SELECT 1 FROM "aset_model_3d" model_filter
-      WHERE model_filter."id_aset" = "Aset3dCatalog"."id_aset"
+      WHERE model_filter."kode_3d" = "Aset3dCatalog"."kode_3d"
         AND model_filter."archived_at" IS NULL
         AND model_filter."status" <> 'archived'
     )`));
@@ -207,7 +215,7 @@ const buildCatalogWhere = (query) => {
   if (validReviewStatuses.includes(reviewStatus)) {
     conditions.push(Sequelize.literal(`EXISTS (
       SELECT 1 FROM "aset_model_3d" review_filter
-      WHERE review_filter."id_aset" = "Aset3dCatalog"."id_aset"
+      WHERE review_filter."kode_3d" = "Aset3dCatalog"."kode_3d"
         AND review_filter."archived_at" IS NULL
         AND review_filter."review_status" = ${sequelize.escape(reviewStatus)}
     )`));
@@ -215,7 +223,7 @@ const buildCatalogWhere = (query) => {
   if (["KMZ", "GLB", "3DTILES"].includes(format)) {
     conditions.push(Sequelize.literal(`EXISTS (
       SELECT 1 FROM "aset_model_3d" format_filter
-      WHERE format_filter."id_aset" = "Aset3dCatalog"."id_aset"
+      WHERE format_filter."kode_3d" = "Aset3dCatalog"."kode_3d"
         AND format_filter."archived_at" IS NULL
         AND UPPER(format_filter."format") = ${sequelize.escape(format)}
     )`));
@@ -225,7 +233,7 @@ const buildCatalogWhere = (query) => {
       ("aset"."koordinat_long" IS NOT NULL AND "aset"."koordinat_lat" IS NOT NULL)
       OR EXISTS (
         SELECT 1 FROM "aset_model_3d" center_filter
-        WHERE center_filter."id_aset" = "Aset3dCatalog"."id_aset"
+        WHERE center_filter."kode_3d" = "Aset3dCatalog"."kode_3d"
           AND center_filter."archived_at" IS NULL
           AND center_filter."location_long" IS NOT NULL
           AND center_filter."location_lat" IS NOT NULL
@@ -284,10 +292,11 @@ export const exportCsv = async (req, res) => {
       order: catalogOrder(req.query.sort, req.query.order),
     });
     const headers = [
-      "kode_3d", "kode_aset", "nama_aset", "kategori", "status_katalog", "status_model",
+      "kode_2d", "kode_3d", "kode_aset", "nama_aset", "kategori", "status_katalog", "status_model",
       "format", "center_x", "center_y", "url_model", "dibuat", "diperbarui",
     ];
     const body = rows.map(serializeCatalog).map((item) => [
+      item.kode_2d,
       item.kode_3d,
       item.asset?.kode_aset,
       item.asset?.nama_aset,
@@ -319,34 +328,54 @@ export const candidates = async (req, res) => {
     const page = toPositiveInteger(req.query.page, 1, 100000);
     const limit = toPositiveInteger(req.query.limit, 8, 50);
     const search = String(req.query.search || "").trim();
-    const where = {
-      id_aset: {
-        [Op.notIn]: Sequelize.literal(
-          '(SELECT "id_aset" FROM "aset_3d_catalog")',
-        ),
-      },
-    };
+    const where = { status: "active" };
 
     if (search) {
       where[Op.or] = [
-        { kode_aset: { [Op.iLike]: `%${search}%` } },
-        { nama_aset: { [Op.iLike]: `%${search}%` } },
-        { lokasi: { [Op.iLike]: `%${search}%` } },
-        { opd_pengguna: { [Op.iLike]: `%${search}%` } },
+        { kode_2d: { [Op.iLike]: `%${search}%` } },
+        { "$aset.kode_aset$": { [Op.iLike]: `%${search}%` } },
+        { "$aset.nama_aset$": { [Op.iLike]: `%${search}%` } },
+        { "$aset.lokasi$": { [Op.iLike]: `%${search}%` } },
       ];
     }
 
-    const { count, rows } = await Aset.findAndCountAll({
+    const { count, rows } = await Aset2dCatalog.findAndCountAll({
       where,
-      attributes: assetAttributes,
+      attributes: [
+        "kode_2d",
+        "id_aset",
+        "status",
+        [Sequelize.literal(`(
+          SELECT COUNT(*)
+          FROM "aset_3d_catalog" building_count
+          WHERE building_count."kode_2d" = "Aset2dCatalog"."kode_2d"
+        )`), "building_count"],
+      ],
+      include: [{
+        model: Aset,
+        as: "aset",
+        required: true,
+        attributes: assetAttributes,
+      }],
       limit,
       offset: (page - 1) * limit,
-      order: [["kode_aset", "ASC"]],
+      order: [["kode_2d", "ASC"]],
+      distinct: true,
+      subQuery: false,
     });
 
     return res.json({
       success: true,
-      data: rows,
+      data: rows.map((row) => {
+        const value = row.toJSON();
+        return {
+          kode_2d: value.kode_2d,
+          id_aset: value.id_aset,
+          status_2d: value.status,
+          building_count: Number(value.building_count || 0),
+          ...value.aset,
+        };
+      }),
       pagination: {
         currentPage: page,
         totalPages: Math.max(1, Math.ceil(count / limit)),
@@ -377,21 +406,17 @@ export const getByCode = async (req, res) => {
 
 export const create = async (req, res) => {
   try {
-    const asset = req.body?.id_aset
-      ? await Aset.findByPk(req.body.id_aset)
-      : await Aset.findOne({ where: { kode_aset: req.body?.kode_aset } });
-    if (!asset) {
-      return res.status(404).json({ success: false, error: "Aset tidak ditemukan" });
+    const kode2d = String(req.body?.kode_2d || "").trim();
+    if (!kode2d) {
+      return res.status(400).json({ success: false, error: "Kode 2D wajib dipilih" });
     }
-
-    const existing = await Aset3dCatalog.findOne({ where: { id_aset: asset.id_aset } });
-    if (existing) {
-      return res.status(409).json({
-        success: false,
-        error: `Aset sudah terdaftar dengan kode 3D ${existing.kode_3d}`,
-        data: { kode_3d: existing.kode_3d },
-      });
+    const parcel = await Aset2dCatalog.findByPk(kode2d, {
+      include: [{ model: Aset, as: "aset", required: true }],
+    });
+    if (!parcel?.aset) {
+      return res.status(404).json({ success: false, error: "Bidang 2D tidak ditemukan" });
     }
+    const asset = parcel.aset;
 
     let sequence = 1;
     let kode3d = createKode3dCandidate(asset.kode_aset, sequence, asset.id_aset);
@@ -403,6 +428,7 @@ export const create = async (req, res) => {
     const catalog = await Aset3dCatalog.create({
       kode_3d: kode3d,
       id_aset: asset.id_aset,
+      kode_2d: parcel.kode_2d,
       status: "active",
       created_by: req.user.id_user,
     });
@@ -411,7 +437,7 @@ export const create = async (req, res) => {
       tabel: "aset_3d_catalog",
       id_referensi: asset.id_aset,
       data_baru: catalog.toJSON(),
-      keterangan: `Menambahkan aset ${asset.kode_aset} ke Kelola 3D sebagai ${kode3d}`,
+      keterangan: `Menambahkan bangunan ${kode3d} pada bidang ${parcel.kode_2d}`,
       user_id: req.user.id_user,
       req,
     });
@@ -440,50 +466,57 @@ export const remove = async (req, res) => {
     }
 
     const oldData = catalog.toJSON();
-    const activeModels = await AsetModel3d.findAll({
-      where: { id_aset: catalog.id_aset, archived_at: null },
-      attributes: ["id_model_3d", "version"],
+    const models = await AsetModel3d.findAll({
+      where: { kode_3d: catalog.kode_3d },
     });
-    const archivedAt = new Date();
+    const storagePaths = [...new Set(models.flatMap((model) => [
+      model.storage_path,
+      model.converted_storage_path,
+      model.lod_medium_storage_path,
+      model.lod_low_storage_path,
+      ...(Array.isArray(model.manifest?.packageStoragePaths)
+        ? model.manifest.packageStoragePaths
+        : []),
+    ]).filter(Boolean))];
 
     await sequelize.transaction(async (transaction) => {
-      if (activeModels.length > 0) {
-        await AsetModel3d.update({
-          is_active: false,
-          status: "archived",
-          archived_at: archivedAt,
-          updated_at: archivedAt,
-        }, {
-          where: { id_aset: catalog.id_aset, archived_at: null },
-          transaction,
-        });
-      }
       await catalog.destroy({ transaction });
     });
+
+    const cleanupResults = await Promise.allSettled(
+      storagePaths.map((storagePath) => deleteFromSupabase(storagePath)),
+    );
+    const failedStoragePaths = cleanupResults
+      .map((result, index) => (result.status === "rejected" ? storagePaths[index] : null))
+      .filter(Boolean);
+    if (failedStoragePaths.length > 0) {
+      console.error("Failed deleting 3D catalog storage objects:", failedStoragePaths);
+    }
 
     await AuditService.logDelete({
       tabel: "aset_3d_catalog",
       id_referensi: catalog.id_aset,
       data_lama: {
         ...oldData,
-        archived_models: activeModels.map((model) => ({
+        deleted_models: models.map((model) => ({
           id_model_3d: model.id_model_3d,
           version: model.version,
         })),
       },
-      keterangan: `Menghapus ${catalog.kode_3d} dari Kelola 3D dan mengarsipkan ${activeModels.length} versi model`,
+      keterangan: `Menghapus permanen ${catalog.kode_3d} dan ${models.length} versi model`,
       user_id: req.user.id_user,
       req,
     });
 
     return res.json({
       success: true,
-      message: activeModels.length > 0
-        ? `Aset 3D dihapus dan ${activeModels.length} versi model diarsipkan`
-        : "Aset 3D dihapus dari Kelola 3D",
+      message: models.length > 0
+        ? `Bangunan 3D dan ${models.length} versi model dihapus permanen`
+        : "Bangunan 3D dihapus permanen dari Kelola 3D",
       data: {
         kode_3d: catalog.kode_3d,
-        archived_model_count: activeModels.length,
+        deleted_model_count: models.length,
+        storage_cleanup_failed_count: failedStoragePaths.length,
       },
     });
   } catch (error) {

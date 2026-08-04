@@ -724,9 +724,12 @@ export default function AssetPage() {
                         {useCompactAssetTable ? (
                           <>
                             <td className="px-2.5 py-2">
-                              <span className="inline-flex items-center gap-2 px-2.5 py-1 bg-surface-secondary rounded-lg text-sm font-mono font-semibold text-text-primary">
-                                {asset.kode_aset || "-"}
-                              </span>
+                              <div className="flex flex-col items-start gap-1">
+                                <span className="inline-flex items-center gap-2 px-2.5 py-1 bg-surface-secondary rounded-lg text-sm font-mono font-semibold text-text-primary">
+                                  {asset.kode_aset || "-"}
+                                </span>
+                                {asset.kode_2d && <span className="px-1 font-mono text-[8px] font-bold text-accent">{asset.kode_2d}</span>}
+                              </div>
                             </td>
                             <td className="px-3 py-3">
                               <span className="text-sm text-text-secondary whitespace-nowrap">
@@ -898,9 +901,12 @@ export default function AssetPage() {
                         ) : (
                           <>
                             <td className="px-3 py-3">
-                              <span className="inline-flex max-w-full truncate rounded-md border border-border bg-surface-secondary px-2 py-1 font-mono text-[11px] font-bold text-text-primary">
-                                {asset.kode_aset}
-                              </span>
+                              <div className="flex flex-col items-start gap-1">
+                                <span className="inline-flex max-w-full truncate rounded-md border border-border bg-surface-secondary px-2 py-1 font-mono text-[11px] font-bold text-text-primary">
+                                  {asset.kode_aset}
+                                </span>
+                                {asset.kode_2d && <span className="px-1 font-mono text-[8px] font-bold text-accent">{asset.kode_2d}</span>}
+                              </div>
                             </td>
                             <td className="px-2.5 py-2">
                               <p className="line-clamp-1 text-xs font-semibold leading-4 text-text-primary">
@@ -1127,9 +1133,12 @@ export default function AssetPage() {
                               {asset.desa_kelurahan || "-"}
                             </span>
                           ) : (
-                            <span className="text-xs font-mono font-semibold text-text-muted bg-surface-secondary px-2 py-0.5 rounded">
-                              {asset.kode_aset}
-                            </span>
+                            <div className="flex flex-col items-start gap-0.5">
+                              <span className="text-xs font-mono font-semibold text-text-muted bg-surface-secondary px-2 py-0.5 rounded">
+                                {asset.kode_aset}
+                              </span>
+                              {asset.kode_2d && <span className="px-1 font-mono text-[8px] font-bold text-accent">{asset.kode_2d}</span>}
+                            </div>
                           )}
                           {useCompactAssetTable && hasCoords && (
                             <MapPinIcon

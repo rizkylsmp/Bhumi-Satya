@@ -13,6 +13,7 @@ import { hasUsableAsset3dData } from "../../../utils/asset3dGeojson";
 const SEARCH_FIELDS = [
   "nama_aset",
   "kode_aset",
+  "kode_2d",
   "kode_3d",
   "nib",
   "nibar",
@@ -99,6 +100,29 @@ function getAssetLods(asset) {
   return [...new Set(models.map((model) => model?.lod).filter(Boolean))].join(", ");
 }
 
+function splitAssetBuildings3d(asset) {
+  const models = Array.isArray(asset?.active_models_3d)
+    ? asset.active_models_3d
+    : asset?.active_model_3d
+      ? [asset.active_model_3d]
+      : [];
+  const groups = new Map();
+
+  models.forEach((model) => {
+    const code = model?.kode_3d || asset?.kode_3d || "";
+    if (!groups.has(code)) groups.set(code, []);
+    groups.get(code).push(model);
+  });
+
+  if (groups.size === 0) return hasUsableAsset3dData(asset) ? [asset] : [];
+  return [...groups.entries()].map(([code, buildingModels]) => ({
+    ...asset,
+    kode_3d: code || asset?.kode_3d,
+    active_model_3d: buildingModels[0] || null,
+    active_models_3d: buildingModels,
+  }));
+}
+
 export default function MapSearchOverlay({
   assets = [],
   activeMapMode = "2d",
@@ -111,7 +135,7 @@ export default function MapSearchOverlay({
 
   const assetsByMode = useMemo(() => ({
     "2d": assets.filter(has2dGeometry),
-    "3d": assets.filter(hasUsableAsset3dData),
+    "3d": assets.flatMap(splitAssetBuildings3d),
   }), [assets]);
 
   const results = useMemo(() => {

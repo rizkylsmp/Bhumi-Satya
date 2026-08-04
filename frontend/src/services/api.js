@@ -97,11 +97,14 @@ export const asetService = {
 };
 
 export const assetModel3dService = {
-  list: (assetId) => api.get(`/aset/${assetId}/models-3d`),
-  upload: (assetId, file, lod) => {
+  list: (assetId, kode3d) => api.get(`/aset/${assetId}/models-3d`, {
+    params: { kode_3d: kode3d },
+  }),
+  upload: (assetId, kode3d, file, lod) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("lod", lod);
+    formData.append("kode_3d", kode3d);
     return api.post(`/aset/${assetId}/models-3d`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
@@ -156,7 +159,7 @@ export const aset3dCatalogService = {
   }),
   candidates: (params) => api.get("/aset-3d/candidates", { params }),
   getByCode: (kode3d) => api.get(`/aset-3d/${encodeURIComponent(kode3d)}`),
-  create: (assetId) => api.post("/aset-3d", { id_aset: assetId }),
+  create: (kode2d) => api.post("/aset-3d", { kode_2d: kode2d }),
   remove: (kode3d) => api.delete(`/aset-3d/${encodeURIComponent(kode3d)}`),
 };
 

@@ -11,6 +11,7 @@ import AsetSumber from "./AsetSumber.js";
 import AsetReconciliation from "./AsetReconciliation.js";
 import AsetModel3d from "./AsetModel3d.js";
 import Aset3dCatalog from "./Aset3dCatalog.js";
+import Aset2dCatalog from "./Aset2dCatalog.js";
 import AsetModel3dObject from "./AsetModel3dObject.js";
 
 // Define associations here to avoid circular dependencies
@@ -201,9 +202,31 @@ AsetModel3dObject.belongsTo(AsetModel3d, {
   as: "model3d",
 });
 
-Aset.hasOne(Aset3dCatalog, {
+Aset.hasOne(Aset2dCatalog, {
   foreignKey: "id_aset",
-  as: "catalog3d",
+  as: "catalog2d",
+});
+
+Aset2dCatalog.belongsTo(Aset, {
+  foreignKey: "id_aset",
+  as: "aset",
+});
+
+Aset2dCatalog.hasMany(Aset3dCatalog, {
+  foreignKey: "kode_2d",
+  sourceKey: "kode_2d",
+  as: "buildings3d",
+});
+
+Aset3dCatalog.belongsTo(Aset2dCatalog, {
+  foreignKey: "kode_2d",
+  targetKey: "kode_2d",
+  as: "parcel2d",
+});
+
+Aset.hasMany(Aset3dCatalog, {
+  foreignKey: "id_aset",
+  as: "catalogs3d",
 });
 
 Aset3dCatalog.belongsTo(Aset, {
@@ -214,6 +237,18 @@ Aset3dCatalog.belongsTo(Aset, {
 Aset3dCatalog.belongsTo(User, {
   foreignKey: "created_by",
   as: "creator",
+});
+
+Aset3dCatalog.hasMany(AsetModel3d, {
+  foreignKey: "kode_3d",
+  sourceKey: "kode_3d",
+  as: "models3d",
+});
+
+AsetModel3d.belongsTo(Aset3dCatalog, {
+  foreignKey: "kode_3d",
+  targetKey: "kode_3d",
+  as: "catalog3d",
 });
 
 User.hasMany(Aset3dCatalog, {
@@ -234,6 +269,7 @@ export {
   AsetSumber,
   AsetReconciliation,
   AsetModel3d,
+  Aset2dCatalog,
   Aset3dCatalog,
   AsetModel3dObject,
 };

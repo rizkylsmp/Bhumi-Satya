@@ -135,8 +135,12 @@ export const list = async (req, res) => {
   try {
     const asset = await Aset.findByPk(req.params.id, { attributes: ["id_aset"] });
     if (!asset) return res.status(404).json({ success: false, error: "Aset tidak ditemukan" });
+    const kode3d = String(req.query?.kode_3d || "").trim();
     const models = await AsetModel3d.findAll({
-      where: { id_aset: asset.id_aset },
+      where: {
+        id_aset: asset.id_aset,
+        ...(kode3d ? { kode_3d: kode3d } : {}),
+      },
       order: [["lod", "ASC"], ["version", "DESC"]],
     });
     return res.json({ success: true, data: models.map(serializeModel) });
@@ -207,11 +211,17 @@ export const upload = async (req, res) => {
   try {
     const asset = await Aset.findByPk(req.params.id);
     if (!asset) return res.status(404).json({ success: false, error: "Aset tidak ditemukan" });
-    const catalog = await Aset3dCatalog.findOne({ where: { id_aset: asset.id_aset } });
+    const kode3d = String(req.body?.kode_3d || "").trim();
+    if (!kode3d) {
+      return res.status(400).json({ success: false, error: "Kode 3D wajib disertakan" });
+    }
+    const catalog = await Aset3dCatalog.findOne({
+      where: { kode_3d: kode3d, id_aset: asset.id_aset },
+    });
     if (!catalog) {
       return res.status(409).json({
         success: false,
-        error: "Tambahkan aset ke katalog Kelola 3D sebelum mengimpor model",
+        error: "Kode bangunan 3D tidak ditemukan pada bidang yang dipilih",
       });
     }
     if (!req.file) return res.status(400).json({ success: false, error: "File KMZ, GLB, atau ZIP 3D Tiles diperlukan" });
@@ -304,7 +314,7 @@ export const upload = async (req, res) => {
     const checksum = crypto.createHash("sha256").update(req.file.buffer).digest("hex");
     const duplicate = await AsetModel3d.findOne({
       where: {
-        id_aset: asset.id_aset,
+        kode_3d: catalog.kode_3d,
         lod,
         checksum_sha256: checksum,
         archived_at: null,
@@ -319,12 +329,13 @@ export const upload = async (req, res) => {
     }
 
     const latestVersion = Number(await AsetModel3d.max("version", {
-      where: { id_aset: asset.id_aset, lod },
+      where: { kode_3d: catalog.kode_3d, lod },
     })) || 0;
     const version = latestVersion + 1;
     const safeName = originalName.replace(/[^a-zA-Z0-9._-]/g, "_");
     const lodPath = lod.toLowerCase().replace(/[^a-z0-9.-]/g, "-");
-    const uploadedStoragePath = `model-3d/aset-${asset.id_aset}/${lodPath}/v${version}-${Date.now()}-${safeName}`;
+    const catalogPath = catalog.kode_3d.toLowerCase().replace(/[^a-z0-9.-]/g, "-");
+    const uploadedStoragePath = `model-3d/${catalogPath}/${lodPath}/v${version}-${Date.now()}-${safeName}`;
     const mimeType = extension === "glb"
       ? "model/gltf-binary"
       : extension === "zip"
@@ -341,7 +352,7 @@ export const upload = async (req, res) => {
     let packageRootPublicUrl = null;
     const packageStoragePaths = [];
     if (packageFiles) {
-      const packagePrefix = `model-3d/aset-${asset.id_aset}/${lodPath}/v${version}-tiles`;
+      const packagePrefix = `model-3d/${catalogPath}/${lodPath}/v${version}-tiles`;
       const entries = [...packageFiles.entries()];
       for (let index = 0; index < entries.length; index += 12) {
         const batch = entries.slice(index, index + 12);
@@ -376,6 +387,7 @@ export const upload = async (req, res) => {
     const model = await sequelize.transaction(async (transaction) => {
       return AsetModel3d.create({
         id_aset: asset.id_aset,
+        kode_3d: catalog.kode_3d,
         lod,
         version,
         is_active: false,
@@ -539,7 +551,7 @@ export const activate = async (req, res) => {
         { is_active: false, updated_at: new Date() },
         {
           where: {
-            id_aset: model.id_aset,
+            kode_3d: model.kode_3d,
             lod: model.lod,
             is_active: true,
           },
@@ -779,7 +791,7 @@ export const restore = async (req, res) => {
     await sequelize.transaction(async (transaction) => {
       const activeModel = await AsetModel3d.findOne({
         where: {
-          id_aset: model.id_aset,
+          kode_3d: model.kode_3d,
           lod: model.lod,
           is_active: true,
           archived_at: null,
@@ -850,7 +862,7 @@ export const removePermanent = async (req, res) => {
         replacement = await AsetModel3d.findOne({
           where: {
             id_model_3d: { [Op.ne]: model.id_model_3d },
-            id_aset: model.id_aset,
+            kode_3d: model.kode_3d,
             lod: model.lod,
             archived_at: null,
             conversion_status: "ready",
