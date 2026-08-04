@@ -1,4 +1,13 @@
-import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createElement,
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -33,7 +42,6 @@ import {
   resolveModelOffsetLocation,
 } from "../../../utils/model3dTransform";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "../mapDefaults";
-import CesiumAssetMap from "../CesiumAssetMap";
 import {
   BASEMAP_OPTIONS,
   DEFAULT_BASEMAP_ID,
@@ -43,6 +51,8 @@ import {
   formatNumberWithOptions,
 } from "../../../utils/format";
 import "./mapLibreStyles.css";
+
+const CesiumAssetMap = lazy(() => import("../CesiumAssetMap"));
 
 const CERTIFIED_STATUS = "Telah Bersertifikat";
 const UNCERTIFIED_STATUS = "Belum Bersertifikat";
@@ -3053,29 +3063,37 @@ const MapDisplayBPN = ({
       />
       {isAsset3dMode && (
         <div className="absolute inset-0">
-          <CesiumAssetMap
-            ref={cesiumMapRef}
-            assets={visible3dAssets}
-            buildingGeoJson={assetBuildingGeoJson}
-            polygonGeoJson={bidangTanahGeoJson}
-            pointGeoJson={visibleDotGeoJson}
-            detailedModels={detailedModels3d}
-            showMarkers={effectiveShowMarkers}
-            showPolygons={effectiveShowPolygons}
-            onFeatureClick={onFeatureClick}
-            onOtherLayerClick={onOtherLayerClick}
-            onStatusChange={setDetailedModelStatus}
-            basemapId={activeBasemap}
-            analysisTool={analysisTool}
-            analysisPoints={analysisPoints}
-            onAnalysisClick={({ longitude, latitude, asset }) => {
-              handleAnalysisClick(
-                { lngLat: { lng: longitude, lat: latitude } },
-                [],
-                asset,
-              );
-            }}
-          />
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center bg-slate-950 text-sm font-medium text-white">
+                Menyiapkan mode 3D...
+              </div>
+            }
+          >
+            <CesiumAssetMap
+              ref={cesiumMapRef}
+              assets={visible3dAssets}
+              buildingGeoJson={assetBuildingGeoJson}
+              polygonGeoJson={bidangTanahGeoJson}
+              pointGeoJson={visibleDotGeoJson}
+              detailedModels={detailedModels3d}
+              showMarkers={effectiveShowMarkers}
+              showPolygons={effectiveShowPolygons}
+              onFeatureClick={onFeatureClick}
+              onOtherLayerClick={onOtherLayerClick}
+              onStatusChange={setDetailedModelStatus}
+              basemapId={activeBasemap}
+              analysisTool={analysisTool}
+              analysisPoints={analysisPoints}
+              onAnalysisClick={({ longitude, latitude, asset }) => {
+                handleAnalysisClick(
+                  { lngLat: { lng: longitude, lat: latitude } },
+                  [],
+                  asset,
+                );
+              }}
+            />
+          </Suspense>
         </div>
       )}
       {basemapSwitcher}

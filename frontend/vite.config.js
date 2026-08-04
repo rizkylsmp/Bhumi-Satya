@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
     env.VITE_API_PROXY_TARGET || "http://127.0.0.1:5000";
 
   return {
-    plugins: [react(), tailwindcss(), cesium()],
+    plugins: [react(), tailwindcss(), cesium({ rebuildCesium: true })],
     server: {
       proxy: {
         "/api": {

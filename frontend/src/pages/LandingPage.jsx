@@ -45,6 +45,16 @@ import ChatbotModal from "../components/chatbot/ChatbotModal";
 import { normalizeRole } from "../utils/permissions";
 import BrandMark from "../components/shared/BrandMark";
 
+const initialRegisterForm = {
+  nama_lengkap: "",
+  username: "",
+  email: "",
+  no_telepon: "",
+  nik: "",
+  alamat: "",
+  password: "",
+};
+
 // ============================================================
 // ASSET DETAIL MODAL
 // ============================================================
@@ -412,6 +422,43 @@ function AssetCard({ item, onClick }) {
 // ============================================================
 // LANDING PAGE
 // ============================================================
+function AuthPanelField({
+  label,
+  value,
+  onChange,
+  icon: Icon = UserIcon,
+  type = "text",
+  autoComplete,
+  inputMode,
+  maxLength,
+  minLength,
+  placeholder,
+  required = false,
+  disabled = false,
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="flex items-center gap-1.5 text-xs font-semibold text-text-muted">
+        <Icon size={12} weight="bold" />
+        {label}
+      </label>
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        autoComplete={autoComplete}
+        inputMode={inputMode}
+        maxLength={maxLength}
+        minLength={minLength}
+        placeholder={placeholder}
+        required={required}
+        disabled={disabled}
+        className="h-12 w-full rounded-xl border border-border bg-surface-secondary px-4 text-sm text-text-primary transition-all placeholder:text-text-muted focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-50"
+      />
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -440,11 +487,18 @@ export default function LandingPage() {
   const [showLoginPanel, setShowLoginPanel] = useState(
     location.state?.openLoginPanel === true,
   );
+  const [authMode, setAuthMode] = useState(
+    new URLSearchParams(location.search).get("mode") === "register"
+      ? "register"
+      : "login",
+  );
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [registerForm, setRegisterForm] = useState(initialRegisterForm);
+  const [registerLoading, setRegisterLoading] = useState(false);
   const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
   const [resetIdentifier, setResetIdentifier] = useState("");
   const [resetToken, setResetToken] = useState("");
@@ -461,10 +515,23 @@ export default function LandingPage() {
   const [mfaEmailLoading, setMfaEmailLoading] = useState(false);
 
   useEffect(() => {
-    if (location.state?.openLoginPanel === true) {
+    if (
+      location.state?.openLoginPanel === true ||
+      location.pathname === "/login"
+    ) {
+      const requestedMode =
+        location.state?.authMode ||
+        new URLSearchParams(location.search).get("mode");
       setShowLoginPanel(true);
+      setAuthMode(requestedMode === "register" ? "register" : "login");
     }
-  }, [location.key, location.state?.openLoginPanel]);
+  }, [
+    location.key,
+    location.pathname,
+    location.search,
+    location.state?.authMode,
+    location.state?.openLoginPanel,
+  ]);
 
   // Fetch map markers
   useEffect(() => {
@@ -500,7 +567,15 @@ export default function LandingPage() {
     ref.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleApply = () => setShowLoginPanel(true);
+  const openAuthPanel = (mode = "login") => {
+    setAuthMode(mode);
+    setForgotPasswordMode(false);
+    setMfaStep(false);
+    setLoginError("");
+    setShowLoginPanel(true);
+  };
+
+  const handleApply = () => openAuthPanel("login");
 
   const getHomePath = (role) =>
     normalizeRole(role) === "masyarakat" ? "/sewa/aset-tersedia" : "/dashboard";
@@ -551,6 +626,31 @@ export default function LandingPage() {
     } finally {
       setLoginLoading(false);
     }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setLoginError("");
+    setRegisterLoading(true);
+
+    try {
+      await authService.register(registerForm);
+      setLoginUsername(registerForm.username);
+      setLoginPassword(registerForm.password);
+      setRegisterForm(initialRegisterForm);
+      setAuthMode("login");
+      toast.success("Registrasi berhasil. Silakan masuk.");
+    } catch (err) {
+      const msg = err.response?.data?.error || "Registrasi gagal";
+      setLoginError(msg);
+      toast.error(msg);
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
+  const updateRegisterForm = (field, value) => {
+    setRegisterForm((current) => ({ ...current, [field]: value }));
   };
 
   const handleMfaVerify = async (e) => {
@@ -1102,7 +1202,7 @@ export default function LandingPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowLoginPanel(true)}
+                  onClick={() => openAuthPanel("login")}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-surface transition hover:opacity-90"
                 >
                   <SignInIcon size={18} weight="bold" />
@@ -1110,7 +1210,7 @@ export default function LandingPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => navigate("/masyarakat/login?mode=register")}
+                  onClick={() => openAuthPanel("register")}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-secondary px-4 py-3 text-sm font-semibold text-text-primary transition hover:border-accent/40 hover:text-accent"
                 >
                   <UserIcon size={18} weight="bold" />
@@ -1249,6 +1349,7 @@ export default function LandingPage() {
           }`}
           onClick={() => {
             setShowLoginPanel(false);
+            setAuthMode("login");
             setMfaStep(false);
             setMfaToken("");
             setOtpType("authenticator");
@@ -1259,12 +1360,13 @@ export default function LandingPage() {
         />
 
         {/* Panel */}
-        <div className="relative h-full w-screen sm:w-96 md:w-104 bg-surface dark:bg-gray-900 flex flex-col shadow-2xl max-h-screen overflow-hidden border-l border-border ml-auto">
+        <div className="relative h-full w-screen sm:w-[30rem] bg-surface dark:bg-gray-900 flex flex-col shadow-2xl max-h-screen overflow-hidden border-l border-border ml-auto">
           {/* Close button */}
           <button
             aria-label="Tutup panel login"
             onClick={() => {
               setShowLoginPanel(false);
+              setAuthMode("login");
               setMfaStep(false);
               setMfaToken("");
               setOtpType("authenticator");
@@ -1286,12 +1388,40 @@ export default function LandingPage() {
                 Bhumi Satya
               </h2>
               <p className="text-text-muted text-sm mt-1.5">
-                Masuk ke akun Anda untuk melanjutkan
+                {authMode === "register"
+                  ? "Buat akun masyarakat untuk menggunakan layanan penyewaan"
+                  : "Masuk ke akun Anda untuk melanjutkan"}
               </p>
             </div>
 
             {/* Form */}
             <div className="px-6 md:px-8 pb-6">
+              {!mfaStep && !forgotPasswordMode && (
+                <div className="mb-5 grid grid-cols-2 rounded-xl border border-border bg-surface-secondary p-1">
+                  {[
+                    { key: "login", label: "Masuk" },
+                    { key: "register", label: "Daftar" },
+                  ].map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      aria-pressed={authMode === item.key}
+                      onClick={() => {
+                        setAuthMode(item.key);
+                        setLoginError("");
+                      }}
+                      className={`h-10 rounded-lg text-sm font-semibold transition-colors ${
+                        authMode === item.key
+                          ? "bg-surface text-text-primary"
+                          : "text-text-muted hover:text-text-primary"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {loginError && (
                 <div className="mb-5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl p-3.5 flex items-start gap-3">
                   <div className="w-5 h-5 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center shrink-0 mt-0.5">
@@ -1542,6 +1672,136 @@ export default function LandingPage() {
                     <ArrowLeftIcon size={16} weight="bold" />
                     Kembali ke Login
                   </button>
+                </form>
+              ) : authMode === "register" ? (
+                <form onSubmit={handleRegister} className="space-y-5">
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                    <p className="text-sm font-bold text-text-primary">
+                      Daftar Akun Masyarakat
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-text-muted">
+                      Buat akun untuk mengajukan dan memantau penyewaan.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <AuthPanelField
+                      label="Nama Lengkap"
+                      value={registerForm.nama_lengkap}
+                      onChange={(value) =>
+                        updateRegisterForm("nama_lengkap", value)
+                      }
+                      placeholder="Nama lengkap"
+                      autoComplete="name"
+                      required
+                      disabled={registerLoading}
+                    />
+                    <AuthPanelField
+                      label="Username"
+                      value={registerForm.username}
+                      onChange={(value) =>
+                        updateRegisterForm("username", value)
+                      }
+                      placeholder="Buat username"
+                      autoComplete="username"
+                      required
+                      disabled={registerLoading}
+                    />
+                    <AuthPanelField
+                      label="Email"
+                      value={registerForm.email}
+                      onChange={(value) => updateRegisterForm("email", value)}
+                      icon={EnvelopeSimpleIcon}
+                      type="email"
+                      placeholder="nama@email.com"
+                      autoComplete="email"
+                      required
+                      disabled={registerLoading}
+                    />
+                    <AuthPanelField
+                      label="Nomor WhatsApp"
+                      value={registerForm.no_telepon}
+                      onChange={(value) =>
+                        updateRegisterForm("no_telepon", value)
+                      }
+                      icon={PhoneIcon}
+                      inputMode="tel"
+                      placeholder="08xxxxxxxxxx"
+                      autoComplete="tel"
+                      required
+                      disabled={registerLoading}
+                    />
+                    <AuthPanelField
+                      label="NIK (Opsional)"
+                      value={registerForm.nik}
+                      onChange={(value) =>
+                        updateRegisterForm(
+                          "nik",
+                          value.replace(/\D/g, "").slice(0, 16),
+                        )
+                      }
+                      inputMode="numeric"
+                      maxLength={16}
+                      placeholder="16 digit NIK"
+                      disabled={registerLoading}
+                    />
+                    <AuthPanelField
+                      label="Password"
+                      value={registerForm.password}
+                      onChange={(value) =>
+                        updateRegisterForm("password", value)
+                      }
+                      icon={LockIcon}
+                      type={showPassword ? "text" : "password"}
+                      minLength={6}
+                      placeholder="Minimal 6 karakter"
+                      autoComplete="new-password"
+                      required
+                      disabled={registerLoading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-text-muted">
+                      <MapPinIcon size={12} weight="bold" />
+                      Alamat (Opsional)
+                    </label>
+                    <textarea
+                      value={registerForm.alamat}
+                      onChange={(event) =>
+                        updateRegisterForm("alamat", event.target.value)
+                      }
+                      disabled={registerLoading}
+                      rows={3}
+                      placeholder="Masukkan alamat"
+                      className="w-full resize-none rounded-xl border border-border bg-surface-secondary px-4 py-3 text-sm text-text-primary transition-all placeholder:text-text-muted focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-50"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={registerLoading}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 text-sm font-bold text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {registerLoading ? (
+                      <>
+                        <CircleNotchIcon
+                          size={18}
+                          weight="bold"
+                          className="animate-spin"
+                        />
+                        Membuat akun...
+                      </>
+                    ) : (
+                      <>
+                        <UserIcon size={18} weight="bold" />
+                        Daftar Akun
+                      </>
+                    )}
+                  </button>
+                  <p className="text-center text-[11px] leading-relaxed text-text-muted">
+                    Akun baru otomatis mendapatkan akses masyarakat.
+                  </p>
                 </form>
               ) : (
                 <form onSubmit={handleLogin} className="space-y-5">

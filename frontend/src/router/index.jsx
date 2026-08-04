@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- Router modules intentionally define route wrapper components. */
-import { createHashRouter, Navigate } from "react-router-dom";
+import { createHashRouter, Navigate, useLocation } from "react-router-dom";
 import { lazy, Suspense } from "react";
 
 // Layouts
@@ -8,28 +8,34 @@ import RootLayout from "../layouts/RootLayout";
 import { useAuthStore } from "../stores/authStore";
 import { normalizeRole } from "../utils/permissions";
 
-// Pages - Auth (eagerly loaded — entry point)
-import MasyarakatAuthPage from "../pages/masyarakat/MasyarakatAuthPage";
+const CHUNK_RELOAD_KEY = "bhumi-satya-chunk-reload-at";
+const CHUNK_RELOAD_COOLDOWN_MS = 60_000;
 
-// Helper for dynamic import errors (e.g. chunk not found after new deployment)
+// Recover once from stale chunks after deployment, then surface the real error.
 const lazyWithRetry = (componentImport) =>
   lazy(async () => {
-    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
-      window.localStorage.getItem("page-has-been-force-refreshed") || "false",
-    );
-
     try {
       const component = await componentImport();
-      window.localStorage.setItem("page-has-been-force-refreshed", "false");
+      window.sessionStorage.removeItem(CHUNK_RELOAD_KEY);
       return component;
     } catch (error) {
-      if (!pageHasAlreadyBeenForceRefreshed) {
-        // We assume the user is on an older version of the app and a chunk is missing
-        window.localStorage.setItem("page-has-been-force-refreshed", "true");
+      const lastReloadAt = Number(
+        window.sessionStorage.getItem(CHUNK_RELOAD_KEY) || 0,
+      );
+      const canReload = Date.now() - lastReloadAt > CHUNK_RELOAD_COOLDOWN_MS;
+
+      if (canReload) {
+        window.sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
         window.location.reload();
-        // Return a dummy promise that never resolves while reloading
-        return new Promise(() => {});
+
+        // If an extension blocks reload, stop the permanent spinner and expose
+        // the import error to React Router after a short grace period.
+        return new Promise((_, reject) => {
+          window.setTimeout(() => reject(error), 8_000);
+        });
       }
+
+      window.sessionStorage.removeItem(CHUNK_RELOAD_KEY);
       throw error;
     }
   });
@@ -90,6 +96,22 @@ function LazyPage({ children }) {
     >
       {children}
     </Suspense>
+  );
+}
+
+function LegacyMasyarakatLoginRedirect() {
+  const location = useLocation();
+  const mode =
+    new URLSearchParams(location.search).get("mode") === "register"
+      ? "register"
+      : "login";
+
+  return (
+    <Navigate
+      to={`/login?mode=${mode}`}
+      replace
+      state={{ openLoginPanel: true, authMode: mode }}
+    />
   );
 }
 
@@ -169,7 +191,7 @@ const router = createHashRouter([
   },
   {
     path: "/masyarakat/login",
-    element: <MasyarakatAuthPage />,
+    element: <LegacyMasyarakatLoginRedirect />,
   },
   // Protected routes with Root Layout
   {

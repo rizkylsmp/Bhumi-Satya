@@ -13,6 +13,25 @@ const normalizeSumber = (value) => {
   return ["BPN", "BPKA"].includes(normalized) ? normalized : null;
 };
 
+const configuredPublicMarkersCacheTtlMs = Number(
+  process.env.PUBLIC_MARKERS_CACHE_TTL_MS || 60_000,
+);
+const publicMarkersCacheTtlMs = Number.isFinite(
+  configuredPublicMarkersCacheTtlMs,
+)
+  ? Math.max(0, configuredPublicMarkersCacheTtlMs)
+  : 60_000;
+let publicMarkersCache = { data: null, expiresAt: 0 };
+
+const sendPublicMarkers = (res, markers, cacheStatus) => {
+  res.setHeader(
+    "Cache-Control",
+    "public, max-age=30, stale-while-revalidate=120",
+  );
+  res.setHeader("X-Bhumi-Cache", cacheStatus);
+  return res.json({ success: true, data: markers });
+};
+
 const popupExtendedAssetAttributes = [
   "batas_utara",
   "batas_selatan",
@@ -175,6 +194,13 @@ const appendExplicitSourceFilters = (where, query = {}) => {
  */
 export const getPublicMarkers = async (req, res) => {
   try {
+    if (
+      publicMarkersCache.data &&
+      publicMarkersCache.expiresAt > Date.now()
+    ) {
+      return sendPublicMarkers(res, publicMarkersCache.data, "HIT");
+    }
+
     const publishedModelAssetIds = await getPublishedModelAssetIds();
 
     const assets = await Aset.findAll({
@@ -363,13 +389,14 @@ export const getPublicMarkers = async (req, res) => {
       };
     });
 
-    res.json({
-      success: true,
+    publicMarkersCache = {
       data: markers,
-    });
+      expiresAt: Date.now() + publicMarkersCacheTtlMs,
+    };
+    return sendPublicMarkers(res, markers, "MISS");
   } catch (error) {
     console.error("Error fetching public markers:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: error.message,
     });

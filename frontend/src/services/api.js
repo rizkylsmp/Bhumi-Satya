@@ -166,7 +166,8 @@ export const petaService = {
   getModel3dTileset: (assetIds) => api.get("/peta/models-3d/tileset.json", {
     params: assetIds?.length ? { asset_ids: assetIds.join(",") } : undefined,
   }),
-  getPublicMarkers: () => api.get("/peta/public-markers"),
+  getPublicMarkers: () =>
+    api.get("/peta/public-markers", { timeout: 15_000 }),
   getPublicDetail: (id) => api.get(`/peta/public-detail/${id}`),
 };
 
@@ -242,7 +243,8 @@ export const sewaService = {
   getPengembalian: (params) => api.get("/sewa/pengembalian", { params }),
   prosesPengembalian: (id, data) => api.put(`/sewa/${id}/pengembalian`, data),
   // Public
-  getPublicAvailable: (params) => api.get("/sewa/public-available", { params }),
+  getPublicAvailable: (params) =>
+    api.get("/sewa/public-available", { params, timeout: 15_000 }),
   getAvailableForMasyarakat: (params) =>
     api.get("/sewa/masyarakat/tersedia", { params }),
   getApprovedForMasyarakat: (params) =>

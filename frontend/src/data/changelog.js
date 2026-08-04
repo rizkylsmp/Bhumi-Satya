@@ -1,5 +1,23 @@
 export const changelogEntries = [
   {
+    id: "faster-stable-production-loading",
+    date: "2026-08-04",
+    type: "peningkatan",
+    title: "Mempercepat dan menstabilkan pemuatan website",
+    summary:
+      "Mode 3D kini dimuat hanya saat diperlukan, data peta publik menggunakan cache singkat, dan kegagalan cache browser tidak lagi menyebabkan loading tanpa batas.",
+    area: "Performa",
+  },
+  {
+    id: "unified-login-registration-panel",
+    date: "2026-08-03",
+    type: "peningkatan",
+    title: "Menyatukan login dan registrasi masyarakat",
+    summary:
+      "Login seluruh pengguna dan pendaftaran akun masyarakat kini tersedia dalam satu panel pada landing page.",
+    area: "Login",
+  },
+  {
     id: "blackbox-testing-guide",
     date: "2026-08-03",
     type: "peningkatan",
