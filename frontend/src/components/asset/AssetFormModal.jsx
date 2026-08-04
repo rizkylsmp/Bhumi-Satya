@@ -14,7 +14,6 @@ import {
   ScalesIcon,
   MapPinIcon,
   CurrencyDollarIcon,
-  FolderOpenIcon,
   XIcon,
   FloppyDiskIcon,
   CircleNotchIcon,
@@ -737,14 +736,6 @@ export default function AssetFormModal({
     handleInputChange(event);
   };
 
-  const handleMultipleFiles = (e) => {
-    const { name, files } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: files,
-    }));
-  };
-
   const handleGeojsonImport = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -894,23 +885,7 @@ export default function AssetFormModal({
         delete submitData.foto_aset;
       }
 
-      // Upload dokumen_pendukung if it's a FileList/File
-      if (submitData.dokumen_pendukung instanceof File) {
-        const res = await uploadService.single(
-          submitData.dokumen_pendukung,
-          "dokumen",
-        );
-        submitData.dokumen_pendukung = [res.data.data.url];
-      } else if (
-        submitData.dokumen_pendukung instanceof FileList ||
-        Array.isArray(submitData.dokumen_pendukung)
-      ) {
-        const files = Array.from(submitData.dokumen_pendukung);
-        if (files.length > 0 && files[0] instanceof File) {
-          const res = await uploadService.multiple(files, "dokumen");
-          submitData.dokumen_pendukung = res.data.data.map((f) => f.url);
-        }
-      } else if (submitData.dokumen_pendukung === null) {
+      if (submitData.dokumen_pendukung === null) {
         delete submitData.dokumen_pendukung;
       }
 
@@ -1262,7 +1237,7 @@ export default function AssetFormModal({
 
                   <div className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                     <SectionHeader
-                      icon={FolderOpenIcon}
+                      icon={ClipboardTextIcon}
                       title="Data KIB dan Administratif"
                     />
 
@@ -1503,31 +1478,6 @@ export default function AssetFormModal({
                     </div>
                   </div>
 
-                  <div className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
-                    <SectionHeader
-                      icon={FolderOpenIcon}
-                      title="Dokumentasi dan Catatan"
-                    />
-
-                    <FormFileUpload
-                      label="Dokumen Pendukung"
-                      name="dokumen_pendukung"
-                      onChange={(e) => handleMultipleFiles(e)}
-                      multiple
-                      accept=".pdf,.doc,.docx,.jpg,.png"
-                      size="lg"
-                    />
-
-                    <FormTextarea
-                      label="Keterangan"
-                      name="keterangan"
-                      placeholder="Keterangan tambahan aset"
-                      value={formData.keterangan}
-                      onChange={handleInputChange}
-                      rows={3}
-                      size="lg"
-                    />
-                  </div>
                 </>
               )}
 
@@ -1763,6 +1713,7 @@ export default function AssetFormModal({
                   <FormFileUpload
                     label="Foto Kondisi Eksisting"
                     name="foto_aset"
+                    value={formData.foto_aset || assetData?.foto_aset}
                     onChange={handleAssetPhotoChange}
                     accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp,image/x-webp"
                     size="lg"
@@ -2092,7 +2043,7 @@ export default function AssetFormModal({
 
               {/* ========== LOKASI DASAR (create mode only) ========== */}
               {isCreateMode && !isLegacyCompactForm && !isFullForm && (
-                <div id="dokumentasi" className="scroll-mt-28 bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
+                <div id="lokasi-dasar" className="scroll-mt-28 bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                   <SectionHeader icon={MapPinIcon} title="Lokasi Aset" />
 
                   <FormTextarea
@@ -2138,36 +2089,6 @@ export default function AssetFormModal({
                       }));
                     }}
                     label="Koordinat Lokasi"
-                  />
-                </div>
-              )}
-
-              {/* ========== DOKUMENTASI ========== */}
-              {isFullForm && !isLegacyCompactForm && (
-                <div id="dokumentasi" role="tabpanel" aria-labelledby="form-tab-dokumentasi" hidden={isPage && activeSection !== "dokumentasi"} data-form-section="dokumentasi" className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
-                  <SectionHeader icon={FolderOpenIcon} title="Dokumentasi" />
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* Dokumen */}
-                    <FormFileUpload
-                      label="Dokumen Pendukung (Sertifikat, BAST, Surat Hibah, dll)"
-                      name="dokumen_pendukung"
-                      onChange={(e) => handleMultipleFiles(e)}
-                      multiple
-                      accept=".pdf,.doc,.docx,.jpg,.png"
-                      size="lg"
-                    />
-                  </div>
-
-                  {/* Keterangan */}
-                  <FormTextarea
-                    label="Keterangan"
-                    name="keterangan"
-                    placeholder="Keterangan tambahan"
-                    value={formData.keterangan}
-                    onChange={handleInputChange}
-                    rows={3}
-                    size="lg"
                   />
                 </div>
               )}

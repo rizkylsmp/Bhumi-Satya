@@ -1,5 +1,32 @@
 export const changelogEntries = [
   {
+    id: "map-search-overlay",
+    date: "2026-08-04",
+    type: "fitur",
+    title: "Menambahkan pencarian data peta 2D dan 3D",
+    summary:
+      "Pencarian aset kini tersedia dalam overlay yang nyaman, tidak memuat ulang peta, dan dapat mengarahkan kamera langsung ke bidang atau model 3D.",
+    area: "Digital Twin",
+  },
+  {
+    id: "cesium-map-interactions",
+    date: "2026-08-04",
+    type: "peningkatan",
+    title: "Menyempurnakan interaksi aset pada peta 3D",
+    summary:
+      "Bidang aset dapat disorot dan dibuka dari Cesium, fly-to mengikuti posisi model 3D, serta kontrol LOD dibuat lebih ringkas.",
+    area: "Digital Twin",
+  },
+  {
+    id: "physical-file-preview",
+    date: "2026-08-04",
+    type: "peningkatan",
+    title: "Merapikan input foto kondisi aset",
+    summary:
+      "Foto yang dipilih dapat dipreview melalui tombol ringkas dan menu Dokumentasi yang tidak digunakan telah dihapus dari formulir aset.",
+    area: "Pusat Data",
+  },
+  {
     id: "faster-stable-production-loading",
     date: "2026-08-04",
     type: "peningkatan",

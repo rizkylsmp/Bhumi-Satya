@@ -30,12 +30,12 @@ const TEAM_MEMBERS = [
 ];
 
 const LOD_OPTIONS = [
-  { id: "lod1", shortLabel: "LoD 1", label: "LoD 1 – Block Model" },
-  { id: "lod2", shortLabel: "LoD 2", label: "LoD 2 – Roof Detail" },
-  { id: "lod2.5", shortLabel: "LoD 2.5", label: "LoD 2.5 – Facade Detail" },
-  { id: "lod3", shortLabel: "LoD 3", label: "LoD 3 – Detailed Facade" },
-  { id: "lod4", shortLabel: "LoD 4", label: "LoD 4 – Architectural Detail" },
-  { id: "gaussian", shortLabel: "Gaussian", label: "Gaussian Splatting" },
+  { id: "lod1", shortLabel: "LOD 1", label: "LOD 1 – Block Model" },
+  { id: "lod2", shortLabel: "LOD 2", label: "LOD 2 – Roof Detail" },
+  { id: "lod2.5", shortLabel: "LOD 2.5", label: "LOD 2.5 – Facade Detail" },
+  { id: "lod3", shortLabel: "LOD 3", label: "LOD 3 – Detailed Facade" },
+  { id: "lod4", shortLabel: "LOD 4", label: "LOD 4 – Architectural Detail" },
+  { id: "gaussian", shortLabel: "GS", label: "Gaussian Splatting" },
 ];
 
 function resolveLodOption(location) {
@@ -275,11 +275,11 @@ export default function Model3dControlPanel({
         )}
 
         {activeTab === "data3d" && (
-          <section id="panel-3d-data3d" role="tabpanel" aria-label="Pilih level of detail" className="space-y-3">
+          <section id="panel-3d-data3d" role="tabpanel" aria-label="Pilih level of detail" className="space-y-2">
             <div
               role="tablist"
               aria-label="Level of Detail model 3D"
-              className="flex gap-1.5 overflow-x-auto pb-1"
+              className="grid grid-cols-3 gap-1"
             >
               {LOD_OPTIONS.map((option) => {
                 const count = locationsByLod[option.id].length;
@@ -294,7 +294,7 @@ export default function Model3dControlPanel({
                     disabled={count === 0}
                     aria-selected={isActive}
                     title={option.label}
-                    className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[9px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                    className={`inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-md border px-1.5 text-[8px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                       isActive
                         ? "border-accent bg-accent text-surface"
                         : "border-border bg-surface text-text-secondary hover:bg-surface-tertiary hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
@@ -302,7 +302,7 @@ export default function Model3dControlPanel({
                   >
                     <span>{option.shortLabel}</span>
                     <span
-                      className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[7px] font-black ${
+                      className={`flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-0.5 text-[7px] font-black ${
                         isActive
                           ? "bg-surface/20 text-surface"
                           : "bg-surface-secondary text-text-muted"
@@ -315,20 +315,15 @@ export default function Model3dControlPanel({
               })}
             </div>
 
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.1em] text-text-primary">
-                  {
-                    LOD_OPTIONS.find(
-                      (option) => option.id === effectiveSelectedLod,
-                    )?.shortLabel
-                  }
-                </p>
-                <p className="mt-0.5 text-[8px] text-text-muted">
-                  Pilih lokasi untuk mengarahkan kamera.
-                </p>
-              </div>
-              <span className="rounded-full bg-surface px-2 py-1 text-[8px] font-black text-text-secondary">
+            <div className="flex items-center justify-between gap-2 px-0.5">
+              <p className="text-[8px] font-black uppercase tracking-[0.1em] text-text-primary">
+                {
+                  LOD_OPTIONS.find(
+                    (option) => option.id === effectiveSelectedLod,
+                  )?.label
+                }
+              </p>
+              <span className="shrink-0 rounded-full bg-surface px-1.5 py-0.5 text-[7px] font-black text-text-secondary">
                 {locationsByLod[effectiveSelectedLod].length} data
               </span>
             </div>
@@ -341,13 +336,13 @@ export default function Model3dControlPanel({
                 </p>
               </div>
             ) : (
-              <div className="max-h-64 space-y-1.5 overflow-y-auto pr-0.5">
+              <div className="max-h-52 space-y-1 overflow-y-auto pr-0.5">
                 {locationsByLod[effectiveSelectedLod].map((location) => {
                   const isVisible = selectedIds.includes(String(location.id));
                   return (
                     <article
                       key={location.id}
-                      className="flex items-center gap-2 rounded-xl border border-border bg-surface p-2.5"
+                      className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2 py-1.5"
                     >
                       <span
                         className={`h-2 w-2 shrink-0 rounded-full ${
@@ -357,25 +352,25 @@ export default function Model3dControlPanel({
                       />
                       <div className="min-w-0 flex-1">
                         <p
-                          className="truncate text-[10px] font-extrabold text-text-primary"
+                          className="truncate text-[9px] font-extrabold text-text-primary"
                           title={location.name}
                         >
                           {location.name}
                         </p>
-                        <p className="mt-0.5 flex items-center gap-1 truncate text-[8px] text-text-muted">
-                          <MapPinIcon size={9} weight="fill" />
+                        <p className="flex items-center gap-1 truncate text-[7px] text-text-muted">
+                          <MapPinIcon size={8} weight="fill" />
                           {location.location}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => onFocusModels?.(location)}
-                        className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-accent/30 bg-accent/10 px-2 text-[8px] font-extrabold text-accent transition hover:border-accent hover:bg-accent hover:text-surface focus-visible:ring-2 focus-visible:ring-accent"
+                        className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-accent/30 bg-accent/10 px-1.5 text-[7px] font-extrabold text-accent transition-colors hover:border-accent hover:bg-accent hover:text-surface focus-visible:ring-2 focus-visible:ring-accent"
                         aria-label={`Fly To ${location.name}`}
                         title={`Fly To ${location.name}`}
                       >
-                        <CrosshairIcon size={11} weight="bold" />
-                        Fly To
+                        <CrosshairIcon size={10} weight="bold" />
+                        Fly
                       </button>
                     </article>
                   );

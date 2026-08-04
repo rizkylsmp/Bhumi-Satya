@@ -17,7 +17,6 @@ import {
   CircleNotchIcon,
   ClipboardTextIcon,
   CurrencyDollarIcon,
-  FolderOpenIcon,
   IdentificationCardIcon,
   MapPinIcon,
   ReceiptIcon,
@@ -46,7 +45,6 @@ const formSections = [
   { id: "pajak", label: "Pajak", icon: ReceiptIcon },
   { id: "spasial", label: "Spasial", icon: MapPinIcon },
   { id: "administratif", label: "Administratif", icon: CurrencyDollarIcon },
-  { id: "dokumentasi", label: "Dokumentasi", icon: FolderOpenIcon },
 ];
 
 const asset3dManagementFields = [

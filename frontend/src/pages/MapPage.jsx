@@ -6,6 +6,7 @@ import AssetMapFilter from "../components/map/AssetMapFilter";
 import AssetLayerControl from "../components/map/AssetLayerControl";
 import AssetViewModal from "../components/asset/AssetViewModal";
 import AssetDetailPanel from "../components/map/shared/AssetDetailPanel";
+import MapSearchOverlay from "../components/map/bpn/MapSearchOverlay";
 import { petaService, asetService } from "../services/api";
 import { downloadAssetPdf } from "../utils/pdfExport";
 import { downloadAssetGeojson } from "../utils/geojsonExport";
@@ -285,6 +286,8 @@ export default function MapPage({ publicMode = false }) {
   // Search-triggered flyTo
   const [focusAssetId, setFocusAssetId] = useState(null);
   const [focusKey, setFocusKey] = useState(0);
+  const [focus3dTarget, setFocus3dTarget] = useState(null);
+  const [focus3dKey, setFocus3dKey] = useState(null);
   const [mapSearchResults, setMapSearchResults] = useState([]);
   const [isMapSearchLoading, setIsMapSearchLoading] = useState(false);
 
@@ -432,24 +435,13 @@ export default function MapPage({ publicMode = false }) {
     // Search is handled internally by MapFilter dropdown — no map-level filter needed
   };
 
-  const handleSelectSearchAsset = (asset) => {
-    const fullAsset =
-      assets.find((item) => String(item.id) === String(asset.id)) || asset;
-
-    if (fullAsset.status_sewa) {
-      if (
-        fullAsset.status_sewa === "Tersedia" &&
-        !selectedSewaLayers.tersedia
-      ) {
-        setSelectedSewaLayers((prev) => ({ ...prev, tersedia: true }));
-      }
-      if (fullAsset.status_sewa === "Tersewa" && !selectedSewaLayers.tersewa) {
-        setSelectedSewaLayers((prev) => ({ ...prev, tersewa: true }));
-      }
+  const handleSelectSearchAsset = (asset, searchMode = "2d") => {
+    if (searchMode === "3d") {
+      setFocus3dTarget({ assetId: asset.id_aset || asset.id });
+      setFocus3dKey((prev) => (prev ?? 0) + 1);
+      return;
     }
 
-    setActiveLayer("bidang");
-    setShowPolygons(true);
     setFocusAssetId(asset.id);
     setFocusKey((prev) => prev + 1);
   };
@@ -649,6 +641,8 @@ export default function MapPage({ publicMode = false }) {
           mode="integrated"
           highlightAssetId={effectiveHighlightId}
           highlightRequestKey={effectiveHighlightKey}
+          focus3dTarget={focus3dTarget}
+          focus3dRequestKey={focus3dKey}
           initialAsset3dMode={initialAsset3dMode}
           asset3dPanelContainer={asset3dPanelContainer}
           asset3dPanelOpen={showFilterPanel && sidePanelMode === "3d"}
@@ -674,7 +668,11 @@ export default function MapPage({ publicMode = false }) {
         />
 
         <div className="absolute left-4 top-4 z-[45] w-[min(19rem,calc(100vw-2rem))]">
-          <MapData2dControls {...data2dControlProps} searchControlOnly />
+          <MapSearchOverlay
+            assets={assets}
+            activeMapMode={sidePanelMode === "3d" ? "3d" : "2d"}
+            onSelectAsset={handleSelectSearchAsset}
+          />
         </div>
 
         {/* Filter Toggle Button — top-left */}

@@ -72,6 +72,27 @@ const getPolygonStyle = (entity) => {
   return POLYGON_STYLES[status] || POLYGON_STYLES.default;
 };
 
+const setEntityVisualState = (entity, state = "default") => {
+  if (!entity) return;
+  if (entity.polygon) {
+    const style = getPolygonStyle(entity);
+    const selected = state === "selected";
+    entity.polygon.material = Color.fromCssColorString(
+      selected ? "#facc15" : style.fill,
+    ).withAlpha(state === "hover" ? 0.45 : selected ? 0.36 : 0.15);
+    entity.polygon.outlineColor = Color.fromCssColorString(
+      selected ? "#eab308" : style.outline,
+    );
+    entity.polygon.outlineWidth = state === "hover" ? 1.8 : selected ? 2 : 1;
+  }
+  if (entity.billboard) {
+    entity.billboard.scale = state === "default" ? 1 : 1.15;
+  }
+  if (entity.point) {
+    entity.point.pixelSize = state === "default" ? 10 : 12;
+  }
+};
+
 const setModelVisualState = (target, state = "default") => {
   if (!target || target.isDestroyed?.()) return;
   const { color, blendAmount } =
@@ -232,10 +253,13 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
   const targetSpheresRef = useRef([]);
   const targetSphereByLocationIdRef = useRef(new Map());
   const targetModelByLocationIdRef = useRef(new Map());
+  const assetEntityByIdRef = useRef(new Map());
   const pendingFocusLocationRef = useRef(null);
   const fallbackTargetRef = useRef(null);
   const hoveredModelRef = useRef(null);
+  const hoveredEntityRef = useRef(null);
   const selectedModelRef = useRef(null);
+  const selectedEntityRef = useRef(null);
   const assetsRef = useRef(assets);
   const onFeatureClickRef = useRef(onFeatureClick);
   const onOtherLayerClickRef = useRef(onOtherLayerClick);
@@ -349,6 +373,23 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           setModelVisualState(targetModel, "selected");
           viewer.scene.requestRender();
         }
+        const targetEntity = location?.assetId
+          ? assetEntityByIdRef.current.get(String(location.assetId))
+          : null;
+        if (targetEntity) {
+          const previousSelectedEntity = selectedEntityRef.current;
+          selectedEntityRef.current = targetEntity;
+          if (previousSelectedEntity && previousSelectedEntity !== targetEntity) {
+            setEntityVisualState(
+              previousSelectedEntity,
+              previousSelectedEntity === hoveredEntityRef.current
+                ? "hover"
+                : "default",
+            );
+          }
+          setEntityVisualState(targetEntity, "selected");
+          viewer.scene.requestRender();
+        }
         const targetSphere = location?.id
           ? targetSphereByLocationIdRef.current.get(String(location.id))
           : null;
@@ -370,10 +411,18 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       clearSelection() {
         const viewer = viewerRef.current;
         const previousSelected = selectedModelRef.current;
+        const previousSelectedEntity = selectedEntityRef.current;
         selectedModelRef.current = null;
+        selectedEntityRef.current = null;
         setModelVisualState(
           previousSelected,
           previousSelected === hoveredModelRef.current ? "hover" : "default",
+        );
+        setEntityVisualState(
+          previousSelectedEntity,
+          previousSelectedEntity === hoveredEntityRef.current
+            ? "hover"
+            : "default",
         );
         if (viewer && !viewer.isDestroyed()) viewer.scene.requestRender();
       },
@@ -467,6 +516,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     const targetSpheres = [];
     const targetSphereByLocationId = new Map();
     const targetModelByLocationId = new Map();
+    const assetEntityById = new Map();
 
     const initialize = async () => {
       onStatusChangeRef.current?.({
@@ -562,6 +612,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           entity.polygon.outline = true;
           entity.polygon.outlineColor = Color.fromCssColorString(style.outline);
           entity.polygon.outlineWidth = 1;
+          if (entity.id != null) assetEntityById.set(String(entity.id), entity);
         });
         await viewer.dataSources.add(polygons);
         fallbackTargetRef.current ||= polygons;
@@ -574,6 +625,11 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           markerSize: 20,
         });
         if (cancelled) return;
+        points.entities.values.forEach((entity) => {
+          if (entity.id != null && !assetEntityById.has(String(entity.id))) {
+            assetEntityById.set(String(entity.id), entity);
+          }
+        });
         await viewer.dataSources.add(points);
         fallbackTargetRef.current ||= points;
       }
@@ -656,6 +712,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       targetSpheresRef.current = targetSpheres;
       targetSphereByLocationIdRef.current = targetSphereByLocationId;
       targetModelByLocationIdRef.current = targetModelByLocationId;
+      assetEntityByIdRef.current = assetEntityById;
       const pendingLocation = pendingFocusLocationRef.current;
       const pendingSphere = pendingLocation?.id
         ? targetSphereByLocationId.get(String(pendingLocation.id))
@@ -663,9 +720,16 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       const pendingModel = pendingLocation?.id
         ? targetModelByLocationId.get(String(pendingLocation.id))
         : null;
+      const pendingEntity = pendingLocation?.assetId
+        ? assetEntityById.get(String(pendingLocation.assetId))
+        : null;
       if (pendingModel) {
         selectedModelRef.current = pendingModel;
         setModelVisualState(pendingModel, "selected");
+      }
+      if (pendingEntity) {
+        selectedEntityRef.current = pendingEntity;
+        setEntityVisualState(pendingEntity, "selected");
       }
       if (!cancelled && pendingSphere) {
         focusSpheres(viewer, [pendingSphere], 0.7, true);
@@ -703,10 +767,18 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       clickHandler.setInputAction((movement) => {
         if (analysisToolRef.current) {
           const previousHovered = hoveredModelRef.current;
+          const previousHoveredEntity = hoveredEntityRef.current;
           hoveredModelRef.current = null;
+          hoveredEntityRef.current = null;
           setModelVisualState(
             previousHovered,
             previousHovered === selectedModelRef.current
+              ? "selected"
+              : "default",
+          );
+          setEntityVisualState(
+            previousHoveredEntity,
+            previousHoveredEntity === selectedEntityRef.current
               ? "selected"
               : "default",
           );
@@ -718,9 +790,29 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           (picked?.primitive?.assetId && picked.primitive) ||
           (picked?.tileset?.assetId && picked.tileset) ||
           null;
-        if (nextHoveredModel === hoveredModelRef.current) return;
+        const pickedEntity = picked?.id || null;
+        const pickedEntityAssetId =
+          getPropertyValue(pickedEntity?.properties?.id_aset) ??
+          pickedEntity?.id;
+        const nextHoveredEntity = pickedEntityAssetId != null
+          && assetsRef.current.some(
+            (item) =>
+              String(item?.id_aset || item?.id) === String(pickedEntityAssetId),
+          )
+          ? pickedEntity
+          : null;
+        if (
+          nextHoveredModel === hoveredModelRef.current
+          && nextHoveredEntity === hoveredEntityRef.current
+        ) {
+          viewer.scene.canvas.style.cursor =
+            nextHoveredModel || nextHoveredEntity ? "pointer" : "";
+          return;
+        }
         const previousHovered = hoveredModelRef.current;
+        const previousHoveredEntity = hoveredEntityRef.current;
         hoveredModelRef.current = nextHoveredModel;
+        hoveredEntityRef.current = nextHoveredEntity;
         setModelVisualState(
           previousHovered,
           previousHovered === selectedModelRef.current
@@ -733,7 +825,20 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
             ? "selected"
             : "hover",
         );
-        viewer.scene.canvas.style.cursor = nextHoveredModel ? "pointer" : "";
+        setEntityVisualState(
+          previousHoveredEntity,
+          previousHoveredEntity === selectedEntityRef.current
+            ? "selected"
+            : "default",
+        );
+        setEntityVisualState(
+          nextHoveredEntity,
+          nextHoveredEntity === selectedEntityRef.current
+            ? "selected"
+            : "hover",
+        );
+        viewer.scene.canvas.style.cursor =
+          nextHoveredModel || nextHoveredEntity ? "pointer" : "";
         viewer.scene.requestRender();
       }, ScreenSpaceEventType.MOUSE_MOVE);
       clickHandler.setInputAction((movement) => {
@@ -741,6 +846,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
         const entity = picked?.id;
         const pickedAssetId =
           getPropertyValue(entity?.properties?.id_aset) ??
+          entity?.id ??
           picked?.primitive?.assetId ??
           picked?.tileset?.assetId;
         const asset = assetsRef.current.find(
@@ -774,7 +880,13 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
             (picked?.tileset?.assetId && picked.tileset) ||
             null;
           const previousSelected = selectedModelRef.current;
+          const selectedEntity =
+            (entity && String(entity.id) === String(pickedAssetId)
+              ? entity
+              : assetEntityByIdRef.current.get(String(pickedAssetId))) || null;
+          const previousSelectedEntity = selectedEntityRef.current;
           selectedModelRef.current = pickedModel;
+          selectedEntityRef.current = selectedEntity;
           if (previousSelected && previousSelected !== pickedModel) {
             setModelVisualState(
               previousSelected,
@@ -783,10 +895,34 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
                 : "default",
             );
           }
+          if (previousSelectedEntity && previousSelectedEntity !== selectedEntity) {
+            setEntityVisualState(
+              previousSelectedEntity,
+              previousSelectedEntity === hoveredEntityRef.current
+                ? "hover"
+                : "default",
+            );
+          }
           setModelVisualState(pickedModel, "selected");
+          setEntityVisualState(selectedEntity, "selected");
           viewer.scene.requestRender();
           onFeatureClickRef.current?.(asset);
         } else {
+          const previousSelected = selectedModelRef.current;
+          const previousSelectedEntity = selectedEntityRef.current;
+          selectedModelRef.current = null;
+          selectedEntityRef.current = null;
+          setModelVisualState(
+            previousSelected,
+            previousSelected === hoveredModelRef.current ? "hover" : "default",
+          );
+          setEntityVisualState(
+            previousSelectedEntity,
+            previousSelectedEntity === hoveredEntityRef.current
+              ? "hover"
+              : "default",
+          );
+          viewer.scene.requestRender();
           onOtherLayerClickRef.current?.();
         }
       }, ScreenSpaceEventType.LEFT_CLICK);

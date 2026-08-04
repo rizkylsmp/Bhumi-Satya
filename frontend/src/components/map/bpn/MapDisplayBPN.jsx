@@ -402,6 +402,7 @@ const MapDisplayBPN = ({
   initialZoom = DEFAULT_MAP_ZOOM,
   highlightAssetId = null,
   highlightRequestKey = null,
+  focus3dTarget = null,
   focus3dRequestKey = null,
   forceDirectModelPreview = false,
   onDetailedModelStatusChange = null,
@@ -2752,8 +2753,25 @@ const MapDisplayBPN = ({
     const requestToken = String(focus3dRequestKey);
     if (lastHandledFocus3dRef.current === requestToken) return;
 
+    const targetAssetId = focus3dTarget?.assetId;
+    const targetModelId = focus3dTarget?.modelId;
+    const matchingLocations = targetAssetId
+      ? model3dLocations.filter(
+          (location) => String(location.assetId) === String(targetAssetId),
+        )
+      : [];
+    const requestedLocation = (
+      targetModelId
+        ? matchingLocations.find(
+            (location) => String(location.modelId) === String(targetModelId),
+          )
+        : null
+    ) || matchingLocations.find(
+      (location) => visible3dLocationIdSet?.has(String(location.id)),
+    ) || matchingLocations[0] || null;
+
     const focusModel = () => {
-      if (focusDetailedModel()) {
+      if (focusDetailedModel(requestedLocation)) {
         lastHandledFocus3dRef.current = requestToken;
       }
     };
@@ -2765,7 +2783,14 @@ const MapDisplayBPN = ({
 
     map.current.once("load", focusModel);
     return () => map.current?.off("load", focusModel);
-  }, [focus3dRequestKey, focusDetailedModel, isMapReady]);
+  }, [
+    focus3dRequestKey,
+    focus3dTarget,
+    focusDetailedModel,
+    isMapReady,
+    model3dLocations,
+    visible3dLocationIdSet,
+  ]);
 
   useEffect(() => {
     if (
@@ -3072,7 +3097,7 @@ const MapDisplayBPN = ({
           >
             <CesiumAssetMap
               ref={cesiumMapRef}
-              assets={visible3dAssets}
+              assets={roleAssets}
               buildingGeoJson={assetBuildingGeoJson}
               polygonGeoJson={bidangTanahGeoJson}
               pointGeoJson={visibleDotGeoJson}
