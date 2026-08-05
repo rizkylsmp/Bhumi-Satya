@@ -55,31 +55,153 @@ body {
   font-family: var(--font-bhumi-sans);
 }
 
-/*
- * Density halaman internal mengikuti Kelola 3D sebagai referensi.
- * Wrapper tidak dipakai pada Kelola 3D dan peta agar ukuran referensi serta
- * perhitungan kanvas/viewport tetap utuh.
- */
+/* Seluruh halaman internal memakai posisi responsif Kelola 3D sebagai acuan. */
 .app-main-content > * {
   width: 100%;
   max-width: 100%;
   min-width: 0;
 }
 
+.admin-page-shell {
+  box-sizing: border-box;
+  min-height: 100%;
+  min-width: 0;
+  width: 100%;
+  padding: 1rem;
+  background: var(--color-surface-secondary);
+}
+
+.admin-page-shell > * {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1600px;
+  min-width: 0;
+  min-height: 100%;
+  margin-inline: auto;
+  padding: 0 !important;
+}
+
 @media (min-width: 768px) {
-  .admin-density-compact {
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 100%;
-    min-height: 100%;
-    min-width: 0;
-    zoom: 0.875;
+  .admin-page-shell {
+    padding: 1.5rem;
+  }
+}
+
+/* Shared page heading and data-table rhythm, based on Kelola 3D. */
+.admin-page-header {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-page-header__identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-page-header__icon {
+  display: flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+}
+
+.admin-page-header__title {
+  min-width: 0;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.admin-page-header__description {
+  margin-top: 0.125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--color-text-muted);
+}
+
+.admin-page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-page-header__actions > button,
+.admin-page-header__actions > a {
+  min-height: 2.25rem;
+}
+
+.admin-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.admin-data-table thead {
+  background: linear-gradient(
+    to right,
+    var(--color-surface-secondary),
+    var(--color-surface)
+  );
+}
+
+.admin-data-table thead tr,
+.admin-data-table tbody tr {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-data-table tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.admin-data-table tbody tr {
+  transition: background-color 150ms ease;
+}
+
+.admin-data-table tbody tr:hover {
+  background: color-mix(in srgb, var(--color-accent) 3%, transparent);
+}
+
+.admin-data-table th {
+  padding-right: 1rem !important;
+  padding-left: 1rem !important;
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+  vertical-align: middle;
+  font-size: 0.625rem !important;
+  line-height: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.admin-data-table td {
+  padding: 0.75rem 1rem !important;
+  vertical-align: middle;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  color: var(--color-text-secondary);
+}
+
+@media (min-width: 640px) {
+  .admin-page-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
   }
 
-  .admin-density-compact > * {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
+  .admin-page-header__actions {
+    justify-content: flex-end;
   }
 }
 

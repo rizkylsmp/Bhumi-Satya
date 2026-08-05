@@ -364,16 +364,16 @@ export default function Kelola3dPage() {
   return (
     <div className="min-h-full bg-surface-secondary p-4 md:p-6">
       <div className="mx-auto max-w-[1600px] space-y-5">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-violet-600 to-sky-500 text-white">
+        <header className="admin-page-header">
+          <div className="admin-page-header__identity">
+            <span className="admin-page-header__icon bg-linear-to-br from-violet-600 to-sky-500 text-white">
               <CubeIcon size={21} weight="duotone" />
             </span>
             <div className="min-w-0">
-              <h1 className="text-xl font-bold text-text-primary">Kelola 3D</h1>
+              <h1 className="admin-page-header__title">Kelola 3D</h1>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="admin-page-header__actions">
             <button
               type="button"
               onClick={fetchCatalog}
@@ -492,7 +492,7 @@ export default function Kelola3dPage() {
           )}
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1754px] table-fixed border-collapse text-left">
+            <table className="admin-data-table min-w-[1754px] table-fixed">
               <thead>
                 <tr className="border-b border-border bg-linear-to-r from-surface-secondary to-surface">
                   {[

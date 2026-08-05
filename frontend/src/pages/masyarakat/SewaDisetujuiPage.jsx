@@ -135,19 +135,19 @@ export default function SewaDisetujuiPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-5">
-      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-        <div>
+      <div className="admin-page-header">
+        <div className="min-w-0">
           <p className="text-xs font-semibold text-accent">
             Portal Masyarakat
           </p>
-          <h1 className="mt-0.5 text-xl font-bold text-text-primary md:text-2xl">
+          <h1 className="admin-page-header__title">
             Sewa Aset Disetujui
           </h1>
-          <p className="mt-0.5 text-xs text-text-muted">
+          <p className="admin-page-header__description">
             Sewa yang telah disetujui dan aktif.
           </p>
         </div>
-        <div className="grid grid-cols-3 gap-3 min-w-72">
+        <div className="admin-page-header__actions grid min-w-72 grid-cols-3 gap-3">
           <SummaryCard
             icon={StorefrontIcon}
             label="Disewakan"

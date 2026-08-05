@@ -67,24 +67,26 @@ export default function DashboardPage() {
   return (
     <div className="min-h-full bg-surface-secondary p-4 md:p-6">
       <div className="mx-auto max-w-[1800px] space-y-5">
-        <header className="flex min-w-0 items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-sky-400 via-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/25 ring-1 ring-inset ring-white/30 dark:from-sky-400 dark:via-blue-500 dark:to-indigo-600 dark:shadow-blue-950/60 dark:ring-blue-200/30">
-              <ChartBarIcon size={24} weight="fill" />
+        <header className="admin-page-header">
+          <div className="admin-page-header__identity">
+            <span className="admin-page-header__icon bg-linear-to-br from-sky-500 to-indigo-600 text-white">
+              <ChartBarIcon size={21} weight="fill" />
             </span>
             <div className="min-w-0">
-              <h1 className="text-xl font-bold text-text-primary lg:text-2xl">
+              <h1 className="admin-page-header__title">
                 Dashboard Bhumi Satya
               </h1>
-              <p className="mt-0.5 truncate text-xs text-text-secondary">
+              <p className="admin-page-header__description">
                 Ringkasan Digital Twin dan penyewaan.
               </p>
             </div>
           </div>
-          <span className="hidden shrink-0 items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text-secondary sm:flex">
-            <PulseIcon size={15} className="text-emerald-500" weight="fill" />
-            Data aktual
-          </span>
+          <div className="admin-page-header__actions">
+            <span className="hidden h-9 shrink-0 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-text-secondary sm:flex">
+              <PulseIcon size={15} className="text-emerald-500" weight="fill" />
+              Data aktual
+            </span>
+          </div>
         </header>
 
         <Suspense fallback={<LoadingFallback />}>

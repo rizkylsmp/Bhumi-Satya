@@ -1028,7 +1028,7 @@ export default function ProfilPage() {
 
                   {/* Desktop view - Table */}
                   <div className="hidden sm:block border border-border rounded-xl overflow-hidden">
-                    <table className="w-full min-w-[680px] table-fixed">
+                    <table className="admin-data-table min-w-[680px] table-fixed">
                       <thead>
                         <tr className="bg-surface-secondary/50">
                           <SortableTableHeader

@@ -612,13 +612,20 @@ export default function PermintaanPage() {
   };
 
   return (
-    <div className="space-y-6 m-5">
+    <div className="space-y-5">
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-text-primary">Permintaan Sewa</h1>
-        <p className="mt-0.5 text-xs text-text-muted">
-          Permintaan sewa dari masyarakat.
-        </p>
+      <div className="admin-page-header">
+        <div className="admin-page-header__identity">
+          <span className="admin-page-header__icon bg-linear-to-br from-blue-500 to-indigo-600 text-white">
+            <StorefrontIcon size={21} weight="duotone" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="admin-page-header__title">Permintaan Sewa</h1>
+            <p className="admin-page-header__description">
+              Permintaan sewa dari masyarakat.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Stats cards */}
@@ -738,7 +745,7 @@ export default function PermintaanPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1030px] table-fixed text-sm">
+            <table className="admin-data-table min-w-[1030px] table-fixed text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-secondary/50">
                   <SortableTableHeader

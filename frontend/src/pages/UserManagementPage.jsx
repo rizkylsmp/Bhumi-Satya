@@ -23,6 +23,7 @@ import {
   TrashIcon,
   PencilSimpleIcon,
   ArrowLeftIcon,
+  UsersThreeIcon,
 } from "@phosphor-icons/react";
 
 const USER_COLUMN_WIDTHS = {
@@ -273,23 +274,28 @@ export default function UserManagementPage() {
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-text-primary">
-            Manajemen User
-          </h1>
-          <p className="mt-0.5 text-xs text-text-tertiary">
-            {stats.totalUsers} akun pengguna terdaftar.
-          </p>
+      <div className="admin-page-header">
+        <div className="admin-page-header__identity">
+          <span className="admin-page-header__icon bg-linear-to-br from-blue-500 to-indigo-600 text-white">
+            <UsersThreeIcon size={21} weight="duotone" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="admin-page-header__title">Manajemen User</h1>
+            <p className="admin-page-header__description">
+              {stats.totalUsers} akun pengguna terdaftar.
+            </p>
+          </div>
         </div>
         {canCreate && (
-          <button
-            onClick={handleOpenAddModal}
-            className="flex items-center justify-center gap-2 bg-accent text-surface px-4 py-2.5 rounded-lg hover:bg-accent-hover transition-all shadow-lg hover:shadow-xl text-sm font-medium w-full sm:w-auto"
-          >
-            <PlusIcon size={18} weight="bold" />
-            Tambah User
-          </button>
+          <div className="admin-page-header__actions">
+            <button
+              onClick={handleOpenAddModal}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-accent px-3 text-xs font-bold text-surface transition hover:bg-accent-hover"
+            >
+              <PlusIcon size={15} weight="bold" />
+              Tambah User
+            </button>
+          </div>
         )}
       </div>
 
@@ -552,7 +558,7 @@ export default function UserManagementPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[960px] table-fixed">
+            <table className="admin-data-table min-w-[960px] table-fixed">
               <thead className="bg-surface-secondary border-b border-border">
                 <tr>
                   <SortableTableHeader

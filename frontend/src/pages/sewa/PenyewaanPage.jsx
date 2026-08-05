@@ -251,39 +251,39 @@ export default function PenyewaanPage() {
   return (
     <div className="p-4 lg:p-6 space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-            <HandshakeIcon size={24} weight="fill" className="text-surface" />
+      <div className="admin-page-header">
+        <div className="admin-page-header__identity">
+          <div className="admin-page-header__icon bg-linear-to-br from-blue-500 to-blue-600">
+            <HandshakeIcon size={21} weight="fill" className="text-surface" />
           </div>
           <div>
-            <h1 className="text-xl lg:text-2xl font-bold text-text-primary">
+            <h1 className="admin-page-header__title">
               Penyewaan Aset
             </h1>
-            <p className="mt-0.5 text-xs text-text-muted">
+            <p className="admin-page-header__description">
               Aset dan kontrak penyewaan.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="admin-page-header__actions">
           <button
             onClick={() => fetchData()}
             disabled={loading}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary transition-all text-sm font-medium disabled:opacity-50"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 text-xs font-bold text-text-secondary transition hover:border-accent hover:text-accent disabled:opacity-50"
           >
             <ArrowsClockwiseIcon
-              size={18}
+              size={15}
               weight="bold"
               className={loading ? "animate-spin" : ""}
             />
-            <span className="hidden sm:inline">Refresh</span>
+            <span>Refresh</span>
           </button>
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center justify-center gap-2 bg-linear-to-r from-accent to-accent/90 text-surface px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-accent/30 transition-all text-sm font-medium"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-accent px-3 text-xs font-bold text-surface transition hover:bg-accent/90"
           >
-            <PlusIcon size={18} weight="bold" />
+            <PlusIcon size={15} weight="bold" />
             Tambah Aset Sewa
           </button>
         </div>

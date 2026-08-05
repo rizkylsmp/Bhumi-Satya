@@ -341,36 +341,38 @@ export default function RiwayatPage() {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-linear-to-br from-accent to-accent/80 rounded-xl flex items-center justify-center">
+      <div className="admin-page-header">
+        <div className="admin-page-header__identity">
+          <div className="admin-page-header__icon bg-linear-to-br from-accent to-accent/80">
             <ClockCounterClockwiseIcon
-              size={24}
+              size={21}
               weight="duotone"
               className="text-surface"
             />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-text-primary">
+            <h1 className="admin-page-header__title">
               Riwayat Aktivitas
             </h1>
-            <p className="mt-0.5 text-xs text-text-tertiary">
+            <p className="admin-page-header__description">
               Aktivitas pengguna dan sistem.
             </p>
           </div>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className="flex items-center justify-center gap-2 bg-surface border border-border text-text-secondary px-4 py-2.5 rounded-xl hover:bg-surface-secondary hover:border-accent/30 transition-all text-sm font-medium disabled:opacity-50 shadow-sm"
-        >
-          <ArrowsClockwiseIcon
-            size={18}
-            weight="bold"
-            className={loading ? "animate-spin" : ""}
-          />
-          <span className="hidden sm:inline">Refresh</span>
-        </button>
+        <div className="admin-page-header__actions">
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 text-xs font-bold text-text-secondary transition hover:border-accent hover:text-accent disabled:opacity-50"
+          >
+            <ArrowsClockwiseIcon
+              size={15}
+              weight="bold"
+              className={loading ? "animate-spin" : ""}
+            />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -498,7 +500,7 @@ export default function RiwayatPage() {
               </p>
             </div>
           ) : (
-            <table className="w-full min-w-[1130px] table-fixed">
+            <table className="admin-data-table min-w-[1130px] table-fixed">
               <thead className="bg-surface-secondary/50 border-b border-border">
                 <tr>
                   <SortableTableHeader

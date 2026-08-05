@@ -152,17 +152,17 @@ export default function PengaturanPage() {
   return (
     <div className="p-4 lg:p-6 space-y-6">
       {/* ==================== PAGE HEADER ==================== */}
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-linear-to-br from-accent to-accent/70 rounded-xl flex items-center justify-center">
-          <GearIcon size={24} weight="duotone" className="text-surface" />
-        </div>
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-text-primary">
-            Pengaturan
-          </h1>
-          <p className="mt-0.5 text-xs text-text-tertiary">
-            Preferensi aplikasi dan sistem.
-          </p>
+      <div className="admin-page-header">
+        <div className="admin-page-header__identity">
+          <div className="admin-page-header__icon bg-linear-to-br from-accent to-accent/70">
+            <GearIcon size={21} weight="duotone" className="text-surface" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="admin-page-header__title">Pengaturan</h1>
+            <p className="admin-page-header__description">
+              Preferensi aplikasi dan sistem.
+            </p>
+          </div>
         </div>
       </div>
 

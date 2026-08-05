@@ -1,5 +1,14 @@
 export const changelogEntries = [
   {
+    id: "consistent-responsive-page-layout",
+    date: "2026-08-04",
+    type: "peningkatan",
+    title: "Menyeragamkan tampilan halaman internal",
+    summary:
+      "Seluruh halaman dashboard kini mengikuti lebar, header, kelompok tombol, dan tata letak tabel Kelola 3D agar konsisten di desktop maupun perangkat seluler.",
+    area: "Antarmuka",
+  },
+  {
     id: "parcel-2d-building-3d-hierarchy",
     date: "2026-08-04",
     type: "fitur",

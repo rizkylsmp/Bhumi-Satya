@@ -496,33 +496,33 @@ export default function SubstansiAssetPage({
   return (
     <div className="p-4 lg:p-6 space-y-5 min-h-screen">
       {/* Page Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
+      <div className="admin-page-header">
+        <div className="admin-page-header__identity">
           <div
-            className={`h-10 w-10 shrink-0 bg-linear-to-br ${iconColor} rounded-lg flex items-center justify-center`}
+            className={`admin-page-header__icon bg-linear-to-br ${iconColor}`}
           >
             <Icon size={21} weight="fill" className="text-surface" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-text-primary">
+            <h1 className="admin-page-header__title">
               {title}
             </h1>
-            <p className="mt-0.5 truncate text-xs text-text-muted">{subtitle}</p>
+            <p className="admin-page-header__description">{subtitle}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="admin-page-header__actions">
           <button
             onClick={fetchAssets}
             disabled={loading}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary transition-all text-sm font-medium disabled:opacity-50"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 text-xs font-bold text-text-secondary transition hover:border-accent hover:text-accent disabled:opacity-50"
           >
             <ArrowsClockwiseIcon
-              size={18}
+              size={15}
               weight="bold"
               className={loading ? "animate-spin" : ""}
             />
-            <span className="hidden sm:inline">Refresh</span>
+            <span>Refresh</span>
           </button>
         </div>
       </div>
@@ -585,7 +585,7 @@ export default function SubstansiAssetPage({
             {/* Desktop Table */}
             <div className="hidden lg:block overflow-x-auto">
               <table
-                className="w-full"
+                className="admin-data-table"
                 style={{ minWidth: `${560 + columns.length * 160}px` }}
               >
                 <thead>

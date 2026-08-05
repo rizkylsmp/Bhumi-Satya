@@ -60,10 +60,6 @@ export default function RootLayout() {
 
   // Halaman peta tidak perlu scroll wrapper
   const isMapPage = location.pathname === "/peta";
-  const isCompactReferencePage =
-    location.pathname === "/kelola-3d" ||
-    location.pathname.startsWith("/kelola-3d/");
-  const useCompactPageDensity = !isMapPage && !isCompactReferencePage;
 
   // Fetch notifications (centralized)
   const fetchNotifications = useCallback(async () => {
@@ -205,7 +201,7 @@ export default function RootLayout() {
         >
           <div
             key={location.pathname}
-            className={`${useCompactPageDensity ? "admin-density-compact" : ""} route-content-enter ${
+            className={`${isMapPage ? "" : "admin-page-shell"} route-content-enter ${
               isMapPage ? "h-full" : ""
             }`}
           >

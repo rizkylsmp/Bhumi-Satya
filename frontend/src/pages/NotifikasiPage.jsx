@@ -288,52 +288,52 @@ export default function NotifikasiPage() {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-linear-to-br from-accent to-accent/80 rounded-xl flex items-center justify-center">
+      <div className="admin-page-header">
+        <div className="admin-page-header__identity">
+          <div className="admin-page-header__icon bg-linear-to-br from-accent to-accent/80">
             <BellRingingIcon
-              size={24}
+              size={21}
               weight="duotone"
               className="text-surface"
             />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-text-primary">
+            <h1 className="admin-page-header__title">
               Notifikasi
             </h1>
-            <p className="mt-0.5 text-xs text-text-tertiary">
+            <p className="admin-page-header__description">
               Pemberitahuan dan aktivitas terbaru.
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="admin-page-header__actions">
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center justify-center gap-2 bg-surface border border-border text-text-secondary px-3 py-2.5 rounded-xl hover:bg-surface-secondary hover:border-accent/30 transition-all text-sm font-medium disabled:opacity-50 shadow-sm"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 text-xs font-bold text-text-secondary transition hover:border-accent hover:text-accent disabled:opacity-50"
           >
             <ArrowsClockwiseIcon
-              size={16}
+              size={15}
               weight="bold"
               className={loading ? "animate-spin" : ""}
             />
-            <span className="hidden sm:inline">Refresh</span>
+            <span>Refresh</span>
           </button>
           <button
             onClick={handleMarkAllAsRead}
             disabled={stats.belumDibaca === 0}
-            className="flex items-center justify-center gap-2 bg-surface border border-border text-text-secondary px-3 py-2.5 rounded-xl hover:bg-surface-secondary hover:border-accent/30 transition-all text-sm font-medium disabled:opacity-50 shadow-sm"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 text-xs font-bold text-text-secondary transition hover:border-accent hover:text-accent disabled:opacity-50"
           >
-            <ChecksIcon size={16} weight="bold" />
-            <span className="hidden sm:inline">Tandai Dibaca</span>
+            <ChecksIcon size={15} weight="bold" />
+            <span className="hidden md:inline">Tandai Dibaca</span>
           </button>
           <button
             onClick={handleDeleteAll}
             disabled={notifications.length === 0}
-            className="flex items-center justify-center gap-2 bg-surface border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 px-3 py-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-sm font-medium disabled:opacity-50 shadow-sm"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-red-200 bg-surface px-3 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-900/20"
           >
-            <TrashIcon size={16} weight="bold" />
-            <span className="hidden sm:inline">Hapus Semua</span>
+            <TrashIcon size={15} weight="bold" />
+            <span className="hidden md:inline">Hapus Semua</span>
           </button>
         </div>
       </div>

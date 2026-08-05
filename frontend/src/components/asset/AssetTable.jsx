@@ -226,7 +226,7 @@ export default function AssetTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-300">
+      <table className="admin-data-table min-w-300">
         <thead>
           <tr className="bg-linear-to-r from-surface-secondary to-surface border-b border-border">
             <TableHeader

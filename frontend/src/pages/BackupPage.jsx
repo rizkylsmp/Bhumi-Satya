@@ -407,29 +407,29 @@ export default function BackupPage() {
   return (
     <div className="p-4 lg:p-6 space-y-6">
       {/* ==================== PAGE HEADER ==================== */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-linear-to-br from-accent to-accent/70 rounded-xl flex items-center justify-center">
+      <div className="admin-page-header">
+        <div className="admin-page-header__identity">
+          <div className="admin-page-header__icon bg-linear-to-br from-accent to-accent/70">
             <HardDrivesIcon
-              size={24}
+              size={21}
               weight="duotone"
               className="text-surface"
             />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-text-primary">
+            <h1 className="admin-page-header__title">
               Backup & Restore
             </h1>
-            <p className="mt-0.5 text-xs text-text-tertiary">
+            <p className="admin-page-header__description">
               Cadangkan atau pulihkan data sistem.
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="admin-page-header__actions">
           {canCreate && (
             <button
               onClick={handleExportCsv}
-              className="flex items-center justify-center gap-2 bg-surface border border-border text-text-primary px-4 py-2.5 rounded-xl hover:bg-surface-secondary transition-all text-sm font-semibold"
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 text-xs font-bold text-text-secondary transition hover:border-accent hover:text-accent"
             >
               <DownloadSimpleIcon size={16} weight="bold" />
               Export CSV
@@ -439,7 +439,7 @@ export default function BackupPage() {
             <button
               onClick={handleBackupNow}
               disabled={exporting}
-              className="flex items-center justify-center gap-2 bg-accent text-surface px-5 py-2.5 rounded-xl hover:opacity-90 transition-all text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-accent/20"
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-accent px-3 text-xs font-bold text-surface transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {exporting ? (
                 <>
