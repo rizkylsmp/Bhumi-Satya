@@ -1,5 +1,41 @@
 export const changelogEntries = [
   {
+    id: "accurate-notification-summary",
+    date: "2026-08-07",
+    type: "perbaikan",
+    title: "Menyesuaikan ringkasan notifikasi",
+    summary:
+      "Jumlah total, belum dibaca, sudah dibaca, dan notifikasi hari ini kini dihitung dari seluruh data pengguna, bukan hanya halaman yang sedang dibuka.",
+    area: "Notifikasi",
+  },
+  {
+    id: "paginated-changelog",
+    date: "2026-08-07",
+    type: "peningkatan",
+    title: "Mempermudah penelusuran changelog",
+    summary:
+      "Daftar perubahan kini dilengkapi pagination dan pilihan jumlah data per halaman agar riwayat panjang tetap ringkas dan mudah dibaca.",
+    area: "Changelog",
+  },
+  {
+    id: "unified-landing-digital-twin",
+    date: "2026-08-07",
+    type: "peningkatan",
+    title: "Menyamakan Digital Twin di Beranda",
+    summary:
+      "Peta Beranda kini langsung terbuka dalam mode 3D dengan layer awal dan tampilan popup Data Umum yang konsisten dengan Digital Twin publik.",
+    area: "Beranda",
+  },
+  {
+    id: "instant-map-layer-visibility",
+    date: "2026-08-07",
+    type: "perbaikan",
+    title: "Menghilangkan refresh saat mengganti layer",
+    summary:
+      "Switch marker dan polygon kini hanya mengubah visibilitas layer tanpa memuat ulang viewer atau mengubah posisi kamera.",
+    area: "Digital Twin",
+  },
+  {
     id: "context-aware-2d-3d-map-popup",
     date: "2026-08-07",
     type: "perbaikan",

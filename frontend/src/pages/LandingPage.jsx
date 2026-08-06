@@ -39,6 +39,7 @@ import { useSessionStore } from "../stores/sessionStore";
 import { formatDate, formatNumber } from "../utils/format";
 import { normalizeMapMarkers } from "../utils/mapAssets";
 import AssetMapDisplay from "../components/map/AssetMapDisplay";
+import AssetDetailPanel from "../components/map/shared/AssetDetailPanel";
 import SewaPolygonMap from "../components/sewa/SewaPolygonMap";
 import ChatbotButton from "../components/chatbot/ChatbotButton";
 import ChatbotModal from "../components/chatbot/ChatbotModal";
@@ -484,8 +485,10 @@ export default function LandingPage() {
   const [mapAssets, setMapAssets] = useState([]);
   const [mapSearch, setMapSearch] = useState("");
   const [focusedAsset, setFocusedAsset] = useState(null);
-  const [showMapMarkers, setShowMapMarkers] = useState(true);
-  const [showMapPolygons, setShowMapPolygons] = useState(false);
+  const [selectedMapAsset, setSelectedMapAsset] = useState(null);
+  const [isLandingMap3d, setIsLandingMap3d] = useState(true);
+  const [showMapMarkers, setShowMapMarkers] = useState(false);
+  const [showMapPolygons, setShowMapPolygons] = useState(true);
 
   // Login panel state
   const [showLoginPanel, setShowLoginPanel] = useState(
@@ -1109,6 +1112,10 @@ export default function LandingPage() {
               highlightRequestKey={
                 focusedAsset ? `landing-${focusedAsset.id}` : null
               }
+              initialAsset3dMode
+              onAsset3dModeChange={setIsLandingMap3d}
+              onFeatureClick={setSelectedMapAsset}
+              onOtherLayerClick={() => setSelectedMapAsset(null)}
               showControls={false}
               activeLayer="bidang"
               showMarkers={showMapMarkers}
@@ -1121,6 +1128,15 @@ export default function LandingPage() {
               showBelumSertifikat
               popupSectionScope="general"
             />
+            {selectedMapAsset && (
+              <AssetDetailPanel
+                key={selectedMapAsset.id_aset || selectedMapAsset.id}
+                asset={selectedMapAsset}
+                onClose={() => setSelectedMapAsset(null)}
+                showModel3d={isLandingMap3d}
+                visibleSectionIds={["general"]}
+              />
+            )}
             <div className="pointer-events-none absolute bottom-4 left-4 z-20">
               <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-slate-950/75 px-3 py-2.5 text-white shadow-xl backdrop-blur-xl">
                 <span className="flex items-center gap-1.5 text-[10px] font-medium">

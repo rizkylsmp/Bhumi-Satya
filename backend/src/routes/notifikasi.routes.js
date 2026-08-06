@@ -16,6 +16,7 @@ const canView = permissionMiddleware(PERMISSIONS.NOTIFIKASI_VIEW);
 
 // GET routes
 router.get("/", canView, NotifikasiController.getAll);
+router.get("/stats", canView, NotifikasiController.getStats);
 router.get("/unread-count", canView, NotifikasiController.getUnreadCount);
 router.get("/recent", canView, NotifikasiController.getRecent);
 

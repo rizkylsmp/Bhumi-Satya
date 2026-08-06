@@ -40,16 +40,27 @@ export default function NotifikasiPage() {
     totalItems: 0,
     itemsPerPage: 10,
   });
+  const [stats, setStats] = useState({
+    total: 0,
+    belumDibaca: 0,
+    sudahDibaca: 0,
+    hariIni: 0,
+  });
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
       const params = { page, limit };
-      if (activeTab === "belum_dibaca") params.unreadOnly = "true";
+      if (activeTab === "belum_dibaca") params.readStatus = "unread";
+      if (activeTab === "sudah_dibaca") params.readStatus = "read";
 
-      const response = await notifikasiService.getAll(params);
+      const [response, statsResponse] = await Promise.all([
+        notifikasiService.getAll(params),
+        notifikasiService.getStats(),
+      ]);
       const data = response.data.data || [];
+      const summary = statsResponse.data?.data || {};
 
       // Transform API data to component format
       const transformedData = data.map((notif) => ({
@@ -75,10 +86,23 @@ export default function NotifikasiPage() {
         totalItems: transformedData.length,
         itemsPerPage: limit,
       });
+      setStats({
+        total: Number(summary.total) || 0,
+        belumDibaca: Number(summary.unread) || 0,
+        sudahDibaca: Number(summary.read) || 0,
+        hariIni: Number(summary.today) || 0,
+      });
     } catch (error) {
       console.error("Error fetching notifications:", error);
-      // Use sample data as fallback
-      setNotifications(getSampleNotifications());
+      setNotifications([]);
+      setPagination({
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+        itemsPerPage: limit,
+      });
+      setStats({ total: 0, belumDibaca: 0, sudahDibaca: 0, hariIni: 0 });
+      toast.error("Gagal memuat notifikasi");
     } finally {
       setLoading(false);
     }
@@ -141,35 +165,6 @@ export default function NotifikasiPage() {
     return match?.[1] || null;
   };
 
-  // Sample data fallback
-  const getSampleNotifications = () => [
-    {
-      id: 1,
-      type: "info",
-      icon: <InfoIcon size={20} />,
-      iconBg: "bg-blue-100 dark:bg-blue-900/30",
-      title: "Selamat Datang",
-      isNew: true,
-      time: "Baru saja",
-      content:
-        "Selamat datang di Bhumi Satya! Mulai kelola aset tanah Anda dengan mudah.",
-      detail: "",
-      isRead: false,
-    },
-  ];
-
-  // Statistics (computed from data)
-  const stats = {
-    total: notifications.length,
-    belumDibaca: notifications.filter((n) => !n.isRead).length,
-    hariIni: notifications.filter(
-      (n) =>
-        n.time.includes("menit") ||
-        n.time.includes("jam") ||
-        n.time === "Baru saja",
-    ).length,
-  };
-
   // Stat cards config
   const statCards = [
     {
@@ -207,55 +202,42 @@ export default function NotifikasiPage() {
     {
       id: "sudah_dibaca",
       label: "Sudah Dibaca",
-      count: stats.total - stats.belumDibaca,
+      count: stats.sudahDibaca,
     },
   ];
 
   const handleMarkAsRead = async (id) => {
     try {
       await notifikasiService.markAsRead(id);
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === id ? { ...n, isRead: true, isNew: false } : n,
-        ),
-      );
+      await fetchNotifications();
       refreshNotifications?.();
     } catch (error) {
       console.error("Error marking as read:", error);
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === id ? { ...n, isRead: true, isNew: false } : n,
-        ),
-      );
+      toast.error("Gagal menandai notifikasi");
     }
   };
 
   const handleMarkAllAsRead = async () => {
     try {
       await notifikasiService.markAllAsRead();
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, isRead: true, isNew: false })),
-      );
+      await fetchNotifications();
       refreshNotifications?.();
       toast.success("Semua notifikasi ditandai sudah dibaca");
     } catch (error) {
       console.error("Error marking all as read:", error);
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, isRead: true, isNew: false })),
-      );
+      toast.error("Gagal menandai semua notifikasi");
     }
   };
 
   const handleDelete = async (id) => {
     try {
       await notifikasiService.delete(id);
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      await fetchNotifications();
       refreshNotifications?.();
       toast.success("Notifikasi dihapus");
     } catch (error) {
       console.error("Error deleting notification:", error);
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-      toast.success("Notifikasi dihapus");
+      toast.error("Gagal menghapus notifikasi");
     }
   };
 
@@ -263,13 +245,12 @@ export default function NotifikasiPage() {
     if (window.confirm("Apakah Anda yakin ingin menghapus semua notifikasi?")) {
       try {
         await notifikasiService.clearAll();
-        setNotifications([]);
+        await fetchNotifications();
         refreshNotifications?.();
         toast.success("Semua notifikasi dihapus");
       } catch (error) {
         console.error("Error clearing notifications:", error);
-        setNotifications([]);
-        toast.success("Semua notifikasi dihapus");
+        toast.error("Gagal menghapus semua notifikasi");
       }
     }
   };
@@ -279,11 +260,7 @@ export default function NotifikasiPage() {
     toast.success("Data diperbarui");
   };
 
-  const filteredNotifications = notifications.filter((n) => {
-    if (activeTab === "belum_dibaca") return !n.isRead;
-    if (activeTab === "sudah_dibaca") return n.isRead;
-    return true;
-  });
+  const filteredNotifications = notifications;
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
@@ -329,7 +306,7 @@ export default function NotifikasiPage() {
           </button>
           <button
             onClick={handleDeleteAll}
-            disabled={notifications.length === 0}
+            disabled={stats.total === 0}
             className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-red-200 bg-surface px-3 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-900/20"
           >
             <TrashIcon size={15} weight="bold" />

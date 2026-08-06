@@ -275,6 +275,10 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
 ) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
+  const polygonDataSourceRef = useRef(null);
+  const pointDataSourceRef = useRef(null);
+  const showMarkersRef = useRef(showMarkers);
+  const showPolygonsRef = useRef(showPolygons);
   const basemapIdRef = useRef(basemapId);
   const basemapOptionRef = useRef(basemapOption);
   const appliedBasemapSignatureRef = useRef("");
@@ -314,6 +318,21 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     onBearingChange,
     onStatusChange,
   ]);
+
+  useEffect(() => {
+    showMarkersRef.current = showMarkers;
+    showPolygonsRef.current = showPolygons;
+    const viewer = viewerRef.current;
+    if (!viewer || viewer.isDestroyed()) return;
+
+    if (polygonDataSourceRef.current) {
+      polygonDataSourceRef.current.show = showPolygons;
+    }
+    if (pointDataSourceRef.current) {
+      pointDataSourceRef.current.show = showMarkers;
+    }
+    viewer.scene.requestRender();
+  }, [showMarkers, showPolygons]);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -682,7 +701,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
         fallbackTargetRef.current = buildings;
       }
 
-      if (showPolygons && polygonGeoJson?.features?.length) {
+      if (polygonGeoJson?.features?.length) {
         const polygons = await GeoJsonDataSource.load(polygonGeoJson, {
           clampToGround: true,
           fill: Color.fromCssColorString(POLYGON_STYLES.default.fill).withAlpha(
@@ -692,6 +711,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           strokeWidth: 1,
         });
         if (cancelled) return;
+        polygons.show = showPolygonsRef.current;
         polygons.entities.values.forEach((entity) => {
           if (!entity.polygon) return;
           const style = getPolygonStyle(entity);
@@ -704,22 +724,25 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           if (entity.id != null) assetEntityById.set(String(entity.id), entity);
         });
         await viewer.dataSources.add(polygons);
+        polygonDataSourceRef.current = polygons;
         fallbackTargetRef.current ||= polygons;
       }
 
-      if (showMarkers && pointGeoJson?.features?.length) {
+      if (pointGeoJson?.features?.length) {
         const points = await GeoJsonDataSource.load(pointGeoJson, {
           clampToGround: true,
           markerColor: Color.fromCssColorString("#0ea5e9"),
           markerSize: 20,
         });
         if (cancelled) return;
+        points.show = showMarkersRef.current;
         points.entities.values.forEach((entity) => {
           if (entity.id != null && !assetEntityById.has(String(entity.id))) {
             assetEntityById.set(String(entity.id), entity);
           }
         });
         await viewer.dataSources.add(points);
+        pointDataSourceRef.current = points;
         fallbackTargetRef.current ||= points;
       }
 
@@ -1047,6 +1070,8 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       fallbackTargetRef.current = null;
       hoveredModelRef.current = null;
       selectedModelRef.current = null;
+      polygonDataSourceRef.current = null;
+      pointDataSourceRef.current = null;
       appliedBasemapSignatureRef.current = "";
       viewerRef.current = null;
       if (viewer && !viewer.isDestroyed()) viewer.destroy();
@@ -1056,8 +1081,6 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     detailedModels,
     pointGeoJson,
     polygonGeoJson,
-    showMarkers,
-    showPolygons,
   ]);
 
   return <div ref={containerRef} className="h-full w-full" />;

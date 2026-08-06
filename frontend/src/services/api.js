@@ -212,6 +212,7 @@ export const riwayatService = {
 
 export const notifikasiService = {
   getAll: (params) => api.get("/notifikasi", { params }),
+  getStats: () => api.get("/notifikasi/stats"),
   getRecent: (limit = 5) =>
     api.get("/notifikasi/recent", { params: { limit } }),
   markAsRead: (id) => api.put(`/notifikasi/${id}/read`),

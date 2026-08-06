@@ -9,6 +9,24 @@ function isMissingNotificationTableError(error) {
   );
 }
 
+const getJakartaDayRange = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const values = Object.fromEntries(
+    parts.map(({ type, value }) => [type, value]),
+  );
+  const start = new Date(
+    `${values.year}-${values.month}-${values.day}T00:00:00+07:00`,
+  );
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start, end };
+};
+
 /**
  * Get all notifications for current user
  * GET /api/notifikasi
@@ -19,6 +37,7 @@ export const getAll = async (req, res) => {
       page = 1,
       limit = 20,
       unreadOnly = "false",
+      readStatus,
       kategori,
       sort = "created_at",
       order = "DESC",
@@ -26,7 +45,11 @@ export const getAll = async (req, res) => {
 
     const where = { user_id: req.user.id_user };
 
-    if (unreadOnly === "true") where.dibaca = false;
+    if (unreadOnly === "true" || readStatus === "unread") {
+      where.dibaca = false;
+    } else if (readStatus === "read") {
+      where.dibaca = true;
+    }
     if (kategori) where.kategori = kategori;
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -52,6 +75,43 @@ export const getAll = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching notifications:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get notification summary for current user
+ * GET /api/notifikasi/stats
+ */
+export const getStats = async (req, res) => {
+  try {
+    const userWhere = { user_id: req.user.id_user };
+    const { start, end } = getJakartaDayRange();
+    const [total, unread, today] = await Promise.all([
+      Notifikasi.count({ where: userWhere }),
+      Notifikasi.count({ where: { ...userWhere, dibaca: false } }),
+      Notifikasi.count({
+        where: {
+          ...userWhere,
+          created_at: { [Op.gte]: start, [Op.lt]: end },
+        },
+      }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        unread,
+        read: Math.max(total - unread, 0),
+        today,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching notification stats:", error);
     res.status(500).json({
       success: false,
       error: error.message,

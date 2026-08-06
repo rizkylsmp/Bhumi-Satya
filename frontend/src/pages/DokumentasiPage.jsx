@@ -6,7 +6,10 @@ import {
   PlusIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react";
+import Pagination from "../components/asset/Pagination";
 import { changelogEntries } from "../data/changelog";
+
+const DEFAULT_PAGE_SIZE = 10;
 
 const filters = [
   {
@@ -54,19 +57,33 @@ const toDate = (value) => new Date(`${value}T00:00:00Z`);
 
 export default function DokumentasiPage() {
   const [activeFilter, setActiveFilter] = useState("semua");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+
+  const visibleEntries = useMemo(
+    () =>
+      activeFilter === "semua"
+      ? changelogEntries
+        : changelogEntries.filter((entry) => entry.type === activeFilter),
+    [activeFilter],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(visibleEntries.length / pageSize));
+  const activePage = Math.min(currentPage, totalPages);
 
   const groupedEntries = useMemo(() => {
-    const visibleEntries = activeFilter === "semua"
-      ? changelogEntries
-      : changelogEntries.filter((entry) => entry.type === activeFilter);
+    const pageEntries = visibleEntries.slice(
+      (activePage - 1) * pageSize,
+      activePage * pageSize,
+    );
 
-    return visibleEntries.reduce((groups, entry) => {
+    return pageEntries.reduce((groups, entry) => {
       const month = monthFormatter.format(toDate(entry.date));
       if (!groups[month]) groups[month] = [];
       groups[month].push(entry);
       return groups;
     }, {});
-  }, [activeFilter]);
+  }, [activePage, pageSize, visibleEntries]);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
@@ -91,7 +108,10 @@ export default function DokumentasiPage() {
             <button
               key={filter.id}
               type="button"
-              onClick={() => setActiveFilter(filter.id)}
+              onClick={() => {
+                setActiveFilter(filter.id);
+                setCurrentPage(1);
+              }}
               aria-pressed={active}
               className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-3.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                 active
@@ -155,6 +175,22 @@ export default function DokumentasiPage() {
             </div>
           </section>
         ))}
+      </div>
+
+      <div className="mt-8 border-t border-border pt-5">
+        <Pagination
+          currentPage={activePage}
+          totalPages={totalPages}
+          totalItems={visibleEntries.length}
+          itemsPerPage={pageSize}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(nextPageSize) => {
+            setPageSize(nextPageSize);
+            setCurrentPage(1);
+          }}
+          pageSizeOptions={[10, 20, 50]}
+          itemLabel="perubahan"
+        />
       </div>
     </div>
   );
