@@ -17,9 +17,13 @@ import {
   DEFAULT_MAP_CENTER_LAT_LNG,
   DEFAULT_MAP_ZOOM,
 } from "../mapDefaults";
-
-const MAP_STYLE =
-  "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+import {
+  createMapLibreBasemapStyle,
+  DEFAULT_BASEMAP_ID,
+  getBasemapOption,
+} from "../basemapOptions";
+import useBasemapOptions from "../useBasemapOptions";
+import MapBasemapSelect from "./MapBasemapSelect";
 
 const toNumber = (value) => {
   if (value === null || value === undefined || value === "") return null;
@@ -122,6 +126,7 @@ function MapLibrePolygonCanvas({
   onAddPoint,
   onMovePoint,
   onRemovePoint,
+  basemapOption,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -201,7 +206,7 @@ function MapLibrePolygonCanvas({
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: MAP_STYLE,
+      style: createMapLibreBasemapStyle(basemapOption),
       center: initialCenter,
       zoom: DEFAULT_MAP_ZOOM,
       attributionControl: true,
@@ -273,7 +278,7 @@ function MapLibrePolygonCanvas({
       map.remove();
       mapRef.current = null;
     };
-  }, [center, points, syncGeometry, syncMarkers, clearMarkers]);
+  }, [basemapOption, center, points, syncGeometry, syncMarkers, clearMarkers]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -321,12 +326,17 @@ export default function MapPolygonDrawer({
   centerLng,
   revealKey = 0,
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [points, setPoints] = useState([]);
   const [savedPoints, setSavedPoints] = useState([]); // backup for cancel
+  const [activeBasemap, setActiveBasemap] = useState(DEFAULT_BASEMAP_ID);
+  const basemapOptions = useBasemapOptions();
   const lastRevealKeyRef = useRef(0);
+  const basemapOption =
+    basemapOptions.find((option) => option.id === activeBasemap)
+    || getBasemapOption(activeBasemap);
 
   const defaultCenter = DEFAULT_MAP_CENTER_LAT_LNG;
   const parsedLat = toNumber(centerLat);
@@ -686,6 +696,11 @@ export default function MapPolygonDrawer({
           <div
             className={`flex-1 relative ${isDrawing ? "map-cursor-crosshair" : ""}`}
           >
+            <MapBasemapSelect
+              options={basemapOptions}
+              value={basemapOption.id}
+              onChange={setActiveBasemap}
+            />
             <MapLibrePolygonCanvas
               points={points}
               isDrawing={isDrawing}
@@ -694,6 +709,7 @@ export default function MapPolygonDrawer({
               onAddPoint={handleAddPoint}
               onMovePoint={handleVertexDrag}
               onRemovePoint={handleRemoveVertex}
+              basemapOption={basemapOption}
             />
           </div>
 
@@ -789,6 +805,11 @@ export default function MapPolygonDrawer({
           <div
             className={`h-96 relative ${isDrawing ? "map-cursor-crosshair" : ""}`}
           >
+            <MapBasemapSelect
+              options={basemapOptions}
+              value={basemapOption.id}
+              onChange={setActiveBasemap}
+            />
             <MapLibrePolygonCanvas
               points={points}
               isDrawing={isDrawing}
@@ -797,6 +818,7 @@ export default function MapPolygonDrawer({
               onAddPoint={handleAddPoint}
               onMovePoint={handleVertexDrag}
               onRemovePoint={handleRemoveVertex}
+              basemapOption={basemapOption}
             />
           </div>
 

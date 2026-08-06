@@ -1,5 +1,23 @@
 export const changelogEntries = [
   {
+    id: "configurable-production-database-ssl",
+    date: "2026-08-07",
+    type: "perbaikan",
+    title: "Menyesuaikan koneksi database deployment",
+    summary:
+      "Proses migrasi dan backend kini mengikuti pengaturan SSL database sehingga deployment dapat menggunakan penyedia PostgreSQL tanpa SSL.",
+    area: "Deployment",
+  },
+  {
+    id: "spatial-editor-basemap-and-layout",
+    date: "2026-08-07",
+    type: "peningkatan",
+    title: "Mempermudah pengisian data spasial",
+    summary:
+      "Peta gambar polygon kini langsung terbuka, impor GeoJSON ditempatkan setelah peta, dan pemilih titik maupun polygon menyediakan pilihan basemap.",
+    area: "Kelola 2D",
+  },
+  {
     id: "accurate-notification-summary",
     date: "2026-08-07",
     type: "perbaikan",

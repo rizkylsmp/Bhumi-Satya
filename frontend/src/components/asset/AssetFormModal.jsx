@@ -1739,6 +1739,20 @@ export default function AssetFormModal({
                     label="Koordinat Lokasi"
                   />
 
+                  <AssetPolygonDrawer
+                    polygonData={formData.polygon_bidang}
+                    revealKey={polygonImportVersion}
+                    onPolygonChange={(polygon) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        polygon_bidang: polygon,
+                      }));
+                    }}
+                    centerLat={formData.koordinat_lat}
+                    centerLng={formData.koordinat_long}
+                    label="Gambar Polygon Bidang Tanah"
+                  />
+
                   <div className="rounded-xl border border-border bg-surface p-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-start gap-3">
@@ -1780,19 +1794,6 @@ export default function AssetFormModal({
                     </div>
                   </div>
 
-                  <AssetPolygonDrawer
-                    polygonData={formData.polygon_bidang}
-                    revealKey={polygonImportVersion}
-                    onPolygonChange={(polygon) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        polygon_bidang: polygon,
-                      }));
-                    }}
-                    centerLat={formData.koordinat_lat}
-                    centerLng={formData.koordinat_long}
-                    label="Gambar Polygon Bidang Tanah"
-                  />
                 </div>
               )}
 

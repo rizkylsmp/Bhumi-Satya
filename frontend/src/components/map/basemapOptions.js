@@ -68,3 +68,51 @@ export const BASEMAP_OPTIONS = [
 export const getBasemapOption = (basemapId) =>
   BASEMAP_OPTIONS.find((option) => option.id === basemapId)
   || BASEMAP_OPTIONS.find((option) => option.id === DEFAULT_BASEMAP_ID);
+
+export const createMapLibreBasemapStyle = (option) => {
+  const backgroundColor = option?.backgroundColor || "#cbd5e1";
+  const style = {
+    version: 8,
+    sources: {},
+    layers: [
+      {
+        id: "basemap-background",
+        type: "background",
+        paint: { "background-color": backgroundColor },
+      },
+    ],
+  };
+
+  if (!option || option.id === "none") return style;
+
+  if (option.kind === "single-image" && option.imageUrl && option.bounds) {
+    style.sources.basemap = {
+      type: "image",
+      url: option.imageUrl,
+      coordinates: [
+        [option.bounds.west, option.bounds.north],
+        [option.bounds.east, option.bounds.north],
+        [option.bounds.east, option.bounds.south],
+        [option.bounds.west, option.bounds.south],
+      ],
+    };
+  } else if (option.tiles?.length) {
+    style.sources.basemap = {
+      type: "raster",
+      tiles: option.tiles,
+      tileSize: option.tileSize || 256,
+      maxzoom: option.maxzoom || 22,
+      attribution: option.attribution,
+    };
+  } else {
+    return style;
+  }
+
+  style.layers.push({
+    id: "basemap-raster",
+    type: "raster",
+    source: "basemap",
+    paint: { "raster-opacity": option.opacity ?? 1 },
+  });
+  return style;
+};

@@ -12,7 +12,9 @@ const baseConfig = {
   dialect: "postgres",
 };
 
-if (process.env.DB_SSL === "true" || process.env.NODE_ENV === "production") {
+const shouldUseSsl = String(process.env.DB_SSL || "").toLowerCase() === "true";
+
+if (shouldUseSsl) {
   baseConfig.dialectOptions = {
     ssl: {
       require: true,

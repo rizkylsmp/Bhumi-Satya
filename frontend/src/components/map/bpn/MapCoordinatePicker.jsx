@@ -13,9 +13,13 @@ import {
   DEFAULT_MAP_CENTER_LAT_LNG,
   DEFAULT_MAP_ZOOM,
 } from "../mapDefaults";
-
-const MAP_STYLE =
-  "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+import {
+  createMapLibreBasemapStyle,
+  DEFAULT_BASEMAP_ID,
+  getBasemapOption,
+} from "../basemapOptions";
+import useBasemapOptions from "../useBasemapOptions";
+import MapBasemapSelect from "./MapBasemapSelect";
 
 const toNumber = (value) => {
   if (value === null || value === undefined || value === "") return null;
@@ -40,7 +44,12 @@ const createSelectedMarkerElement = () => {
   return marker;
 };
 
-function MapLibreCoordinateCanvas({ centerLatLng, selectedCoords, onSelect }) {
+function MapLibreCoordinateCanvas({
+  centerLatLng,
+  selectedCoords,
+  onSelect,
+  basemapOption,
+}) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
@@ -59,7 +68,7 @@ function MapLibreCoordinateCanvas({ centerLatLng, selectedCoords, onSelect }) {
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: MAP_STYLE,
+      style: createMapLibreBasemapStyle(basemapOption),
       center: initialCenter,
       zoom: DEFAULT_MAP_ZOOM,
       attributionControl: true,
@@ -86,7 +95,7 @@ function MapLibreCoordinateCanvas({ centerLatLng, selectedCoords, onSelect }) {
       map.remove();
       mapRef.current = null;
     };
-  }, [centerLatLng, selectedCoords]);
+  }, [basemapOption, centerLatLng, selectedCoords]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -130,6 +139,11 @@ export default function MapCoordinatePicker({
   const [isExpanded, setIsExpanded] = useState(!hasValidCoords);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [tempCoords, setTempCoords] = useState(null);
+  const [activeBasemap, setActiveBasemap] = useState(DEFAULT_BASEMAP_ID);
+  const basemapOptions = useBasemapOptions();
+  const basemapOption =
+    basemapOptions.find((option) => option.id === activeBasemap)
+    || getBasemapOption(activeBasemap);
   const defaultCenter = DEFAULT_MAP_CENTER_LAT_LNG;
 
   // Determine map center and marker position
@@ -311,10 +325,16 @@ export default function MapCoordinatePicker({
 
           {/* Fullscreen Map */}
           <div className="flex-1 relative map-cursor-crosshair">
+            <MapBasemapSelect
+              options={basemapOptions}
+              value={basemapOption.id}
+              onChange={setActiveBasemap}
+            />
             <MapLibreCoordinateCanvas
               centerLatLng={mapCenter}
               selectedCoords={fullscreenCoords}
               onSelect={handleLocationSelect}
+              basemapOption={basemapOption}
             />
           </div>
         </div>
@@ -340,10 +360,16 @@ export default function MapCoordinatePicker({
 
           {/* Map Container */}
           <div className="h-96 relative map-cursor-crosshair">
+            <MapBasemapSelect
+              options={basemapOptions}
+              value={basemapOption.id}
+              onChange={setActiveBasemap}
+            />
             <MapLibreCoordinateCanvas
               centerLatLng={mapCenter}
               selectedCoords={inlineCoords}
               onSelect={handleLocationSelect}
+              basemapOption={basemapOption}
             />
           </div>
 
