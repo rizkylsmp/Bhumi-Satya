@@ -320,7 +320,7 @@ export default function MapSearchOverlay({
                     const lods = searchMode === "3d" ? getAssetLods(asset) : "";
                     return (
                       <article
-                        key={`${searchMode}-${asset.id_aset || asset.id}`}
+                        key={`${searchMode}-${asset.id_aset || asset.id}-${asset.kode_3d || asset.active_model_3d?.id_model_3d || "asset"}`}
                         className="group flex min-h-28 flex-col rounded-xl border border-border bg-surface p-3 transition-colors hover:border-accent/45 hover:bg-surface-secondary/60"
                       >
                         <div className="flex min-w-0 items-start gap-2.5">

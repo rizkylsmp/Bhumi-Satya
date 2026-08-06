@@ -25,7 +25,6 @@ import {
   DatabaseIcon,
   DownloadSimpleIcon,
   EyeIcon,
-  MapPinIcon,
   MapTrifoldIcon,
   PencilSimpleIcon,
   PlusIcon,
@@ -156,46 +155,35 @@ function PanelHeader({ title, description, action }) {
 
 export default function DashboardIntegratedPanel({
   loading,
-  asetStats,
   sewaStats,
   totalDigitalTwin,
+  spatialStats,
   recentActivities,
 }) {
   const navigate = useNavigate();
-  const total = Number(asetStats?.totalAset) || 0;
-  const located = Number(asetStats?.totalLokasi) || 0;
-  const coordinated = Number(asetStats?.totalKoordinat) || 0;
-  const polygonized = Number(asetStats?.totalPolygon) || 0;
+  const totalManaged2d = Number(spatialStats?.total) || 0;
+  const coordinated = Number(spatialStats?.totalCoordinates) || 0;
+  const polygonized = Number(spatialStats?.totalPolygon) || 0;
+  const linkedParcels = Number(spatialStats?.totalWithBuildings) || 0;
+  const unlinkedParcels = Number(spatialStats?.totalWithoutBuildings) || 0;
   const totalRentals = Number(sewaStats?.total) || 0;
   const availableRentals = Number(sewaStats?.tersedia) || 0;
   const activeRentals =
     (Number(sewaStats?.disewakan) || 0) +
     (Number(sewaStats?.akanBerakhir) || 0);
 
-  const readinessData = [
+  const coverageData = [
     {
-      name: "Lokasi",
-      value: located,
-      percentage: getPercentage(located, total),
-      color: CHART_COLORS.blue,
-    },
-    {
-      name: "Koordinat",
-      value: coordinated,
-      percentage: getPercentage(coordinated, total),
-      color: CHART_COLORS.cyan,
-    },
-    {
-      name: "Polygon",
-      value: polygonized,
-      percentage: getPercentage(polygonized, total),
-      color: CHART_COLORS.violet,
-    },
-    {
-      name: "Model 3D",
-      value: totalDigitalTwin,
-      percentage: getPercentage(totalDigitalTwin, total),
+      name: "Terhubung ke 3D",
+      value: linkedParcels,
       color: CHART_COLORS.emerald,
+      path: "/kelola-3d",
+    },
+    {
+      name: "Belum terhubung",
+      value: unlinkedParcels,
+      color: CHART_COLORS.amber,
+      path: "/aset/spasial",
     },
   ];
 
@@ -236,37 +224,39 @@ export default function DashboardIntegratedPanel({
     },
   ];
 
-  const districtData = Object.entries(asetStats?.byKecamatan || {})
-    .map(([name, value]) => ({
-      name: name.length > 18 ? `${name.slice(0, 18)}…` : name,
-      fullName: name,
-      value: Number(value) || 0,
+  const buildingData = (spatialStats?.buildingsPerParcel || [])
+    .map((item) => ({
+      name: item.kode_2d,
+      fullName: item.kode_2d,
+      value: Number(item.building_count) || 0,
     }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 8);
+    .filter((item) => item.value > 0);
 
   const statCards = [
     {
       label: "Data Digital Twin",
       value: formatNumber(totalDigitalTwin),
-      detail: `${getPercentage(totalDigitalTwin, total)}% dari ${formatNumber(total)} bidang`,
+      detail: "Bangunan 3D yang dikelola dalam sistem",
       icon: CubeIcon,
+      path: "/kelola-3d",
       iconClass:
         "from-sky-400 via-blue-500 to-blue-700 dark:from-sky-400 dark:via-blue-500 dark:to-indigo-600",
     },
     {
-      label: "Memiliki Koordinat",
-      value: formatNumber(coordinated),
-      detail: `${getPercentage(coordinated, total)}% dari total bidang`,
-      icon: MapPinIcon,
+      label: "Cakupan Spasial",
+      value: formatNumber(polygonized),
+      detail: `${formatNumber(coordinated)} memiliki koordinat, ${getPercentage(polygonized, totalManaged2d)}% terpetakan`,
+      icon: MapTrifoldIcon,
+      path: "/aset/spasial",
       iconClass:
         "from-cyan-400 via-sky-500 to-blue-700 dark:from-cyan-400 dark:via-sky-500 dark:to-blue-600",
     },
     {
-      label: "Bidang Terpetakan",
-      value: formatNumber(polygonized),
-      detail: `${getPercentage(polygonized, total)}% siap dipetakan`,
-      icon: MapTrifoldIcon,
+      label: "Total Bidang 2D",
+      value: formatNumber(totalManaged2d),
+      detail: "Bidang yang dikelola dalam Digital Twin",
+      icon: DatabaseIcon,
+      path: "/aset/spasial",
       iconClass:
         "from-blue-400 via-blue-600 to-indigo-700 dark:from-blue-400 dark:via-blue-500 dark:to-indigo-600",
     },
@@ -277,6 +267,7 @@ export default function DashboardIntegratedPanel({
             value: formatNumber(availableRentals),
             detail: `${formatNumber(totalRentals)} unit dalam portofolio sewa`,
             icon: BuildingsIcon,
+            path: "/sewa/penyewaan",
             iconClass:
               "from-sky-400 via-blue-500 to-indigo-700 dark:from-sky-400 dark:via-blue-500 dark:to-indigo-600",
           },
@@ -285,6 +276,7 @@ export default function DashboardIntegratedPanel({
             value: formatNumber(activeRentals),
             detail: `${formatNumber(sewaStats?.akanBerakhir)} akan berakhir`,
             icon: HandshakeIcon,
+            path: "/sewa/penyewaan",
             iconClass:
               "from-cyan-400 via-blue-600 to-indigo-700 dark:from-cyan-400 dark:via-blue-500 dark:to-indigo-600",
           },
@@ -292,9 +284,15 @@ export default function DashboardIntegratedPanel({
       : []),
   ];
 
-  const openDistrict = (district) => {
-    if (!district) return;
-    navigate("/peta", { state: { filterKecamatan: district } });
+  const openChartPath = (item, fallback) => {
+    const path = item?.path || item?.payload?.path || fallback;
+    if (path) navigate(path);
+  };
+
+  const openBuildingCatalog = (item) => {
+    const code = item?.fullName || item?.payload?.fullName;
+    const query = code ? `?search=${encodeURIComponent(code)}` : "";
+    navigate(`/kelola-3d${query}`);
   };
 
   return (
@@ -308,9 +306,13 @@ export default function DashboardIntegratedPanel({
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
-            <article
+            <button
+              type="button"
               key={stat.label}
-              className="min-w-0 rounded-xl border border-border bg-surface p-4"
+              onClick={() => navigate(stat.path)}
+              disabled={loading}
+              className="min-w-0 rounded-xl border border-border bg-surface p-4 text-left transition-colors hover:border-accent/40 hover:bg-surface-secondary focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-wait"
+              aria-label={`Buka ${stat.label}`}
             >
               {loading ? (
                 <div className="animate-pulse space-y-3">
@@ -338,7 +340,7 @@ export default function DashboardIntegratedPanel({
                   </p>
                 </>
               )}
-            </article>
+            </button>
           );
         })}
       </section>
@@ -354,11 +356,11 @@ export default function DashboardIntegratedPanel({
           }`}
         >
           <PanelHeader
-            title="Kesiapan Data Digital Twin"
-            description="Kelengkapan data utama dibandingkan dengan seluruh bidang terdaftar."
+            title="Cakupan Digital Twin 2D dan 3D"
+            description="Perbandingan bidang yang sudah dan belum terhubung dengan bangunan 3D."
             action={
               <span className="shrink-0 rounded-md bg-surface-secondary px-2 py-1 text-[10px] font-semibold text-text-muted">
-                4 indikator
+                {formatNumber(linkedParcels)} / {formatNumber(totalManaged2d)} bidang
               </span>
             }
           />
@@ -366,16 +368,16 @@ export default function DashboardIntegratedPanel({
             <div className="mt-5">
               <LoadingChart />
             </div>
-          ) : total > 0 ? (
+          ) : totalManaged2d > 0 ? (
             <>
               <div
                 className="mt-4 h-64 min-w-0"
                 role="img"
-                aria-label="Diagram kesiapan data Digital Twin"
+                aria-label="Diagram cakupan bidang 2D yang terhubung dengan bangunan 3D"
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={readinessData}
+                    data={coverageData}
                     margin={{ top: 12, right: 8, left: -18, bottom: 0 }}
                   >
                     <CartesianGrid
@@ -401,26 +403,38 @@ export default function DashboardIntegratedPanel({
                         fontSize: 11,
                       }}
                     />
-                    <Tooltip content={<ChartTooltip />} cursor={{ opacity: 0.08 }} />
-                    <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={56}>
-                      {readinessData.map((item) => (
+                    <Tooltip
+                      content={<ChartTooltip suffix="bidang" />}
+                      cursor={{ opacity: 0.08 }}
+                    />
+                    <Bar
+                      dataKey="value"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={56}
+                      cursor="pointer"
+                      onClick={(item) => openChartPath(item)}
+                    >
+                      {coverageData.map((item) => (
                         <Cell key={item.name} fill={item.color} />
                       ))}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {readinessData.map((item) => (
-                  <div
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {coverageData.map((item) => (
+                  <button
+                    type="button"
                     key={item.name}
-                    className="rounded-lg bg-surface-secondary px-3 py-2"
+                    onClick={() => navigate(item.path)}
+                    className="rounded-lg bg-surface-secondary px-3 py-2 text-left transition-colors hover:bg-surface-tertiary focus-visible:ring-2 focus-visible:ring-accent"
+                    aria-label={`Buka data ${item.name}`}
                   >
                     <p className="text-[10px] text-text-muted">{item.name}</p>
                     <p className="mt-0.5 text-sm font-bold text-text-primary">
-                      {item.percentage}%
+                      {formatNumber(item.value)} bidang
                     </p>
-                  </div>
+                  </button>
                 ))}
               </div>
             </>
@@ -470,6 +484,8 @@ export default function DashboardIntegratedPanel({
                       outerRadius={82}
                       paddingAngle={3}
                       stroke="none"
+                      cursor="pointer"
+                      onClick={() => navigate("/sewa/penyewaan")}
                     >
                       {rentalStatusData.map((item) => (
                         <Cell key={item.name} fill={item.color} />
@@ -522,15 +538,15 @@ export default function DashboardIntegratedPanel({
       >
         <article className="min-w-0 rounded-xl border border-border bg-surface p-4">
           <PanelHeader
-            title="Sebaran Data Spasial"
-            description="Delapan kecamatan dengan jumlah bidang terbanyak. Klik batang untuk membuka Digital Twin."
+            title="Keterhubungan Model 3D"
+            description="Jumlah bangunan 3D yang terhubung pada setiap bidang 2D."
             action={
               <button
                 type="button"
-                onClick={() => navigate("/peta")}
+                onClick={() => navigate("/kelola-3d")}
                 className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-accent hover:underline"
               >
-                Buka peta <CaretRightIcon size={11} />
+                Kelola 3D <CaretRightIcon size={11} />
               </button>
             }
           />
@@ -538,15 +554,15 @@ export default function DashboardIntegratedPanel({
             <div className="mt-5">
               <LoadingChart />
             </div>
-          ) : districtData.length ? (
+          ) : buildingData.length ? (
             <div
               className="mt-4 h-72 min-w-0"
               role="img"
-              aria-label="Diagram sebaran bidang per kecamatan"
+              aria-label="Diagram keterhubungan bangunan 3D dengan bidang 2D"
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={districtData}
+                  data={buildingData}
                   layout="vertical"
                   margin={{ top: 0, right: 10, left: 0, bottom: 0 }}
                 >
@@ -576,22 +592,25 @@ export default function DashboardIntegratedPanel({
                       fontSize: 10,
                     }}
                   />
-                  <Tooltip content={<ChartTooltip />} cursor={{ opacity: 0.08 }} />
+                  <Tooltip
+                    content={<ChartTooltip suffix="bangunan 3D" />}
+                    cursor={{ opacity: 0.08 }}
+                  />
                   <Bar
                     dataKey="value"
                     fill={CHART_COLORS.blue}
                     radius={[0, 6, 6, 0]}
                     maxBarSize={22}
                     cursor="pointer"
-                    onClick={(item) => openDistrict(item?.fullName)}
+                    onClick={openBuildingCatalog}
                   />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           ) : (
             <EmptyChart
-              icon={MapTrifoldIcon}
-              message="Belum ada data kecamatan"
+              icon={CubeIcon}
+              message="Belum ada relasi kode 2D dan bangunan 3D"
             />
           )}
         </article>
@@ -601,6 +620,15 @@ export default function DashboardIntegratedPanel({
           <PanelHeader
             title="Nilai Penyewaan Aktif"
             description="Ringkasan nilai kontrak aktif berdasarkan periode pembayaran."
+            action={
+              <button
+                type="button"
+                onClick={() => navigate("/sewa/penyewaan")}
+                className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-accent hover:underline"
+              >
+                Kelola <CaretRightIcon size={11} />
+              </button>
+            }
           />
           {loading ? (
             <div className="mt-5">
@@ -649,7 +677,13 @@ export default function DashboardIntegratedPanel({
                     }
                     cursor={{ opacity: 0.08 }}
                   />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={56}>
+                  <Bar
+                    dataKey="value"
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={56}
+                    cursor="pointer"
+                    onClick={() => navigate("/sewa/penyewaan")}
+                  >
                     {rentalValueData.map((item) => (
                       <Cell key={item.name} fill={item.color} />
                     ))}
@@ -677,6 +711,15 @@ export default function DashboardIntegratedPanel({
           <PanelHeader
             title="Ringkasan Penyewaan"
             description="Nilai ekonomi dan kontrak yang sedang berjalan."
+            action={
+              <button
+                type="button"
+                onClick={() => navigate("/sewa/penyewaan")}
+                className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-accent hover:underline"
+              >
+                Kelola <CaretRightIcon size={11} />
+              </button>
+            }
           />
           <div className="mt-4 space-y-2">
             <div className="flex items-center justify-between rounded-lg bg-surface-secondary p-3">
@@ -768,9 +811,12 @@ export default function DashboardIntegratedPanel({
                 const ActivityIcon = style.icon;
 
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={activity.id_riwayat || index}
-                    className="flex min-w-0 items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-secondary/60"
+                    onClick={() => navigate("/riwayat")}
+                    className="flex w-full min-w-0 items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-secondary/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+                    aria-label="Buka riwayat aktivitas"
                   >
                     <span
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white ${style.iconClass}`}
@@ -798,7 +844,7 @@ export default function DashboardIntegratedPanel({
                     <time className="hidden shrink-0 text-[10px] text-text-muted sm:block">
                       {formatDateTime(activity.created_at)}
                     </time>
-                  </div>
+                  </button>
                 );
               })}
             </div>

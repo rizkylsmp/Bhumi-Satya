@@ -1,11 +1,5 @@
 import SubstansiAssetPage from "../../components/asset/SubstansiAssetPage";
-import {
-  BuildingsIcon,
-  CheckCircleIcon,
-  CurrencyCircleDollarIcon,
-  ReceiptIcon,
-} from "@phosphor-icons/react";
-import { formatCompactCurrency as formatCurrency } from "../../utils/format";
+import { ReceiptIcon } from "@phosphor-icons/react";
 
 const columns = [
   {
@@ -80,56 +74,6 @@ const columns = [
   },
 ];
 
-const statsCards = (assets, totalItems, assetStats) => [
-  {
-    label: "Data Pajak",
-    value: assetStats?.totalPajak ?? totalItems,
-    icon: ReceiptIcon,
-    iconBg: "bg-blue-100 dark:bg-blue-900/30",
-    iconColor: "text-blue-600 dark:text-blue-400",
-  },
-  {
-    label: "Terverifikasi",
-    value:
-      assetStats?.totalPajakTerverifikasi ??
-      assets.filter((asset) => asset.pajak_status || asset.nop).length,
-    icon: CheckCircleIcon,
-    iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
-  },
-  {
-    label: "Total NJOP Pemetaan",
-    value: formatCurrency(
-      assetStats
-        ? Number(assetStats.totalNjopBumiPajak || 0) +
-            Number(assetStats.totalNjopBangunanPajak || 0)
-        : assets.reduce(
-            (total, asset) =>
-              total +
-              Number(asset.njop_bumi_pemetaan || 0) +
-              Number(asset.njop_bangunan_pemetaan || 0),
-            0,
-          ),
-    ),
-    icon: BuildingsIcon,
-    iconBg: "bg-violet-100 dark:bg-violet-900/30",
-    iconColor: "text-violet-600 dark:text-violet-400",
-  },
-  {
-    label: "Total PBB Pemetaan",
-    value: formatCurrency(
-      assetStats?.totalPbbPemetaan ??
-        assets.reduce(
-          (total, asset) => total + Number(asset.pbb_pemetaan || 0),
-          0,
-        ),
-    ),
-    icon: CurrencyCircleDollarIcon,
-    iconBg: "bg-amber-100 dark:bg-amber-900/30",
-    iconColor: "text-amber-600 dark:text-amber-400",
-  },
-];
-
 export default function DataPajakPage() {
   return (
     <SubstansiAssetPage
@@ -138,8 +82,8 @@ export default function DataPajakPage() {
       icon={ReceiptIcon}
       iconColor="from-amber-500 to-orange-500"
       columns={columns}
-      statsCards={statsCards}
       substansi="pajak"
+      filterPreset="pajak"
     />
   );
 }

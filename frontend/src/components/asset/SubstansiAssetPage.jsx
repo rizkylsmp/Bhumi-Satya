@@ -236,8 +236,8 @@ export default function SubstansiAssetPage({
   icon: Icon,
   iconColor = "from-blue-500 to-blue-600",
   columns = [],
-  statsCards,
   substansi = null,
+  filterPreset = "pusatData",
   renderRowActions = null,
 }) {
   const navigate = useNavigate();
@@ -252,9 +252,9 @@ export default function SubstansiAssetPage({
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [assetStats, setAssetStats] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({});
+  const [filterOptions, setFilterOptions] = useState({});
 
   // Sort state
   const [sortBy, setSortBy] = useState("kode_aset");
@@ -292,23 +292,16 @@ export default function SubstansiAssetPage({
     }
   }, [currentPage, searchTerm, filters, itemsPerPage]);
 
-  const fetchAssetStats = useCallback(async () => {
-    try {
-      const response = await asetService.getStats();
-      setAssetStats(response.data?.data || null);
-    } catch (error) {
-      console.error("Error fetching asset stats:", error);
-      setAssetStats((current) => current);
-    }
-  }, []);
-
   useEffect(() => {
     fetchAssets();
   }, [fetchAssets]);
 
   useEffect(() => {
-    fetchAssetStats();
-  }, [fetchAssetStats]);
+    asetService
+      .getFilterOptions()
+      .then((response) => setFilterOptions(response.data?.data || {}))
+      .catch(() => setFilterOptions({}));
+  }, []);
 
   // ==================== HANDLERS ====================
 
@@ -355,51 +348,6 @@ export default function SubstansiAssetPage({
     if (sortOrder === "asc") return aVal > bVal ? 1 : -1;
     return aVal < bVal ? 1 : -1;
   });
-
-  // ==================== STATS ====================
-
-  const defaultStats = [
-    {
-      label: "Total Aset",
-      value: assetStats?.totalAset ?? totalItems,
-      icon: CheckCircleIcon,
-      iconBg: "bg-blue-100 dark:bg-blue-900/30",
-      iconColor: "text-blue-600 dark:text-blue-400",
-    },
-    {
-      label: "Aktif",
-      value:
-        assetStats?.byStatus?.Aktif ??
-        assets.filter((a) => a.status?.toLowerCase() === "aktif").length,
-      icon: CheckCircleIcon,
-      iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
-      iconColor: "text-emerald-600 dark:text-emerald-400",
-    },
-    {
-      label: "Bermasalah",
-      value:
-        assetStats?.byStatus?.Bermasalah ??
-        assets.filter((a) => a.status?.toLowerCase() === "bermasalah").length,
-      icon: WarningIcon,
-      iconBg: "bg-red-100 dark:bg-red-900/30",
-      iconColor: "text-red-600 dark:text-red-400",
-    },
-    {
-      label: "Indikasi",
-      value:
-        assetStats?.byStatus?.["Indikasi Bermasalah"] ??
-        assets.filter(
-          (a) => a.status?.toLowerCase() === "indikasi bermasalah",
-        ).length,
-      icon: LightningIcon,
-      iconBg: "bg-amber-100 dark:bg-amber-900/30",
-      iconColor: "text-amber-600 dark:text-amber-400",
-    },
-  ];
-
-  const stats = statsCards
-    ? statsCards(assets, totalItems, assetStats)
-    : defaultStats;
 
   // ==================== TABLE HEADER ====================
 
@@ -527,36 +475,13 @@ export default function SubstansiAssetPage({
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, idx) => {
-          const StatIcon = stat.icon;
-          return (
-            <div
-              key={idx}
-              className="bg-surface rounded-xl border border-border p-4 flex items-center gap-4"
-            >
-              <div
-                className={`w-11 h-11 ${stat.iconBg} rounded-xl flex items-center justify-center`}
-              >
-                <StatIcon size={22} weight="fill" className={stat.iconColor} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-text-primary">
-                  {stat.value}
-                </p>
-                <p className="text-xs text-text-muted">{stat.label}</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
       {/* Data Table */}
       <div className="bg-surface rounded-2xl border border-border overflow-hidden">
         <AssetSearch
           onSearch={handleSearch}
           onFilterChange={handleFilterChange}
+          filterOptions={filterOptions}
+          filterPreset={filterPreset}
           embedded
         />
 

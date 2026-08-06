@@ -17,6 +17,8 @@ import sewaAsetRoutes from "./routes/sewaAset.routes.js";
 import permintaanRoutes from "./routes/permintaan.routes.js";
 import chatbotRoutes from "./routes/chatbot.routes.js";
 import aset3dRoutes from "./routes/aset3d.routes.js";
+import aset2dRoutes from "./routes/aset2d.routes.js";
+import orthophotoRoutes from "./routes/orthophoto.routes.js";
 
 // Load .env only for local development (Vercel injects env vars directly)
 if (!process.env.VERCEL) {
@@ -69,7 +71,7 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader(
       "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS"
+      "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     );
     res.setHeader(
       "Access-Control-Allow-Headers",
@@ -103,6 +105,8 @@ app.use("/api/sewa", sewaAsetRoutes);
 app.use("/api/permintaan", permintaanRoutes);
 app.use("/api/chatbot", chatbotRoutes);
 app.use("/api/aset-3d", aset3dRoutes);
+app.use("/api/aset-2d", aset2dRoutes);
+app.use("/api/orthophotos", orthophotoRoutes);
 
 // Landing page - inline HTML for serverless compatibility
 app.get("/", (req, res) => {

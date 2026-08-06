@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowRightIcon,
   ArrowCounterClockwiseIcon,
@@ -9,16 +9,19 @@ import {
   CheckCircleIcon,
   CubeIcon,
   DownloadSimpleIcon,
+  FileArrowUpIcon,
+  FilesIcon,
   FunnelIcon,
   MagnifyingGlassIcon,
   LinkSimpleIcon,
   MapPinIcon,
   PlusIcon,
   TrashIcon,
+  WarningCircleIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { useConfirm } from "../components/ui/confirmContext";
-import { aset3dCatalogService } from "../services/api";
+import { aset3dCatalogService, assetModel3dService } from "../services/api";
 import { useAuthStore } from "../stores/authStore";
 import { hasPermission } from "../utils/permissions";
 import Pagination from "../components/asset/Pagination";
@@ -65,9 +68,10 @@ const sortOptions = [
   { value: "center_y:ASC", label: "Center Y terkecil" },
   { value: "kode_3d:ASC", label: "Kode 3D A–Z" },
   { value: "kode_aset:ASC", label: "Kode aset A–Z" },
-  { value: "nama_aset:ASC", label: "Nama aset A–Z" },
+  { value: "building_name:ASC", label: "Nama bangunan A–Z" },
 ];
 const DEFAULT_SORT = "created_at:DESC";
+const BATCH_LOD_OPTIONS = ["LOD1", "LOD2", "LOD2.5", "LOD3", "LOD4"];
 const CATALOG_COLUMN_WIDTHS = {
   kode_3d: 190,
   nama: 250,
@@ -82,7 +86,7 @@ const CATALOG_COLUMN_WIDTHS = {
 
 const getCatalogSortValue = (item, key) => {
   const values = {
-    nama: item.asset?.nama_aset,
+    nama: item.building_name,
     lokasi: item.asset?.lokasi || item.asset?.desa_kelurahan,
     data_bangunan:
       Number(item.asset?.building_floors || 0) * 1000 +
@@ -95,6 +99,292 @@ const getCatalogSortValue = (item, key) => {
   };
   return key in values ? values[key] : item?.[key];
 };
+
+const batchFileId = (file) =>
+  `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`;
+
+function BatchImportDialog({ open, onClose, onCompleted }) {
+  const [input, setInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [candidates, setCandidates] = useState([]);
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
+  const [selectedParcel, setSelectedParcel] = useState(null);
+  const [existingBuildings, setExistingBuildings] = useState([]);
+  const [existingBuildingsLoading, setExistingBuildingsLoading] = useState(false);
+  const [lod, setLod] = useState("LOD1");
+  const [files, setFiles] = useState([]);
+  const [processing, setProcessing] = useState(false);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const timer = window.setTimeout(() => setSearch(input.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [input, open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    let cancelled = false;
+    const load = async () => {
+      setCandidatesLoading(true);
+      try {
+        const response = await aset3dCatalogService.candidates({
+          page: 1,
+          limit: 12,
+          search: search || undefined,
+        });
+        if (!cancelled) setCandidates(response.data?.data || []);
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(errorMessage(error, "Gagal memuat bidang 2D"));
+          setCandidates([]);
+        }
+      } finally {
+        if (!cancelled) setCandidatesLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, search]);
+
+  useEffect(() => {
+    if (!open || !selectedParcel?.kode_2d) {
+      setExistingBuildings([]);
+      setExistingBuildingsLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
+    const load = async () => {
+      setExistingBuildingsLoading(true);
+      try {
+        const response = await aset3dCatalogService.list({
+          page: 1,
+          limit: 100,
+          search: selectedParcel.kode_2d,
+          catalog_status: "active",
+          sort: "created_at",
+          order: "DESC",
+        });
+        if (!cancelled) {
+          setExistingBuildings(
+            (response.data?.data || []).filter(
+              (item) => item.kode_2d === selectedParcel.kode_2d,
+            ),
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setExistingBuildings([]);
+          toast.error(errorMessage(error, "Gagal memuat kode 3D pada bidang ini"));
+        }
+      } finally {
+        if (!cancelled) setExistingBuildingsLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, selectedParcel?.kode_2d]);
+
+  useEffect(() => {
+    if (open) return;
+    setInput("");
+    setSearch("");
+    setSelectedParcel(null);
+    setExistingBuildings([]);
+    setExistingBuildingsLoading(false);
+    setLod("LOD1");
+    setFiles([]);
+    setProcessing(false);
+  }, [open]);
+
+  const addFiles = (fileList) => {
+    const incoming = Array.from(fileList || []);
+    const valid = incoming.filter(
+      (file) => /\.(kmz|glb|zip)$/i.test(file.name)
+        && file.size <= 100 * 1024 * 1024,
+    );
+    if (valid.length !== incoming.length) {
+      toast.error("Sebagian file dilewati. Gunakan KMZ, GLB, atau ZIP maksimal 100 MB.");
+    }
+    setFiles((current) => [
+      ...current,
+      ...valid.slice(0, Math.max(0, 20 - current.length)).map((file) => ({
+        id: batchFileId(file),
+        file,
+        state: "pending",
+        targetKode3d: "new",
+        kode3d: null,
+        error: "",
+      })),
+    ]);
+    if (incoming.length + files.length > 20) {
+      toast.error("Maksimal 20 bangunan dalam satu proses batch");
+    }
+  };
+
+  const updateFileState = (id, changes) => {
+    setFiles((current) => current.map((item) => (
+      item.id === id ? { ...item, ...changes } : item
+    )));
+  };
+
+  const startImport = async () => {
+    if (!selectedParcel || files.length === 0 || processing) {
+      toast.error("Pilih kode 2D dan minimal satu file model");
+      return;
+    }
+    setProcessing(true);
+    let successCount = 0;
+    for (const item of files) {
+      if (item.state === "success") {
+        successCount += 1;
+        continue;
+      }
+      let createdCode = null;
+      let targetCode = item.targetKode3d === "new" ? null : item.targetKode3d;
+      updateFileState(item.id, {
+        state: targetCode ? "uploading" : "creating",
+        error: "",
+      });
+      try {
+        let assetId = selectedParcel.id_aset;
+        if (!targetCode) {
+          const catalogResponse = await aset3dCatalogService.create(
+            selectedParcel.kode_2d,
+          );
+          const catalog = catalogResponse.data?.data;
+          createdCode = catalog?.kode_3d;
+          targetCode = createdCode;
+          assetId = catalog?.asset?.id_aset || assetId;
+          if (!targetCode || !assetId) {
+            throw new Error("Kode 3D baru tidak diterima dari server");
+          }
+        }
+        if (!assetId) throw new Error("Aset tujuan model tidak ditemukan");
+        updateFileState(item.id, { state: "uploading", kode3d: targetCode });
+        const uploadResponse = await assetModel3dService.upload(
+          assetId,
+          targetCode,
+          item.file,
+          lod,
+        );
+        const modelId = uploadResponse.data?.data?.id_model_3d;
+        if (modelId) {
+          updateFileState(item.id, { state: "converting", kode3d: targetCode });
+          await assetModel3dService.convert(assetId, modelId);
+        }
+        updateFileState(item.id, { state: "success", kode3d: targetCode });
+        successCount += 1;
+      } catch (error) {
+        if (createdCode) {
+          await aset3dCatalogService.remove(createdCode).catch(() => {});
+        }
+        updateFileState(item.id, {
+          state: "failed",
+          kode3d: item.targetKode3d === "new" ? null : targetCode,
+          error: errorMessage(error, error.message || "Import gagal"),
+        });
+      }
+    }
+    setProcessing(false);
+    await onCompleted();
+    if (successCount === files.length) {
+      toast.success(`${successCount} bangunan 3D berhasil diimpor ke ${selectedParcel.kode_2d}`);
+    } else {
+      toast.error(`${successCount} berhasil, ${files.length - successCount} gagal`);
+    }
+  };
+
+  if (!open) return null;
+  const completedCount = files.filter((item) => item.state === "success").length;
+  const failedCount = files.filter((item) => item.state === "failed").length;
+  return (
+    <div className="motion-backdrop fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => !processing && event.target === event.currentTarget && onClose()}>
+      <section role="dialog" aria-modal="true" aria-labelledby="batch-import-title" className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl">
+        <header className="flex items-center justify-between gap-4 border-b border-border px-5 py-3.5">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white"><FilesIcon size={19} weight="duotone" /></span>
+            <div className="min-w-0"><h2 id="batch-import-title" className="text-sm font-black text-text-primary">Import Batch Bangunan 3D</h2><p className="mt-0.5 truncate text-[9px] text-text-muted">Tentukan tujuan kode 3D secara terpisah untuk setiap file.</p></div>
+          </div>
+          <button type="button" disabled={processing} onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted hover:bg-surface-secondary hover:text-text-primary disabled:opacity-40" aria-label="Tutup import batch"><XIcon size={17} weight="bold" /></button>
+        </header>
+
+        <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+          <div className="min-h-0 border-b border-border p-4 lg:border-b-0 lg:border-r">
+            <p className="text-[8px] font-black uppercase tracking-[0.14em] text-text-muted">1 · Pilih kode 2D</p>
+            <label className="relative mt-2 block"><span className="sr-only">Cari kode 2D</span><MagnifyingGlassIcon size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" /><input type="search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Cari kode 2D atau nama aset…" className="h-10 w-full rounded-xl border border-border bg-surface-secondary pl-9 pr-3 text-[10px] font-semibold text-text-primary outline-none focus:border-accent" /></label>
+            <div className="mt-2 max-h-[48vh] space-y-1.5 overflow-y-auto pr-1 dark:[color-scheme:dark]">
+              {candidatesLoading ? [1, 2, 3].map((row) => <div key={row} className="h-16 animate-pulse rounded-xl bg-surface-secondary" />) : candidates.map((candidate) => {
+                const active = selectedParcel?.kode_2d === candidate.kode_2d;
+                return <button key={candidate.kode_2d} type="button" disabled={processing || files.some((item) => item.state === "success")} onClick={() => { setSelectedParcel(candidate); setFiles((current) => current.map((item) => ({ ...item, state: "pending", targetKode3d: "new", kode3d: null, error: "" }))); }} className={`flex w-full items-center gap-2.5 rounded-xl border p-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${active ? "border-violet-500 bg-violet-500/10" : "border-border hover:border-violet-300 hover:bg-surface-secondary"}`}><span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${active ? "bg-violet-600 text-white" : "bg-violet-500/10 text-violet-600 dark:text-violet-300"}`}><BuildingsIcon size={15} weight="duotone" /></span><span className="min-w-0 flex-1"><span className="block font-mono text-[9px] font-black text-text-primary">{candidate.kode_2d}</span><span className="mt-0.5 block truncate text-[8px] text-text-muted">{candidate.kode_aset} · {candidate.nama_aset}</span></span>{active && <CheckCircleIcon size={15} weight="fill" className="text-violet-500" />}</button>;
+              })}
+              {!candidatesLoading && candidates.length === 0 && <div className="rounded-xl border border-dashed border-border py-8 text-center text-[9px] text-text-muted">Bidang 2D tidak ditemukan.</div>}
+            </div>
+          </div>
+
+          <div className="min-h-0 overflow-y-auto p-4 dark:[color-scheme:dark]">
+            <div className="flex items-end gap-2">
+              <div className="min-w-0 flex-1"><p className="text-[8px] font-black uppercase tracking-[0.14em] text-text-muted">2 · Pilih file dan tujuan 3D</p><p className="mt-1 text-[9px] font-bold text-text-secondary">{selectedParcel ? `Tujuan bidang ${selectedParcel.kode_2d}` : "Kode 2D belum dipilih"}</p></div>
+              <label><span className="mb-1 block text-[7px] font-black uppercase text-text-muted">LOD</span><select value={lod} disabled={processing} onChange={(event) => setLod(event.target.value)} className="h-9 rounded-lg border border-border bg-surface-secondary px-2.5 text-[9px] font-black text-text-primary outline-none focus:border-violet-500">{BATCH_LOD_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
+            </div>
+
+            <label className="mt-3 flex min-h-20 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-violet-300 bg-violet-50/60 px-4 text-[9px] font-black text-violet-700 transition hover:border-violet-500 dark:border-violet-500/40 dark:bg-violet-500/5 dark:text-violet-300"><FileArrowUpIcon size={16} weight="bold" />Pilih Beberapa File<input type="file" multiple accept=".kmz,.glb,.zip" disabled={processing || files.length >= 20} onChange={(event) => { addFiles(event.target.files); event.target.value = ""; }} className="hidden" /></label>
+
+            <div className="mt-3 space-y-1.5">
+              {files.map((item) => {
+                const stateLabel = { pending: "Menunggu", creating: "Membuat kode", uploading: "Mengunggah", converting: "Konversi", success: item.kode3d || "Berhasil", failed: "Gagal" }[item.state];
+                return (
+                  <div key={item.id} className={`rounded-xl border px-3 py-2 ${item.state === "success" ? "border-emerald-200 bg-emerald-50/60 dark:border-emerald-500/30 dark:bg-emerald-500/5" : item.state === "failed" ? "border-red-200 bg-red-50/60 dark:border-red-500/30 dark:bg-red-500/5" : "border-border bg-surface-secondary"}`}>
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface text-text-muted">
+                        {["creating", "uploading", "converting"].includes(item.state) ? <ArrowsClockwiseIcon size={14} className="animate-spin text-violet-500" /> : item.state === "success" ? <CheckCircleIcon size={15} weight="fill" className="text-emerald-500" /> : item.state === "failed" ? <WarningCircleIcon size={15} weight="fill" className="text-red-500" /> : <CubeIcon size={14} />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[9px] font-bold text-text-primary">{item.file.name}</span>
+                        <span className={`mt-0.5 block truncate text-[7px] ${item.state === "failed" ? "text-red-600 dark:text-red-300" : "text-text-muted"}`}>
+                          {item.error || `${(item.file.size / 1024 / 1024).toFixed(1)} MB · ${stateLabel}`}
+                        </span>
+                      </span>
+                      {!processing && item.state !== "success" && <button type="button" onClick={() => setFiles((current) => current.filter((fileItem) => fileItem.id !== item.id))} className="flex h-7 w-7 items-center justify-center rounded-lg text-text-muted hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10" aria-label={`Hapus ${item.file.name}`}><XIcon size={12} weight="bold" /></button>}
+                    </div>
+                    <label className="mt-2 flex items-center gap-2 pl-10">
+                      <span className="shrink-0 text-[7px] font-black uppercase tracking-wide text-text-muted">Masukkan ke</span>
+                      <select
+                        value={item.targetKode3d}
+                        disabled={processing || item.state === "success" || !selectedParcel || existingBuildingsLoading}
+                        onChange={(event) => updateFileState(item.id, {
+                          targetKode3d: event.target.value,
+                          state: "pending",
+                          kode3d: null,
+                          error: "",
+                        })}
+                        className="h-8 min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 text-[8px] font-bold text-text-primary outline-none focus:border-violet-500 disabled:cursor-not-allowed disabled:opacity-65"
+                        aria-label={`Tujuan kode 3D untuk ${item.file.name}`}
+                      >
+                        <option value="new">Buat kode 3D baru</option>
+                        {existingBuildings.map((building) => (
+                          <option key={building.kode_3d} value={building.kode_3d}>
+                            {building.kode_3d} · {building.building_name || "Tanpa nama"}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                );
+              })}
+              {files.length === 0 && <div className="rounded-xl border border-dashed border-border py-8 text-center"><FilesIcon size={24} className="mx-auto text-text-muted" /><p className="mt-2 text-[9px] font-bold text-text-muted">Belum ada file · Maksimal 20 file</p></div>}
+            </div>
+          </div>
+        </div>
+
+        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-surface-secondary/60 px-5 py-3"><p className="text-[9px] font-bold text-text-muted">{files.length} file · {completedCount} berhasil{failedCount > 0 ? ` · ${failedCount} gagal` : ""}</p><div className="flex gap-2"><button type="button" disabled={processing} onClick={onClose} className="h-9 rounded-lg border border-border bg-surface px-3 text-[9px] font-black text-text-secondary hover:border-accent">{completedCount > 0 ? "Selesai" : "Batal"}</button><button type="button" disabled={processing || !selectedParcel || files.length === 0 || completedCount === files.length} onClick={startImport} className="inline-flex h-9 items-center gap-2 rounded-lg bg-accent px-4 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">{processing ? <ArrowsClockwiseIcon size={14} className="animate-spin" /> : <FileArrowUpIcon size={14} weight="bold" />}{processing ? "Memproses batch…" : failedCount > 0 ? "Coba Lagi yang Gagal" : "Mulai Import"}</button></div></footer>
+      </section>
+    </div>
+  );
+}
 
 function AddAssetDialog({ open, onClose, onAdded }) {
   const [input, setInput] = useState("");
@@ -216,14 +506,14 @@ function AddAssetDialog({ open, onClose, onAdded }) {
 
 export default function Kelola3dPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const confirm = useConfirm();
   const userRole = useAuthStore((state) => state.user?.role || "");
   const canUpdate = hasPermission(userRole, "kelola3d", "update");
-  const [input, setInput] = useState("");
-  const [search, setSearch] = useState("");
+  const initialSearch = searchParams.get("search")?.trim() || "";
+  const [input, setInput] = useState(initialSearch);
+  const [search, setSearch] = useState(initialSearch);
   const [modelStatus, setModelStatus] = useState("all");
-  const [catalogStatus, setCatalogStatus] = useState("all");
-  const [reviewStatus, setReviewStatus] = useState("all");
   const [format, setFormat] = useState("all");
   const [centerStatus, setCenterStatus] = useState("all");
   const [sortValue, setSortValue] = useState(DEFAULT_SORT);
@@ -250,6 +540,7 @@ export default function Kelola3dPage() {
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [deletingCode, setDeletingCode] = useState(null);
 
   useEffect(() => {
@@ -269,8 +560,6 @@ export default function Kelola3dPage() {
         limit,
         search: search || undefined,
         model_status: modelStatus,
-        catalog_status: catalogStatus,
-        review_status: reviewStatus,
         format,
         center_status: centerStatus,
         sort,
@@ -284,7 +573,7 @@ export default function Kelola3dPage() {
     } finally {
       setLoading(false);
     }
-  }, [catalogStatus, centerStatus, format, limit, modelStatus, order, page, reviewStatus, search, sort]);
+  }, [centerStatus, format, limit, modelStatus, order, page, search, sort]);
 
   useEffect(() => {
     fetchCatalog();
@@ -321,8 +610,6 @@ export default function Kelola3dPage() {
       const response = await aset3dCatalogService.exportCsv({
         search: search || undefined,
         model_status: modelStatus,
-        catalog_status: catalogStatus,
-        review_status: reviewStatus,
         format,
         center_status: centerStatus,
         sort,
@@ -340,11 +627,8 @@ export default function Kelola3dPage() {
     }
   };
 
-  const totalWithModels = items.filter((item) => item.model_count > 0).length;
   const activeFilterCount = [
     modelStatus,
-    catalogStatus,
-    reviewStatus,
     format,
     centerStatus,
   ].filter((value) => value !== "all").length;
@@ -353,8 +637,6 @@ export default function Kelola3dPage() {
   const resetControls = () => {
     setInput("");
     setModelStatus("all");
-    setCatalogStatus("all");
-    setReviewStatus("all");
     setFormat("all");
     setCenterStatus("all");
     setSortValue(DEFAULT_SORT);
@@ -388,37 +670,34 @@ export default function Kelola3dPage() {
               Refresh
             </button>
             {canUpdate && (
-              <button
-                type="button"
-                onClick={() => setDialogOpen(true)}
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-accent px-3 text-xs font-bold text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-              >
-                <PlusIcon size={15} weight="bold" />
-                Tambah Bangunan 3D
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBatchDialogOpen(true)}
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-accent/35 bg-accent/10 px-3 text-xs font-bold text-accent transition hover:border-accent/60 hover:bg-accent/15 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                >
+                  <FilesIcon size={15} weight="duotone" />
+                  Import Batch 3D
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDialogOpen(true)}
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-accent px-3 text-xs font-bold text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                >
+                  <PlusIcon size={15} weight="bold" />
+                  Tambah Bangunan 3D
+                </button>
+              </div>
             )}
           </div>
         </header>
-
-        <section className="grid gap-3 sm:grid-cols-3">
-          {[
-            { label: "Total katalog", value: pagination?.totalItems || 0, icon: BuildingsIcon, tone: "text-accent bg-accent/10" },
-            { label: "Dengan model · halaman ini", value: totalWithModels, icon: CheckCircleIcon, tone: "text-emerald-600 bg-emerald-500/10" },
-            { label: "Perlu model · halaman ini", value: Math.max(0, items.length - totalWithModels), icon: CubeIcon, tone: "text-amber-600 bg-amber-500/10" },
-          ].map((stat) => (
-            <div key={stat.label} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
-              <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.tone}`}><stat.icon size={18} weight="duotone" /></span>
-              <div><p className="text-lg font-black leading-none text-text-primary">{stat.value}</p><p className="mt-1 text-[8px] font-bold uppercase tracking-wide text-text-muted">{stat.label}</p></div>
-            </div>
-          ))}
-        </section>
 
         <section className="overflow-hidden rounded-2xl border border-border bg-surface">
           <div className="flex min-w-0 flex-wrap items-center gap-2 border-b border-border p-3">
             <label className="relative min-w-56 flex-1">
               <span className="sr-only">Cari katalog 3D</span>
               <MagnifyingGlassIcon size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-              <input type="search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Cari kode 3D, kode aset, nama, lokasi…" className="h-10 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-3 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
+              <input type="search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Cari kode 3D, nama bangunan, aset, lokasi…" className="h-10 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-3 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
             </label>
             <select value={sortValue} onChange={(event) => { setSortValue(event.target.value); setPage(1); }} className="h-10 rounded-xl border border-border bg-surface-secondary px-3 text-[10px] font-bold text-text-secondary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15">
               {sortOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -456,26 +735,11 @@ export default function Kelola3dPage() {
             </button>
           </div>
           {showFilters && (
-            <div className="grid grid-cols-2 gap-2 border-b border-border p-3 md:grid-cols-3 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2 border-b border-border p-3 md:grid-cols-3">
               <select value={modelStatus} onChange={(event) => { setModelStatus(event.target.value); setPage(1); }} className="h-9 min-w-0 rounded-lg border border-border bg-surface px-2.5 text-[9px] font-bold text-text-secondary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15">
                 <option value="all">Semua status model</option>
                 <option value="with_model">Dengan model</option>
                 <option value="without_model">Belum ada model</option>
-              </select>
-              <select value={catalogStatus} onChange={(event) => { setCatalogStatus(event.target.value); setPage(1); }} className="h-9 min-w-0 rounded-lg border border-border bg-surface px-2.5 text-[9px] font-bold text-text-secondary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15">
-                <option value="all">Semua status katalog</option>
-                <option value="active">Katalog aktif</option>
-                <option value="inactive">Katalog nonaktif</option>
-              </select>
-              <select value={reviewStatus} onChange={(event) => { setReviewStatus(event.target.value); setPage(1); }} className="h-9 min-w-0 rounded-lg border border-border bg-surface px-2.5 text-[9px] font-bold text-text-secondary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15">
-                <option value="all">Semua status verifikasi</option>
-                <option value="draft">Draf</option>
-                <option value="processing">Diproses</option>
-                <option value="needs_review">Perlu verifikasi</option>
-                <option value="verified">Terverifikasi</option>
-                <option value="rejected">Ditolak</option>
-                <option value="active">Aktif</option>
-                <option value="expired">Kedaluwarsa</option>
               </select>
               <select value={format} onChange={(event) => { setFormat(event.target.value); setPage(1); }} className="h-9 min-w-0 rounded-lg border border-border bg-surface px-2.5 text-[9px] font-bold text-text-secondary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15">
                 <option value="all">Semua format</option>
@@ -538,7 +802,7 @@ export default function Kelola3dPage() {
                 ) : sortedItems.map((item) => (
                   <tr key={item.kode_3d} className="group transition hover:bg-accent/[0.025]">
                     <td className="px-4 py-3"><p className="font-mono text-[9px] font-bold text-text-muted">{item.kode_2d || "Kode 2D —"}</p><span className="mt-1 inline-flex rounded-lg bg-violet-50 px-2.5 py-1.5 font-mono text-[10px] font-black text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">{item.kode_3d}</span></td>
-                    <td className="px-4 py-3"><p className="max-w-64 truncate text-[10px] font-bold text-text-primary">{item.asset?.nama_aset || "Nama aset belum diisi"}</p><p className="mt-1 text-[8px] font-bold uppercase text-text-muted">{item.asset?.kode_aset || "—"} · {item.category || "Bangunan"} · {item.model_format || "Tanpa model"}</p></td>
+                    <td className="px-4 py-3"><p className="max-w-64 truncate text-[10px] font-bold text-text-primary">{item.building_name || "Nama bangunan belum diisi"}</p><p className="mt-1 text-[8px] font-bold uppercase text-text-muted">{item.asset?.kode_aset || "—"} · {item.category || "Bangunan"} · {item.model_format || "Tanpa model"}</p></td>
                     <td className="px-4 py-3"><p className="flex max-w-64 items-center gap-1 truncate text-[9px] text-text-secondary"><MapPinIcon size={10} /> {item.asset?.lokasi || item.asset?.desa_kelurahan || "—"}</p><p className="mt-1 max-w-64 truncate text-[8px] text-text-muted">{item.asset?.opd_pengguna || "OPD belum diisi"}</p></td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1.5">
@@ -632,6 +896,11 @@ export default function Kelola3dPage() {
           />
         </section>
       </div>
+      <BatchImportDialog
+        open={batchDialogOpen}
+        onClose={() => setBatchDialogOpen(false)}
+        onCompleted={fetchCatalog}
+      />
       <AddAssetDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onAdded={() => { setPage(1); fetchCatalog(); }} />
     </div>
   );

@@ -9,7 +9,9 @@ describe("aset3d schema initializer", () => {
       query: async (sql) => {
         queryCount += 1;
         assert.match(sql, /CREATE TABLE IF NOT EXISTS "aset_2d_catalog"/);
+        assert.match(sql, /ADD COLUMN "is_managed" BOOLEAN/);
         assert.match(sql, /CREATE TABLE IF NOT EXISTS "aset_3d_catalog"/);
+        assert.match(sql, /ADD COLUMN IF NOT EXISTS "building_name" VARCHAR\(150\)/);
         assert.match(sql, /UNIQUE \("kode_3d", "lod", "version"\)/);
       },
     });

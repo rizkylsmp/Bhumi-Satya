@@ -262,13 +262,14 @@ export const getPublicMarkers = async (req, res) => {
         {
           model: Aset2dCatalog,
           as: "catalog2d",
-          attributes: ["kode_2d"],
+          attributes: ["kode_2d", "is_managed"],
           required: false,
         },
         {
           model: Aset3dCatalog,
           as: "catalogs3d",
-          attributes: ["kode_3d", "kode_2d"],
+          attributes: ["kode_3d", "kode_2d", "building_name"],
+          where: { status: "active" },
           required: false,
         },
         {
@@ -323,7 +324,17 @@ export const getPublicMarkers = async (req, res) => {
       const availableSewa = plain.sewas?.find(
         (sewa) => sewa.status === "Tersedia",
       );
-      const activeModels3d = plain.models3d || [];
+      const buildingNamesByCode = Object.fromEntries(
+        (plain.catalogs3d || []).map((catalog) => [
+          catalog.kode_3d,
+          catalog.building_name || catalog.kode_3d,
+        ]),
+      );
+      const activeModels3d = (plain.models3d || []).map((model) => ({
+        ...model,
+        building_name: buildingNamesByCode[model.kode_3d]
+          || model.kode_3d,
+      }));
       const activeModel3d = activeModels3d[0] || null;
 
       return {
@@ -332,7 +343,13 @@ export const getPublicMarkers = async (req, res) => {
         kode_aset: plain.kode_aset,
         kode_3d: plain.catalogs3d?.[0]?.kode_3d || null,
         kode_3d_list: (plain.catalogs3d || []).map((catalog) => catalog.kode_3d),
-        kode_2d: plain.catalog2d?.kode_2d || plain.catalogs3d?.[0]?.kode_2d || null,
+        building_count_3d: plain.catalogs3d?.length || 0,
+        building_name_3d: plain.catalogs3d?.[0]?.building_name
+          || plain.catalogs3d?.[0]?.kode_3d
+          || null,
+        kode_2d: plain.catalog2d?.is_managed
+          ? plain.catalog2d.kode_2d
+          : plain.catalogs3d?.[0]?.kode_2d || null,
         nib: plain.nib || null,
         nama: plain.nama_aset,
         nama_aset: plain.nama_aset,
@@ -557,13 +574,14 @@ export const getMarkers = async (req, res) => {
         {
           model: Aset2dCatalog,
           as: "catalog2d",
-          attributes: ["kode_2d"],
+          attributes: ["kode_2d", "is_managed"],
           required: false,
         },
         {
           model: Aset3dCatalog,
           as: "catalogs3d",
-          attributes: ["kode_3d", "kode_2d"],
+          attributes: ["kode_3d", "kode_2d", "building_name"],
+          where: { status: "active" },
           required: false,
         },
         {
@@ -625,7 +643,17 @@ export const getMarkers = async (req, res) => {
         : availableSewa
           ? "Tersedia"
           : "Tidak Disewakan";
-      const activeModels3d = plain.models3d || [];
+      const buildingNamesByCode = Object.fromEntries(
+        (plain.catalogs3d || []).map((catalog) => [
+          catalog.kode_3d,
+          catalog.building_name || catalog.kode_3d,
+        ]),
+      );
+      const activeModels3d = (plain.models3d || []).map((model) => ({
+        ...model,
+        building_name: buildingNamesByCode[model.kode_3d]
+          || model.kode_3d,
+      }));
       const activeModel3d = activeModels3d[0] || null;
 
       return {
@@ -633,7 +661,13 @@ export const getMarkers = async (req, res) => {
         kode: plain.kode_aset,
         kode_3d: plain.catalogs3d?.[0]?.kode_3d || null,
         kode_3d_list: (plain.catalogs3d || []).map((catalog) => catalog.kode_3d),
-        kode_2d: plain.catalog2d?.kode_2d || plain.catalogs3d?.[0]?.kode_2d || null,
+        building_count_3d: plain.catalogs3d?.length || 0,
+        building_name_3d: plain.catalogs3d?.[0]?.building_name
+          || plain.catalogs3d?.[0]?.kode_3d
+          || null,
+        kode_2d: plain.catalog2d?.is_managed
+          ? plain.catalog2d.kode_2d
+          : plain.catalogs3d?.[0]?.kode_2d || null,
         nib: plain.nib || null,
         nama: plain.nama_aset,
         lokasi: plain.lokasi,

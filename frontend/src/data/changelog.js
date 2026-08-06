@@ -1,5 +1,185 @@
 export const changelogEntries = [
   {
+    id: "context-aware-2d-3d-map-popup",
+    date: "2026-08-07",
+    type: "perbaikan",
+    title: "Menyesuaikan popup dengan objek peta yang dipilih",
+    summary:
+      "Klik bidang 2D kini menampilkan kode bidang dan jumlah bangunan terkait, sedangkan klik bangunan 3D menampilkan kode serta nama bangunan yang tepat.",
+    area: "Digital Twin",
+  },
+  {
+    id: "digital-twin-dashboard-coverage",
+    date: "2026-08-07",
+    type: "peningkatan",
+    title: "Memperjelas statistik cakupan Digital Twin",
+    summary:
+      "Dashboard kini membandingkan bidang yang sudah dan belum terhubung ke bangunan 3D tanpa persentase model yang dapat melebihi jumlah bidang.",
+    area: "Dashboard",
+  },
+  {
+    id: "shared-building-name-per-3d-code",
+    date: "2026-08-07",
+    type: "perbaikan",
+    title: "Menyatukan nama bangunan untuk seluruh LOD",
+    summary:
+      "Nama bangunan kini diisi satu kali untuk setiap kode 3D, digunakan oleh seluruh LOD, pencarian, daftar model, dan informasi popup peta.",
+    area: "Kelola 3D",
+  },
+  {
+    id: "exclusive-lod-map-display",
+    date: "2026-08-07",
+    type: "perbaikan",
+    title: "Mencegah model antar-LOD bertumpuk",
+    summary:
+      "Digital Twin kini hanya menampilkan model dari satu LOD yang dipilih, dengan LOD 1 sebagai tampilan awal dan perpindahan penuh saat LOD lain dibuka.",
+    area: "Digital Twin",
+  },
+  {
+    id: "disable-orthophoto-menu-during-development",
+    date: "2026-08-07",
+    type: "peningkatan",
+    title: "Menandai pengelolaan Orthophoto dalam pengembangan",
+    summary:
+      "Menu Kelola Orthophoto kini berada di bawah Kelola 3D dan dinonaktifkan sementara dengan penanda pengembangan.",
+    area: "Navigasi",
+  },
+  {
+    id: "remove-3d-availability-map-filter",
+    date: "2026-08-07",
+    type: "peningkatan",
+    title: "Meringkas kontrol layer peta",
+    summary:
+      "Filter Ketersediaan 3D telah dihapus dari menu peta mode 2D dan 3D agar pilihan layer lebih ringkas dan langsung dipahami.",
+    area: "Digital Twin",
+  },
+  {
+    id: "stable-digital-twin-rendering",
+    date: "2026-08-06",
+    type: "perbaikan",
+    title: "Menstabilkan tampilan peta Digital Twin",
+    summary:
+      "Inisialisasi ganda Cesium telah dicegah dan basemap tidak lagi dipasang ulang saat pilihannya belum berubah, sehingga peta tidak berkedip saat digunakan.",
+    area: "Digital Twin",
+  },
+  {
+    id: "batch-import-per-file-3d-target",
+    date: "2026-08-06",
+    type: "peningkatan",
+    title: "Menambahkan pilihan tujuan pada import batch 3D",
+    summary:
+      "Setiap file batch kini dapat dibuatkan kode 3D baru atau dimasukkan sebagai versi model pada kode 3D yang sudah ada dalam bidang yang sama.",
+    area: "Kelola 3D",
+  },
+  {
+    id: "managed-3d-building-name-in-catalog",
+    date: "2026-08-06",
+    type: "perbaikan",
+    title: "Menyelaraskan nama bangunan pada Kelola 3D",
+    summary:
+      "Kolom Nama/Kategori kini menampilkan nama bangunan 3D yang diisi pada Detail Model, termasuk pada pencarian, pengurutan, dan ekspor data.",
+    area: "Kelola 3D",
+  },
+  {
+    id: "interactive-map-compass",
+    date: "2026-08-06",
+    type: "peningkatan",
+    title: "Menambahkan kompas interaktif pada peta",
+    summary:
+      "Kompas di samping kontrol zoom kini mengikuti putaran peta secara langsung dan dapat diklik untuk mengembalikan arah pandang ke utara pada mode 2D maupun 3D.",
+    area: "Digital Twin",
+  },
+  {
+    id: "batch-3d-import-per-parcel",
+    date: "2026-08-06",
+    type: "fitur",
+    title: "Menambahkan import batch bangunan 3D",
+    summary:
+      "Beberapa file model kini dapat diimpor sekaligus ke satu kode 2D, dengan kode 3D dan status proses terpisah untuk setiap bangunan.",
+    area: "Kelola 3D",
+  },
+  {
+    id: "managed-internal-orthophoto",
+    date: "2026-08-06",
+    type: "fitur",
+    title: "Menambahkan pengelolaan orthophoto internal",
+    summary:
+      "GeoTIFF kini dapat diunggah, dipreview, dan dipublikasikan sebagai pilihan basemap internal pada peta 2D, mode 3D, dan preview model.",
+    area: "Data Spasial",
+  },
+  {
+    id: "restore-selected-2d-polygon",
+    date: "2026-08-06",
+    type: "perbaikan",
+    title: "Memulihkan polygon 2D setelah detail ditutup",
+    summary:
+      "Polygon bidang yang dibuka dari Kelola 2D kini kembali ke warna layer 2D normal setelah panel informasinya ditutup.",
+    area: "Digital Twin",
+  },
+  {
+    id: "compact-3d-import-control",
+    date: "2026-08-06",
+    type: "peningkatan",
+    title: "Meringkas tampilan impor model 3D",
+    summary:
+      "Area impor kini menampilkan format, pilihan LOD, dan tombol file dalam satu baris ringkas agar proses unggah lebih cepat dipahami.",
+    area: "Kelola 3D",
+  },
+  {
+    id: "editable-3d-parcel-link",
+    date: "2026-08-06",
+    type: "peningkatan",
+    title: "Memperbarui bidang 2D bangunan 3D",
+    summary:
+      "Kode 2D dapat diganti lewat ikon edit pada kartu kode, dan preview menampilkan polygon bidang yang sedang terhubung sebagai konteks model bangunan.",
+    area: "Kelola 3D",
+  },
+  {
+    id: "linked-dashboard-content",
+    date: "2026-08-06",
+    type: "peningkatan",
+    title: "Menghubungkan dashboard dengan data terkait",
+    summary:
+      "Kartu, diagram, relasi 2D–3D, penyewaan, dan aktivitas dashboard kini dapat dibuka langsung menuju halaman pengelolaannya.",
+    area: "Dashboard",
+  },
+  {
+    id: "asset-2d-3d-management-flow",
+    date: "2026-08-06",
+    type: "fitur",
+    title: "Menambahkan alur pengelolaan bidang 2D",
+    summary:
+      "Aset kini dipilih terlebih dahulu ke Kelola 2D untuk memperoleh kode bidang, kemudian bangunan 3D dibuat berdasarkan kode 2D tersebut.",
+    area: "Kelola 2D",
+  },
+  {
+    id: "accurate-map-search-and-spatial-stats",
+    date: "2026-08-06",
+    type: "perbaikan",
+    title: "Memperbaiki tujuan pencarian dan statistik spasial",
+    summary:
+      "Pencarian 3D kini mengarah ke bangunan yang dipilih dan statistik dashboard dihitung dari bidang yang benar-benar masuk Kelola 2D.",
+    area: "Digital Twin",
+  },
+  {
+    id: "dashboard-buildings-per-parcel",
+    date: "2026-08-06",
+    type: "peningkatan",
+    title: "Menampilkan relasi data 2D dan 3D",
+    summary:
+      "Dashboard kini memperlihatkan jumlah kode bangunan 3D yang terhubung pada setiap kode 2D.",
+    area: "Dashboard",
+  },
+  {
+    id: "compact-data-management-pages",
+    date: "2026-08-06",
+    type: "peningkatan",
+    title: "Meringkas halaman pengelolaan data",
+    summary:
+      "Kartu ringkasan di halaman Kelola Data dan Kelola 3D dihapus agar pengguna dapat langsung mengakses pencarian, filter, dan tabel.",
+    area: "Kelola Data dan 3D",
+  },
+  {
     id: "deployment-cache-recovery",
     date: "2026-08-06",
     type: "perbaikan",

@@ -19,13 +19,41 @@ export const resolvePopupModel = (asset = {}, modelOverride = null) =>
 
 export const buildAssetPopupData = (asset = {}, modelOverride = null) => {
   const model = resolvePopupModel(asset, modelOverride);
+  const context = ["2d", "3d"].includes(asset.popup_context)
+    ? asset.popup_context
+    : null;
   const assetName = firstValue(asset.nama_aset, asset.nama);
   const assetCode = firstValue(asset.kode_aset, asset.kode);
-  const catalogCode = firstValue(asset.kode_3d, asset.catalog3d?.kode_3d);
+  const parcelCode = firstValue(asset.kode_2d, asset.catalog2d?.kode_2d);
+  const catalogCode = firstValue(
+    model?.kode_3d,
+    asset.kode_3d,
+    asset.catalog3d?.kode_3d,
+  );
+  const buildingName = firstValue(
+    model?.building_name,
+    asset.building_name_3d,
+    asset.catalog3d?.building_name,
+  );
+  const inferredBuildingCount = new Set([
+    ...(Array.isArray(asset.kode_3d_list) ? asset.kode_3d_list : []),
+    ...(Array.isArray(asset.active_models_3d)
+      ? asset.active_models_3d.map((item) => item?.kode_3d)
+      : []),
+  ].filter(hasPopupValue)).size;
+  const buildingCount = Number.isFinite(Number(asset.building_count_3d))
+    ? Number(asset.building_count_3d)
+    : inferredBuildingCount;
   const general = [
     ["Kode Aset", assetCode],
     ["Nama Aset", assetName],
-    ["Kode 3D", catalogCode],
+    ["Kode 2D", context === "2d" ? parcelCode : null],
+    ["Kode 3D", context === "2d" ? null : catalogCode],
+    ["Nama Bangunan", context === "2d" ? null : buildingName],
+    [
+      "Jumlah Bangunan 3D",
+      context === "2d" ? `${buildingCount} bangunan` : null,
+    ],
     ["Jenis Aset", firstValue(asset.jenis_aset, asset.jenis)],
     ["Luas Terdata", asset.luas, "area"],
     ["Tahun Perolehan", firstValue(asset.tahun_perolehan, asset.tahun)],
@@ -147,8 +175,10 @@ export const buildAssetPopupData = (asset = {}, modelOverride = null) => {
     }));
 
   return {
+    context,
     title: assetName || "Aset tanpa nama",
     assetCode,
+    parcelCode,
     catalogCode,
     location: firstValue(asset.lokasi),
     description: firstValue(asset.keterangan),
@@ -165,12 +195,14 @@ export const buildAssetPopupData = (asset = {}, modelOverride = null) => {
     model: {
       available: Boolean(
         model ||
+        hasPopupValue(buildingName) ||
         hasPopupValue(asset.model_3d_lod) ||
         hasPopupValue(asset.building_height_m) ||
         hasPopupValue(asset.building_floors),
       ),
       recordAvailable: Boolean(model),
       id: model?.id_model_3d || null,
+      name: buildingName,
       lod: firstValue(model?.lod, asset.model_3d_lod),
       version: firstValue(model?.version),
       format: firstValue(model?.format, model?.model_type),

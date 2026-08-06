@@ -737,8 +737,15 @@ export const updateMetadata = async (req, res) => {
       ...spatialMetadata
     } = metadata;
     const manifest = { ...currentManifest };
-    if (Object.hasOwn(metadata, "display_name")) manifest.display_name = displayName;
+    delete manifest.display_name;
     if (Object.hasOwn(metadata, "description")) manifest.description = description;
+
+    if (Object.hasOwn(metadata, "display_name")) {
+      await Aset3dCatalog.update(
+        { building_name: displayName },
+        { where: { kode_3d: model.kode_3d } },
+      );
+    }
 
     await model.update({
       ...spatialMetadata,

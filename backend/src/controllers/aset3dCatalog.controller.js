@@ -93,6 +93,8 @@ const modelAttributes = [
   "review_status",
   "format",
   "model_type",
+  "original_name",
+  "manifest",
   "public_url",
   "converted_public_url",
   "location_lat",
@@ -112,6 +114,7 @@ export const serializeCatalog = (record) => {
   const activeModel = models.find((model) => model.is_active) || models[0] || null;
   const centerX = activeModel?.location_long ?? value.aset?.koordinat_long ?? null;
   const centerY = activeModel?.location_lat ?? value.aset?.koordinat_lat ?? null;
+  const buildingName = String(value.building_name || "").trim() || null;
   return {
     kode_3d: value.kode_3d,
     kode_2d: value.kode_2d,
@@ -123,6 +126,7 @@ export const serializeCatalog = (record) => {
     model_count: models.length,
     active_model: activeModel,
     active_models: models.filter((model) => model.is_active),
+    building_name: buildingName,
     model_status: activeModel?.review_status || activeModel?.conversion_status || "belum_ada",
     category: "Bangunan",
     model_format: activeModel?.format || activeModel?.model_type || null,
@@ -144,7 +148,7 @@ const catalogInclude = {
     attributes: modelAttributes,
     required: false,
     separate: true,
-    order: [["version", "DESC"]],
+    order: [["is_active", "DESC"], ["updated_at", "DESC"], ["version", "DESC"]],
   }],
 };
 
@@ -156,6 +160,11 @@ const catalogOrder = (sort, order) => {
   if (sort === "kode_3d") return [["kode_3d", direction]];
   if (sort === "kode_2d") return [["kode_2d", direction]];
   if (sort === "status") return [["status", direction]];
+  if (sort === "building_name") {
+    return [[Sequelize.literal(
+      'COALESCE("Aset3dCatalog"."building_name", \'\')',
+    ), direction]];
+  }
   if (sort === "model_updated_at") {
     return [[Sequelize.literal(`COALESCE((
       SELECT MAX(sort_model."updated_at")
@@ -194,6 +203,7 @@ const buildCatalogWhere = (query) => {
     where[Op.or] = [
       { kode_3d: { [Op.iLike]: `%${search}%` } },
       { kode_2d: { [Op.iLike]: `%${search}%` } },
+      { building_name: { [Op.iLike]: `%${search}%` } },
       { "$aset.kode_aset$": { [Op.iLike]: `%${search}%` } },
       { "$aset.nama_aset$": { [Op.iLike]: `%${search}%` } },
       { "$aset.lokasi$": { [Op.iLike]: `%${search}%` } },
@@ -292,13 +302,14 @@ export const exportCsv = async (req, res) => {
       order: catalogOrder(req.query.sort, req.query.order),
     });
     const headers = [
-      "kode_2d", "kode_3d", "kode_aset", "nama_aset", "kategori", "status_katalog", "status_model",
+      "kode_2d", "kode_3d", "kode_aset", "nama_bangunan_3d", "nama_aset", "kategori", "status_katalog", "status_model",
       "format", "center_x", "center_y", "url_model", "dibuat", "diperbarui",
     ];
     const body = rows.map(serializeCatalog).map((item) => [
       item.kode_2d,
       item.kode_3d,
       item.asset?.kode_aset,
+      item.building_name,
       item.asset?.nama_aset,
       item.category,
       item.status,
@@ -328,7 +339,7 @@ export const candidates = async (req, res) => {
     const page = toPositiveInteger(req.query.page, 1, 100000);
     const limit = toPositiveInteger(req.query.limit, 8, 50);
     const search = String(req.query.search || "").trim();
-    const where = { status: "active" };
+    const where = { status: "active", is_managed: true };
 
     if (search) {
       where[Op.or] = [
@@ -345,6 +356,7 @@ export const candidates = async (req, res) => {
         "kode_2d",
         "id_aset",
         "status",
+        "is_managed",
         [Sequelize.literal(`(
           SELECT COUNT(*)
           FROM "aset_3d_catalog" building_count
@@ -413,7 +425,7 @@ export const create = async (req, res) => {
     const parcel = await Aset2dCatalog.findByPk(kode2d, {
       include: [{ model: Aset, as: "aset", required: true }],
     });
-    if (!parcel?.aset) {
+    if (!parcel?.aset || !parcel.is_managed) {
       return res.status(404).json({ success: false, error: "Bidang 2D tidak ditemukan" });
     }
     const asset = parcel.aset;
@@ -452,6 +464,125 @@ export const create = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating 3D catalog:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const update = async (req, res) => {
+  try {
+    const buildingName = String(req.body?.building_name || "").trim();
+    if (buildingName.length > 150) {
+      return res.status(400).json({
+        success: false,
+        error: "Nama bangunan maksimal 150 karakter",
+      });
+    }
+
+    const catalog = await Aset3dCatalog.findByPk(req.params.kode3d);
+    if (!catalog) {
+      return res.status(404).json({
+        success: false,
+        error: "Aset Kelola 3D tidak ditemukan",
+      });
+    }
+
+    const oldData = catalog.toJSON();
+    await catalog.update({
+      building_name: buildingName || null,
+      updated_at: new Date(),
+    });
+
+    await AuditService.logUpdate({
+      tabel: "aset_3d_catalog",
+      id_referensi: catalog.id_aset,
+      data_lama: oldData,
+      data_baru: catalog.toJSON(),
+      keterangan: `Memperbarui nama bangunan ${catalog.kode_3d}`,
+      user_id: req.user.id_user,
+      req,
+    });
+
+    const updated = await Aset3dCatalog.findByPk(catalog.kode_3d, {
+      include: [catalogInclude],
+    });
+    return res.json({
+      success: true,
+      message: "Nama bangunan berhasil disimpan",
+      data: serializeCatalog(updated),
+    });
+  } catch (error) {
+    console.error("Error updating 3D catalog:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const updateParcel = async (req, res) => {
+  try {
+    const kode2d = String(req.body?.kode_2d || "").trim();
+    if (!kode2d) {
+      return res.status(400).json({ success: false, error: "Kode 2D wajib dipilih" });
+    }
+
+    const [catalog, parcel] = await Promise.all([
+      Aset3dCatalog.findByPk(req.params.kode3d),
+      Aset2dCatalog.findByPk(kode2d, {
+        include: [{ model: Aset, as: "aset", required: true }],
+      }),
+    ]);
+    if (!catalog) {
+      return res.status(404).json({ success: false, error: "Aset Kelola 3D tidak ditemukan" });
+    }
+    if (!parcel?.aset || !parcel.is_managed || parcel.status !== "active") {
+      return res.status(404).json({
+        success: false,
+        error: "Bidang 2D aktif tidak ditemukan di Kelola 2D",
+      });
+    }
+
+    if (catalog.kode_2d === parcel.kode_2d) {
+      const current = await Aset3dCatalog.findByPk(catalog.kode_3d, {
+        include: [catalogInclude],
+      });
+      return res.json({
+        success: true,
+        message: "Bangunan 3D sudah terhubung ke kode 2D tersebut",
+        data: serializeCatalog(current),
+      });
+    }
+
+    const oldData = catalog.toJSON();
+    await sequelize.transaction(async (transaction) => {
+      await catalog.update({
+        kode_2d: parcel.kode_2d,
+        id_aset: parcel.aset.id_aset,
+        updated_at: new Date(),
+      }, { transaction });
+      await AsetModel3d.update(
+        { id_aset: parcel.aset.id_aset, updated_at: new Date() },
+        { where: { kode_3d: catalog.kode_3d }, transaction },
+      );
+    });
+
+    await AuditService.logUpdate({
+      tabel: "aset_3d_catalog",
+      id_referensi: parcel.aset.id_aset,
+      data_lama: oldData,
+      data_baru: catalog.toJSON(),
+      keterangan: `Memindahkan ${catalog.kode_3d} dari bidang ${oldData.kode_2d} ke ${parcel.kode_2d}`,
+      user_id: req.user.id_user,
+      req,
+    });
+
+    const updated = await Aset3dCatalog.findByPk(catalog.kode_3d, {
+      include: [catalogInclude],
+    });
+    return res.json({
+      success: true,
+      message: `Kode 2D bangunan diperbarui menjadi ${parcel.kode_2d}`,
+      data: serializeCatalog(updated),
+    });
+  } catch (error) {
+    console.error("Error updating 3D catalog parcel:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
 };

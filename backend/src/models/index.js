@@ -13,6 +13,7 @@ import AsetModel3d from "./AsetModel3d.js";
 import Aset3dCatalog from "./Aset3dCatalog.js";
 import Aset2dCatalog from "./Aset2dCatalog.js";
 import AsetModel3dObject from "./AsetModel3dObject.js";
+import Orthophoto from "./Orthophoto.js";
 
 // Define associations here to avoid circular dependencies
 // User has many Aset (created_by)
@@ -256,6 +257,16 @@ User.hasMany(Aset3dCatalog, {
   as: "createdCatalogs3d",
 });
 
+Orthophoto.belongsTo(User, {
+  foreignKey: "created_by",
+  as: "creator",
+});
+
+User.hasMany(Orthophoto, {
+  foreignKey: "created_by",
+  as: "orthophotos",
+});
+
 export {
   sequelize,
   User,
@@ -272,4 +283,5 @@ export {
   Aset2dCatalog,
   Aset3dCatalog,
   AsetModel3dObject,
+  Orthophoto,
 };

@@ -10,7 +10,6 @@ import MapSearchOverlay from "../components/map/bpn/MapSearchOverlay";
 import { petaService, asetService } from "../services/api";
 import { downloadAssetPdf } from "../utils/pdfExport";
 import { downloadAssetGeojson } from "../utils/geojsonExport";
-import { hasUsableAsset3dData } from "../utils/asset3dGeojson";
 import { normalizeMapMarkers } from "../utils/mapAssets";
 import { RENTAL_FEATURE_ENABLED } from "../config/featureFlags";
 import {
@@ -129,8 +128,6 @@ function MapData2dControls({
   setShowSudahSertifikat,
   showBelumSertifikat,
   setShowBelumSertifikat,
-  data3dFilter,
-  setData3dFilter,
   layerOnly = false,
   searchControlOnly = false,
 }) {
@@ -170,8 +167,6 @@ function MapData2dControls({
         setShowSudahSertifikat={setShowSudahSertifikat}
         showBelumSertifikat={showBelumSertifikat}
         setShowBelumSertifikat={setShowBelumSertifikat}
-        data3dFilter={data3dFilter}
-        setData3dFilter={setData3dFilter}
       />
     );
   }
@@ -223,8 +218,6 @@ function MapData2dControls({
           setShowSudahSertifikat={setShowSudahSertifikat}
           showBelumSertifikat={showBelumSertifikat}
           setShowBelumSertifikat={setShowBelumSertifikat}
-          data3dFilter={data3dFilter}
-          setData3dFilter={setData3dFilter}
         />
       </DropdownSection>
 
@@ -330,8 +323,6 @@ export default function MapPage({ publicMode = false }) {
   const [showKecamatan, setShowKecamatan] = useState(true);
   const [showSudahSertifikat, setShowSudahSertifikat] = useState(true);
   const [showBelumSertifikat, setShowBelumSertifikat] = useState(true);
-  const [data3dFilter, setData3dFilter] = useState("all");
-
   const handleAsset3dPanelOpenChange = useCallback((isOpen) => {
     setShowFilterPanel(isOpen);
   }, []);
@@ -440,7 +431,14 @@ export default function MapPage({ publicMode = false }) {
 
   const handleSelectSearchAsset = (asset, searchMode = "2d") => {
     if (searchMode === "3d") {
-      setFocus3dTarget({ assetId: asset.id_aset || asset.id });
+      const selectedModel = asset.active_model_3d
+        || asset.active_models_3d?.[0]
+        || null;
+      setFocus3dTarget({
+        assetId: asset.id_aset || asset.id,
+        modelId: selectedModel?.id_model_3d || null,
+        kode3d: asset.kode_3d || selectedModel?.kode_3d || null,
+      });
       setFocus3dKey((prev) => (prev ?? 0) + 1);
       return;
     }
@@ -536,21 +534,13 @@ export default function MapPage({ publicMode = false }) {
       !selectedKecamatanFilter ||
       String(asset.kecamatan || "").trim().toLowerCase() ===
         String(selectedKecamatanFilter).trim().toLowerCase();
-    const has3dData = hasUsableAsset3dData(asset);
-    const match3dData =
-      data3dFilter === "all" ||
-      (data3dFilter === "available" && has3dData) ||
-      (data3dFilter === "missing" && !has3dData);
-
     return (
       matchSewaLayer &&
       matchCertificateLayer &&
-      matchKecamatan &&
-      match3dData
+      matchKecamatan
     );
   }), [
     assets,
-    data3dFilter,
     selectedKecamatanFilter,
     selectedSewaLayers,
     showBelumSertifikat,
@@ -607,8 +597,6 @@ export default function MapPage({ publicMode = false }) {
     setShowSudahSertifikat,
     showBelumSertifikat,
     setShowBelumSertifikat,
-    data3dFilter,
-    setData3dFilter,
   };
 
   return (

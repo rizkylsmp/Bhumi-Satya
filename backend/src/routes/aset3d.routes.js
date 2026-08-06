@@ -21,6 +21,16 @@ router.post(
   permissionMiddleware(PERMISSIONS.ASET_UPDATE),
   Aset3dCatalogController.create,
 );
+router.patch(
+  "/:kode3d",
+  permissionMiddleware(PERMISSIONS.ASET_UPDATE),
+  Aset3dCatalogController.update,
+);
+router.patch(
+  "/:kode3d/parcel",
+  permissionMiddleware(PERMISSIONS.ASET_UPDATE),
+  Aset3dCatalogController.updateParcel,
+);
 router.delete(
   "/:kode3d",
   permissionMiddleware(PERMISSIONS.ASET_UPDATE),

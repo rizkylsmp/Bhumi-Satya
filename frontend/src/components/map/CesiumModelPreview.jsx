@@ -9,6 +9,9 @@ import {
   Math as CesiumMath,
   Matrix4,
   Model,
+  PolygonHierarchy,
+  Rectangle,
+  SingleTileImageryProvider,
   Transforms,
   UrlTemplateImageryProvider,
   Viewer,
@@ -55,8 +58,21 @@ const getModelUrl = (model = {}) =>
 const getModelFormat = (model = {}) =>
   String(model.format || model.model_type || "").toUpperCase();
 
-const createBasemapProvider = (basemapId) => {
-  const option = getBasemapOption(basemapId);
+const createBasemapProvider = async (basemapId, suppliedOption = null) => {
+  const option = suppliedOption || getBasemapOption(basemapId);
+  if (option?.kind === "single-image") {
+    const bounds = option.bounds;
+    if (!option.imageUrl || !bounds) return null;
+    return SingleTileImageryProvider.fromUrl(option.imageUrl, {
+      rectangle: Rectangle.fromDegrees(
+        bounds.west,
+        bounds.south,
+        bounds.east,
+        bounds.north,
+      ),
+      credit: option.attribution,
+    });
+  }
   if (!option?.cesiumUrl) return null;
   return new UrlTemplateImageryProvider({
     url: option.cesiumUrl,
@@ -65,11 +81,12 @@ const createBasemapProvider = (basemapId) => {
   });
 };
 
-const applyBasemap = (viewer, basemapId) => {
+const applyBasemap = async (viewer, basemapId, suppliedOption = null) => {
   if (!viewer || viewer.isDestroyed()) return;
-  const option = getBasemapOption(basemapId);
+  const option = suppliedOption || getBasemapOption(basemapId);
   viewer.imageryLayers.removeAll(true);
-  const provider = createBasemapProvider(option.id);
+  const provider = await createBasemapProvider(option.id, option);
+  if (!viewer || viewer.isDestroyed()) return;
   if (provider) viewer.imageryLayers.addImageryProvider(provider);
   const background = Color.fromCssColorString(
     option.backgroundColor || "#cbd5e1",
@@ -137,12 +154,89 @@ const waitForModelReady = (model) => {
   });
 };
 
+const getPolygonPoints = (rawPolygon, coordinateOrder = "latLng") => {
+  if (!rawPolygon) return [];
+  if (typeof rawPolygon === "string") {
+    try {
+      return getPolygonPoints(JSON.parse(rawPolygon), coordinateOrder);
+    } catch {
+      return [];
+    }
+  }
+  if (Array.isArray(rawPolygon)) {
+    const firstNumber = Number(rawPolygon[0]);
+    const secondNumber = Number(rawPolygon[1]);
+    if (Number.isFinite(firstNumber) && Number.isFinite(secondNumber)) {
+      return coordinateOrder === "lngLat"
+        ? [[firstNumber, secondNumber]]
+        : [[secondNumber, firstNumber]];
+    }
+    return rawPolygon.flatMap((item) => getPolygonPoints(item, coordinateOrder));
+  }
+  if (typeof rawPolygon === "object") {
+    const longitude = Number(rawPolygon.lng ?? rawPolygon.longitude);
+    const latitude = Number(rawPolygon.lat ?? rawPolygon.latitude);
+    if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
+      return [[longitude, latitude]];
+    }
+    if (rawPolygon.coordinates) {
+      return getPolygonPoints(rawPolygon.coordinates, "lngLat");
+    }
+    if (rawPolygon.geometry) {
+      return getPolygonPoints(rawPolygon.geometry, coordinateOrder);
+    }
+    if (rawPolygon.features) {
+      return getPolygonPoints(rawPolygon.features, coordinateOrder);
+    }
+  }
+  return [];
+};
+
+const addParcelPolygon = (viewer, asset) => {
+  const points = getPolygonPoints(asset?.polygon_bidang || asset?.polygon)
+    .filter(([longitude, latitude]) => (
+      Number.isFinite(longitude)
+      && Number.isFinite(latitude)
+      && Math.abs(longitude) <= 180
+      && Math.abs(latitude) <= 90
+    ));
+  if (points.length < 3) return null;
+
+  const first = points[0];
+  const last = points.at(-1);
+  const closedPoints = first[0] === last[0] && first[1] === last[1]
+    ? points
+    : [...points, first];
+  const positions = closedPoints.map(([longitude, latitude]) =>
+    Cartesian3.fromDegrees(longitude, latitude, 0));
+  const fillColor = Color.fromCssColorString("#38bdf8").withAlpha(0.2);
+  const outlineColor = Color.fromCssColorString("#0284c7").withAlpha(0.95);
+
+  return viewer.entities.add({
+    id: "selected-parcel-2d",
+    name: asset?.kode_2d || asset?.kode_aset || "Bidang 2D terpilih",
+    polygon: {
+      hierarchy: new PolygonHierarchy(positions.slice(0, -1)),
+      material: fillColor,
+      outline: false,
+      height: 0,
+    },
+    polyline: {
+      positions,
+      width: 3,
+      material: outlineColor,
+      clampToGround: true,
+    },
+  });
+};
+
 export default function CesiumModelPreview({
   asset,
   model,
   focusRequestKey,
   onStatusChange,
   basemapId = DEFAULT_BASEMAP_ID,
+  basemapOption = null,
 }) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
@@ -151,11 +245,14 @@ export default function CesiumModelPreview({
   const assetRef = useRef(asset);
   const onStatusChangeRef = useRef(onStatusChange);
   const basemapIdRef = useRef(basemapId);
+  const basemapOptionRef = useRef(basemapOption);
   const modelLoadKey = [
     model?.id_model_3d || "no-model",
     getModelUrl(model || {}) || "no-url",
     getModelFormat(model || {}) || "no-format",
     asset?.id_aset || asset?.id || "no-asset",
+    asset?.kode_2d || "no-parcel",
+    JSON.stringify(asset?.polygon_bidang || asset?.polygon || null),
   ].join(":");
 
   useEffect(() => {
@@ -166,8 +263,10 @@ export default function CesiumModelPreview({
 
   useEffect(() => {
     basemapIdRef.current = basemapId;
-    applyBasemap(viewerRef.current, basemapId);
-  }, [basemapId]);
+    basemapOptionRef.current = basemapOption;
+    applyBasemap(viewerRef.current, basemapId, basemapOption)
+      .catch((error) => console.error("Could not switch preview basemap:", error));
+  }, [basemapId, basemapOption]);
 
   useEffect(() => {
     if (!containerRef.current) return undefined;
@@ -205,7 +304,12 @@ export default function CesiumModelPreview({
       viewerRef.current = viewer;
       viewer.scene.globe.depthTestAgainstTerrain = false;
       viewer.scene.globe.showGroundAtmosphere = false;
-      applyBasemap(viewer, basemapIdRef.current);
+      await applyBasemap(
+        viewer,
+        basemapIdRef.current,
+        basemapOptionRef.current,
+      );
+      const parcelEntity = addParcelPolygon(viewer, currentAsset);
 
       resizeObserver = new ResizeObserver(() => {
         if (!viewer.isDestroyed()) viewer.resize();
@@ -214,6 +318,10 @@ export default function CesiumModelPreview({
 
       const fallbackLocation = assetLocation(currentAsset);
       if (!currentModel) {
+        if (parcelEntity) {
+          await viewer.zoomTo(parcelEntity);
+          return;
+        }
         const cameraLocation = isFiniteLocation(fallbackLocation)
           ? fallbackLocation
           : {

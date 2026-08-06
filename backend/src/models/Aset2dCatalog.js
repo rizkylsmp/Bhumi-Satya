@@ -19,6 +19,11 @@ const Aset2dCatalog = sequelize.define(
       allowNull: false,
       defaultValue: "active",
     },
+    is_managed: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,

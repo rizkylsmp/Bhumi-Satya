@@ -6,6 +6,7 @@ test("serializes catalog management fields from the active model", () => {
   const value = serializeCatalog({
     kode_3d: "3D-000001",
     kode_2d: "2D-000001",
+    building_name: "Gedung Rektorat",
     status: "active",
     created_at: "2026-07-01",
     updated_at: "2026-07-02",
@@ -21,6 +22,7 @@ test("serializes catalog management fields from the active model", () => {
         status: "ready",
         review_status: "active",
         format: "3DTILES",
+        manifest: { display_name: "Nama Lama LOD1" },
         converted_public_url: "https://example.test/tileset.json",
         location_long: 112.9,
         location_lat: -7.7,
@@ -30,12 +32,33 @@ test("serializes catalog management fields from the active model", () => {
   });
 
   assert.equal(value.category, "Bangunan");
+  assert.equal(value.building_name, "Gedung Rektorat");
   assert.equal(value.kode_2d, "2D-000001");
   assert.equal(value.model_status, "active");
   assert.equal(value.center_x, 112.9);
   assert.equal(value.center_y, -7.7);
   assert.equal(value.model_url, "https://example.test/tileset.json");
   assert.equal(value.asset.models3d, undefined);
+});
+
+test("does not derive a building name from the asset or an individual LOD", () => {
+  const value = serializeCatalog({
+    kode_3d: "3D-000002",
+    building_name: null,
+    status: "active",
+    aset: {
+      nama_aset: "Nama Aset Tidak Digunakan",
+      models3d: [{
+        id_model_3d: 8,
+        kode_3d: "3D-000002",
+        is_active: true,
+        status: "ready",
+        manifest: { display_name: "Nama LOD Tidak Digunakan" },
+      }],
+    },
+  });
+
+  assert.equal(value.building_name, null);
 });
 
 test("CSV cells escape commas, quotes, and line breaks", () => {

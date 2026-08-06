@@ -191,9 +191,7 @@ export default function Model3dControlPanel({
 
   const updateSelection = (nextIds) => {
     const normalizedIds = Array.from(new Set(nextIds.map(String)));
-    onVisibleLocationIdsChange?.(
-      normalizedIds.length === allIds.length ? null : normalizedIds,
-    );
+    onVisibleLocationIdsChange?.(normalizedIds);
   };
 
   const selectLod = (lodId) => {

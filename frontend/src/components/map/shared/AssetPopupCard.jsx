@@ -146,6 +146,7 @@ function AccordionSection({
 
 function ModelDetails({ model, statusLabel }) {
   const rows = [
+    { label: "Nama Bangunan", value: model.name },
     { label: "LOD", value: model.lod },
     {
       label: "Versi",
@@ -358,7 +359,11 @@ export default function AssetPopupCard({
               <BuildingsIcon size={15} weight="fill" />
             </span>
             <h3 className="min-w-0 flex-1 truncate font-mono text-sm font-black leading-tight">
-              {popup.assetCode || popup.catalogCode || "Tanpa kode"}
+              {popup.context === "3d"
+                ? popup.catalogCode || popup.assetCode || "Tanpa kode"
+                : popup.context === "2d"
+                  ? popup.parcelCode || popup.assetCode || "Tanpa kode"
+                  : popup.assetCode || popup.catalogCode || "Tanpa kode"}
             </h3>
           </div>
           <button

@@ -3,6 +3,31 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
+    const [schemaRows] = await queryInterface.sequelize.query(`
+      SELECT
+        to_regclass('aset_2d_catalog') IS NOT NULL AS has_2d_catalog,
+        EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = current_schema()
+            AND table_name = 'aset_3d_catalog'
+            AND column_name = 'kode_2d'
+        ) AS has_3d_parcel_link,
+        EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = current_schema()
+            AND table_name = 'aset_model_3d'
+            AND column_name = 'kode_3d'
+        ) AS has_model_catalog_link;
+    `);
+    const schema = schemaRows[0] || {};
+    if (
+      schema.has_2d_catalog
+      && schema.has_3d_parcel_link
+      && schema.has_model_catalog_link
+    ) {
+      return;
+    }
+
     const transaction = await queryInterface.sequelize.transaction();
     try {
       await queryInterface.createTable("aset_2d_catalog", {

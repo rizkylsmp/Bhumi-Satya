@@ -46,6 +46,7 @@ import {
   BASEMAP_OPTIONS,
   DEFAULT_BASEMAP_ID,
 } from "../basemapOptions";
+import useBasemapOptions from "../useBasemapOptions";
 import {
   formatCurrency,
   formatNumberWithOptions,
@@ -431,7 +432,10 @@ const MapDisplayBPN = ({
 }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
+  const compassButtonRef = useRef(null);
+  const compassNeedleRef = useRef(null);
   const isBaseStyleReadyRef = useRef(false);
+  const appliedBasemapSignatureRef = useRef("");
   const cesiumMapRef = useRef(null);
   const popupRef = useRef(null);
   const popupDragCleanupRef = useRef(null);
@@ -445,6 +449,7 @@ const MapDisplayBPN = ({
   const analysisStateRef = useRef({ tool: null, points: [] });
   const baseLayerVisibilityRef = useRef(new Map());
   const isBPKAMode = mode === "bpka";
+  const basemapOptions = useBasemapOptions();
 
   // Internal state (used when showControls=true, i.e. DashboardPage)
   const [activeLayerInternal, setActiveLayerInternal] = useState("bidang");
@@ -459,9 +464,7 @@ const MapDisplayBPN = ({
   const [activeBasemap, setActiveBasemap] = useState(() => {
     if (typeof window === "undefined") return DEFAULT_BASEMAP_ID;
     const storedBasemap = window.localStorage.getItem(BASEMAP_STORAGE_KEY);
-    return BASEMAP_OPTIONS.some((option) => option.id === storedBasemap)
-      ? storedBasemap
-      : DEFAULT_BASEMAP_ID;
+    return storedBasemap || DEFAULT_BASEMAP_ID;
   });
   const [basemapError, setBasemapError] = useState("");
   const [isBasemapMenuOpen, setIsBasemapMenuOpen] = useState(false);
@@ -493,6 +496,23 @@ const MapDisplayBPN = ({
   const [analysisPoints, setAnalysisPoints] = useState([]);
   const [analysisGeometry, setAnalysisGeometry] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
+
+  const updateCompassBearing = useCallback((value) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return;
+    const bearing = ((((numeric + 180) % 360) + 360) % 360) - 180;
+    if (compassNeedleRef.current) {
+      compassNeedleRef.current.style.transform = `rotate(${-bearing}deg)`;
+    }
+    if (compassButtonRef.current) {
+      const degrees = Math.round(((bearing % 360) + 360) % 360);
+      compassButtonRef.current.title = `Arah peta ${degrees}° · Klik untuk kembali ke utara`;
+      compassButtonRef.current.setAttribute(
+        "aria-label",
+        `Kompas, arah peta ${degrees} derajat. Klik untuk kembali ke utara`,
+      );
+    }
+  }, []);
 
   useEffect(() => {
     onDetailedModelStatusChange?.(detailedModelStatus);
@@ -566,7 +586,12 @@ const MapDisplayBPN = ({
             : `asset-${assetId}-${modelIndex}`,
           assetId,
           modelId,
-          name: asset?.nama_aset || asset?.nama || asset?.kode_aset || `Aset ${assetId}`,
+          name:
+            model?.building_name
+            || asset?.building_name_3d
+            || model?.kode_3d
+            || asset?.kode_3d
+            || "Nama bangunan belum diisi",
           location: asset?.lokasi || asset?.desa_kelurahan || "Lokasi belum dilengkapi",
           latitude: offsetLocation.latitude,
           longitude: offsetLocation.longitude,
@@ -1048,7 +1073,15 @@ const MapDisplayBPN = ({
     if (selectedSource) {
       selectedSource.setData(EMPTY_FEATURE_COLLECTION);
     }
-  }, [setSourceFeatureState]);
+
+    // The yellow highlight uses a separate GeoJSON source. Restore the base
+    // source explicitly after clearing it so the selected parcel returns to
+    // the normal certified/uncertified 2D styling instead of disappearing.
+    const bidangSource = map.current?.getSource("bidang_tanah");
+    if (bidangSource) {
+      bidangSource.setData(bidangTanahGeoJson);
+    }
+  }, [bidangTanahGeoJson, setSourceFeatureState]);
 
   const setSelectedBidangOverlay = (feature) => {
     const selectedSource = map.current?.getSource(SELECTED_BIDANG_SOURCE_ID);
@@ -1352,7 +1385,18 @@ const MapDisplayBPN = ({
         // ditutup agar tidak muncul ganda.
         closeMapPopup();
         selectBidangAsset(matched);
-        currentOnFeatureClick(matched);
+        const isBuilding3d = layerId === "asset-buildings-3d-layer";
+        const modelIdFromFeature = feature.properties?.id_model_3d;
+        const selectedModel = isBuilding3d
+          ? (matched.active_models_3d || []).find(
+              (model) => String(model?.id_model_3d) === String(modelIdFromFeature),
+            ) || matched.active_model_3d || null
+          : null;
+        currentOnFeatureClick({
+          ...matched,
+          popup_context: isBuilding3d ? "3d" : "2d",
+          ...(selectedModel ? { active_model_3d: selectedModel } : {}),
+        });
         return;
       }
     }
@@ -1612,30 +1656,44 @@ const MapDisplayBPN = ({
     }
   };
 
+  const getBasemapSignature = (option = {}) => JSON.stringify({
+    id: option.id || "",
+    kind: option.kind || "",
+    tiles: option.tiles || [],
+    imageUrl: option.imageUrl || "",
+    bounds: option.bounds || null,
+    opacity: option.opacity ?? 1,
+  });
+
   const applyBasemap = async (basemapId) => {
     const option =
-      BASEMAP_OPTIONS.find((item) => item.id === basemapId) ||
+      basemapOptions.find((item) => item.id === basemapId) ||
       BASEMAP_OPTIONS[0];
+    if (basemapId?.startsWith("internal-orthophoto-") && option.id !== basemapId) {
+      return;
+    }
     setActiveBasemap(option.id);
     setBasemapError("");
     if (!map.current || !isBaseStyleReadyRef.current) return;
+    const signature = getBasemapSignature(option);
+    if (appliedBasemapSignatureRef.current === signature) return;
 
     if (option.id === MAPLIBRE_BASEMAP_ID) {
       removeBasemapRaster();
       setBaseStyleVisibility(true);
+      appliedBasemapSignatureRef.current = signature;
       return;
     }
 
     if (option.id === "none") {
       removeBasemapRaster();
       setBaseStyleVisibility(false);
+      appliedBasemapSignatureRef.current = signature;
       return;
     }
 
     try {
-      const tiles = option.tiles;
-
-      if (!tiles?.length || !map.current) {
+      if (!map.current) {
         setBasemapError("Basemap belum bisa dimuat.");
         return;
       }
@@ -1643,13 +1701,32 @@ const MapDisplayBPN = ({
       removeBasemapRaster();
       setBaseStyleVisibility(false);
 
-      map.current.addSource(BASEMAP_RASTER_SOURCE_ID, {
-        type: "raster",
-        tiles,
-        tileSize: option.tileSize || 256,
-        maxzoom: option.maxzoom || 22,
-        attribution: option.attribution,
-      });
+      if (option.kind === "single-image") {
+        const bounds = option.bounds;
+        if (!option.imageUrl || !bounds) {
+          throw new Error("URL atau batas orthophoto belum tersedia");
+        }
+        map.current.addSource(BASEMAP_RASTER_SOURCE_ID, {
+          type: "image",
+          url: option.imageUrl,
+          coordinates: [
+            [bounds.west, bounds.north],
+            [bounds.east, bounds.north],
+            [bounds.east, bounds.south],
+            [bounds.west, bounds.south],
+          ],
+        });
+      } else {
+        const tiles = option.tiles;
+        if (!tiles?.length) throw new Error("URL tile basemap belum tersedia");
+        map.current.addSource(BASEMAP_RASTER_SOURCE_ID, {
+          type: "raster",
+          tiles,
+          tileSize: option.tileSize || 256,
+          maxzoom: option.maxzoom || 22,
+          attribution: option.attribution,
+        });
+      }
 
       const beforeLayerId = [
         "batas_kecamatan_fill",
@@ -1665,15 +1742,23 @@ const MapDisplayBPN = ({
           id: BASEMAP_RASTER_LAYER_ID,
           type: "raster",
           source: BASEMAP_RASTER_SOURCE_ID,
-          paint: { "raster-opacity": 1 },
+          paint: { "raster-opacity": option.opacity ?? 1 },
         },
         beforeLayerId,
       );
+      appliedBasemapSignatureRef.current = signature;
     } catch (error) {
       console.warn("Could not switch basemap:", error);
       setBasemapError("Basemap belum bisa dimuat.");
     }
   };
+
+  useEffect(() => {
+    if (!isMapReady) return;
+    void applyBasemap(activeBasemap);
+    // Reapply a stored internal orthophoto after its public catalog is loaded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBasemap, basemapOptions, isMapReady]);
 
   const addCustomLayers = () => {
     if (!map.current || !map.current.isStyleLoaded()) return;
@@ -2330,6 +2415,10 @@ const MapDisplayBPN = ({
 
     map.current.on("click", handleMapClick);
     map.current.on("mousemove", handleMouseMove);
+    const handleMapRotate = () => {
+      updateCompassBearing(map.current?.getBearing() || 0);
+    };
+    map.current.on("rotate", handleMapRotate);
 
     return () => {
       // Remove popup FIRST before map to prevent race condition
@@ -2355,6 +2444,7 @@ const MapDisplayBPN = ({
         isBaseStyleReadyRef.current = false;
         map.current.off("click", handleMapClick);
         map.current.off("mousemove", handleMouseMove);
+        map.current.off("rotate", handleMapRotate);
         map.current.remove();
         map.current = null;
       }
@@ -2362,14 +2452,6 @@ const MapDisplayBPN = ({
   // Map listeners are intentionally bound once and read current state from refs.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!isMapReady) return;
-    applyBasemap(activeBasemap);
-  // Basemap initialization runs once after the MapLibre style is fully ready.
-  // Subsequent user changes are applied directly by the basemap controls.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMapReady]);
 
   useEffect(() => {
     if (!isMapReady || !map.current || !map.current.isStyleLoaded()) return;
@@ -2691,8 +2773,12 @@ const MapDisplayBPN = ({
       closeMapPopup();
       onFeatureClickRef.current?.(
         targetModel
-          ? { ...targetAsset, active_model_3d: targetModel }
-          : targetAsset,
+          ? {
+              ...targetAsset,
+              popup_context: "3d",
+              active_model_3d: targetModel,
+            }
+          : { ...targetAsset, popup_context: "3d" },
       );
     };
 
@@ -2892,8 +2978,37 @@ const MapDisplayBPN = ({
         <div
           className="order-last flex overflow-hidden rounded-lg border border-white/80 bg-white/95 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95"
           role="group"
-          aria-label="Kontrol zoom peta"
+          aria-label="Kontrol arah dan zoom peta"
         >
+          <button
+            ref={compassButtonRef}
+            type="button"
+            onClick={() => {
+              if (isAsset3dMode) {
+                cesiumMapRef.current?.resetNorth();
+                return;
+              }
+              map.current?.easeTo({ bearing: 0, duration: 450 });
+            }}
+            className="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-slate-100 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent dark:text-slate-100 dark:hover:bg-slate-800"
+            title="Arah peta 0° · Klik untuk kembali ke utara"
+            aria-label="Kompas, arah peta 0 derajat. Klik untuk kembali ke utara"
+          >
+            <span
+              ref={compassNeedleRef}
+              className="relative flex h-6 w-6 items-center justify-center"
+              style={{ transform: "rotate(0deg)" }}
+              aria-hidden="true"
+            >
+              <span className="absolute -top-0.5 text-[7px] font-black leading-none text-red-600 dark:text-red-400">N</span>
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
+                <path d="M12 2.75 16 12l-4-1.65L8 12l4-9.25Z" fill="currentColor" className="text-red-500" />
+                <path d="M12 21.25 8 12l4 1.65L16 12l-4 9.25Z" fill="currentColor" className="text-sky-600 dark:text-sky-400" />
+                <circle cx="12" cy="12" r="1.35" fill="white" stroke="currentColor" strokeWidth="0.8" />
+              </svg>
+            </span>
+          </button>
+          <span className="w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
           <button
             type="button"
             onClick={() => {
@@ -2990,10 +3105,12 @@ const MapDisplayBPN = ({
                   role="radiogroup"
                   aria-label="Peta dasar"
                 >
-                  {BASEMAP_OPTIONS.map((option) => {
+                  {basemapOptions.map((option) => {
                     const isActive = activeBasemap === option.id;
                     const OptionIcon =
-                      option.kind === "imagery" ? ImageIcon : MapTrifoldIcon;
+                      ["imagery", "single-image"].includes(option.kind)
+                        ? ImageIcon
+                        : MapTrifoldIcon;
 
                     return (
                       <button
@@ -3107,7 +3224,9 @@ const MapDisplayBPN = ({
               onFeatureClick={onFeatureClick}
               onOtherLayerClick={onOtherLayerClick}
               onStatusChange={setDetailedModelStatus}
+              onBearingChange={updateCompassBearing}
               basemapId={activeBasemap}
+              basemapOption={basemapOptions.find((option) => option.id === activeBasemap)}
               analysisTool={analysisTool}
               analysisPoints={analysisPoints}
               onAnalysisClick={({ longitude, latitude, asset }) => {

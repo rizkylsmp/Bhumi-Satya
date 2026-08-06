@@ -160,7 +160,38 @@ export const aset3dCatalogService = {
   candidates: (params) => api.get("/aset-3d/candidates", { params }),
   getByCode: (kode3d) => api.get(`/aset-3d/${encodeURIComponent(kode3d)}`),
   create: (kode2d) => api.post("/aset-3d", { kode_2d: kode2d }),
+  update: (kode3d, payload) => api.patch(
+    `/aset-3d/${encodeURIComponent(kode3d)}`,
+    payload,
+  ),
+  updateParcel: (kode3d, kode2d) => api.patch(
+    `/aset-3d/${encodeURIComponent(kode3d)}/parcel`,
+    { kode_2d: kode2d },
+  ),
   remove: (kode3d) => api.delete(`/aset-3d/${encodeURIComponent(kode3d)}`),
+};
+
+export const aset2dCatalogService = {
+  list: (params) => api.get("/aset-2d", { params }),
+  stats: () => api.get("/aset-2d/stats"),
+  candidates: (params) => api.get("/aset-2d/candidates", { params }),
+  create: (kodeAset) => api.post("/aset-2d", { kode_aset: kodeAset }),
+  remove: (kode2d) => api.delete(`/aset-2d/${encodeURIComponent(kode2d)}`),
+};
+
+export const orthophotoService = {
+  published: () => api.get("/orthophotos/published"),
+  list: (params) => api.get("/orthophotos", { params }),
+  create: (formData) => api.post("/orthophotos", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 300_000,
+  }),
+  update: (id, data) => api.put(`/orthophotos/${id}`, data),
+  setPublished: (id, published) => api.patch(
+    `/orthophotos/${id}/publish`,
+    { published },
+  ),
+  remove: (id) => api.delete(`/orthophotos/${id}`),
 };
 
 export const petaService = {

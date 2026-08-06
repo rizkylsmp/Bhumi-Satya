@@ -1,10 +1,5 @@
 import SubstansiAssetPage from "../../components/asset/SubstansiAssetPage";
-import {
-  MapPinLineIcon,
-  RulerIcon,
-  HouseIcon,
-  TreeStructureIcon,
-} from "@phosphor-icons/react";
+import { RulerIcon } from "@phosphor-icons/react";
 
 const columns = [
   {
@@ -85,44 +80,6 @@ const columns = [
   },
 ];
 
-const statsCards = (assets, totalItems, assetStats) => [
-  {
-    label: "Total Aset",
-    value: assetStats?.totalAset ?? totalItems,
-    icon: MapPinLineIcon,
-    iconBg: "bg-teal-100 dark:bg-teal-900/30",
-    iconColor: "text-teal-600 dark:text-teal-400",
-  },
-  {
-    label: "Memiliki Lokasi",
-    value: assetStats?.totalLokasi ?? assets.filter((a) => a.lokasi).length,
-    icon: MapPinLineIcon,
-    iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
-  },
-  {
-    label: "Lahan Kosong",
-    value:
-      assetStats?.totalLahanKosong ??
-      assets.filter((a) => a.penggunaan_saat_ini === "Lahan Kosong").length,
-    icon: TreeStructureIcon,
-    iconBg: "bg-amber-100 dark:bg-amber-900/30",
-    iconColor: "text-amber-600 dark:text-amber-400",
-  },
-  {
-    label: "Digunakan",
-    value:
-      assetStats?.totalDigunakan ??
-      assets.filter(
-        (a) =>
-          a.penggunaan_saat_ini && a.penggunaan_saat_ini !== "Lahan Kosong",
-      ).length,
-    icon: HouseIcon,
-    iconBg: "bg-blue-100 dark:bg-blue-900/30",
-    iconColor: "text-blue-600 dark:text-blue-400",
-  },
-];
-
 export default function DataFisikPage() {
   return (
     <SubstansiAssetPage
@@ -131,8 +88,8 @@ export default function DataFisikPage() {
       icon={RulerIcon}
       iconColor="from-teal-500 to-teal-600"
       columns={columns}
-      statsCards={statsCards}
       substansi="fisik"
+      filterPreset="fisik"
     />
   );
 }

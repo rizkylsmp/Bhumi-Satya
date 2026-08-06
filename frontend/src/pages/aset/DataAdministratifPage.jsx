@@ -1,11 +1,8 @@
 import SubstansiAssetPage from "../../components/asset/SubstansiAssetPage";
 import {
-  FileTextIcon,
   BuildingsIcon,
   CurrencyDollarIcon,
-  NotebookIcon,
 } from "@phosphor-icons/react";
-import { formatCurrency as formatCurrencyShort } from "../../utils/format";
 
 const columns = [
   {
@@ -69,50 +66,6 @@ const columns = [
   },
 ];
 
-const statsCards = (assets, totalItems, assetStats) => {
-  const totalNilai = assets.reduce(
-    (sum, a) => sum + (parseFloat(a.nilai_aset) || 0),
-    0,
-  );
-  const totalNJOP = assets.reduce(
-    (sum, a) => sum + (parseFloat(a.nilai_njop) || 0),
-    0,
-  );
-
-  return [
-    {
-      label: "Total Aset",
-      value: assetStats?.totalAset ?? totalItems,
-      icon: FileTextIcon,
-      iconBg: "bg-violet-100 dark:bg-violet-900/30",
-      iconColor: "text-violet-600 dark:text-violet-400",
-    },
-    {
-      label: "Total Nilai Perolehan",
-      value: formatCurrencyShort(assetStats?.totalNilai ?? totalNilai),
-      icon: CurrencyDollarIcon,
-      iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
-      iconColor: "text-emerald-600 dark:text-emerald-400",
-    },
-    {
-      label: "Total NJOP",
-      value: formatCurrencyShort(assetStats?.totalNilaiNjop ?? totalNJOP),
-      icon: NotebookIcon,
-      iconBg: "bg-blue-100 dark:bg-blue-900/30",
-      iconColor: "text-blue-600 dark:text-blue-400",
-    },
-    {
-      label: "Memiliki OPD",
-      value:
-        assetStats?.totalOpdPengguna ??
-        assets.filter((a) => a.opd_pengguna).length,
-      icon: BuildingsIcon,
-      iconBg: "bg-amber-100 dark:bg-amber-900/30",
-      iconColor: "text-amber-600 dark:text-amber-400",
-    },
-  ];
-};
-
 export default function DataAdministratifPage() {
   return (
     <SubstansiAssetPage
@@ -121,8 +74,8 @@ export default function DataAdministratifPage() {
       icon={CurrencyDollarIcon}
       iconColor="from-violet-500 to-violet-600"
       columns={columns}
-      statsCards={statsCards}
       substansi="administratif"
+      filterPreset="administratif"
     />
   );
 }

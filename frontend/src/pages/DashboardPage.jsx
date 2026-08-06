@@ -1,8 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
+  aset2dCatalogService,
   aset3dCatalogService,
-  asetService,
   riwayatService,
   sewaService,
 } from "../services/api";
@@ -26,9 +26,9 @@ const LoadingFallback = () => (
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(true);
-  const [asetStats, setAsetStats] = useState(null);
   const [sewaStats, setSewaStats] = useState(null);
   const [totalDigitalTwin, setTotalDigitalTwin] = useState(0);
+  const [spatialStats, setSpatialStats] = useState(null);
   const [recentActivities, setRecentActivities] = useState([]);
 
   const fetchDashboardData = useCallback(async () => {
@@ -36,24 +36,24 @@ export default function DashboardPage() {
     try {
       const isAdmin = user?.role?.toLowerCase() === "admin";
       const [
-        asetRes,
         sewaRes,
         digitalTwinRes,
+        spatialRes,
         activitiesRes,
       ] = await Promise.all([
-        asetService.getStats(),
         RENTAL_FEATURE_ENABLED
           ? sewaService.getStats()
           : Promise.resolve({ data: { data: null } }),
         aset3dCatalogService.list({ page: 1, limit: 1 }),
+        aset2dCatalogService.stats(),
         isAdmin ? riwayatService.getAll({ limit: 5 }) : Promise.resolve(null),
       ]);
 
-      setAsetStats(asetRes.data.data);
       setSewaStats(sewaRes.data.data);
       setTotalDigitalTwin(
         Number(digitalTwinRes?.data?.pagination?.totalItems) || 0,
       );
+      setSpatialStats(spatialRes?.data?.data || null);
       setRecentActivities(activitiesRes?.data?.data || []);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
@@ -95,9 +95,9 @@ export default function DashboardPage() {
         <Suspense fallback={<LoadingFallback />}>
           <DashboardIntegratedPanel
             loading={loading}
-            asetStats={asetStats}
             sewaStats={sewaStats}
             totalDigitalTwin={totalDigitalTwin}
+            spatialStats={spatialStats}
             recentActivities={recentActivities}
           />
         </Suspense>

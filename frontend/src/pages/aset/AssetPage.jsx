@@ -78,17 +78,7 @@ export default function AssetPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState({
-    kecamatan: "",
-    desa_kelurahan: "",
-    has_location: "",
-    has_nibar: "",
-    jenis_hak: "",
-    status_sewa: "",
-    is_certified: "",
-    sumber: "",
-    reconciliation_status: "",
-  });
+  const [filters, setFilters] = useState({});
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewingAsset, setViewingAsset] = useState(null);
   const [filterOptions, setFilterOptions] = useState({
@@ -110,19 +100,9 @@ export default function AssetPage() {
         page: currentPage,
         limit: itemsPerPage,
         ...(searchTerm && { search: searchTerm }),
-        ...(filters.kecamatan && { kecamatan: filters.kecamatan }),
-        ...(filters.desa_kelurahan && {
-          desa_kelurahan: filters.desa_kelurahan,
-        }),
-        ...(filters.has_location && { has_location: filters.has_location }),
-        ...(filters.has_nibar && { has_nibar: filters.has_nibar }),
-        ...(filters.jenis_hak && { jenis_hak: filters.jenis_hak }),
-        ...(filters.status_sewa && { status_sewa: filters.status_sewa }),
-        ...(filters.is_certified && { is_certified: filters.is_certified }),
-        ...(filters.sumber && { sumber: filters.sumber }),
-        ...(filters.reconciliation_status && {
-          reconciliation_status: filters.reconciliation_status,
-        }),
+        ...Object.fromEntries(
+          Object.entries(filters).filter(([, value]) => Boolean(value)),
+        ),
       };
       const response = await asetService.getAll(params);
       const { data, pagination } = response.data;

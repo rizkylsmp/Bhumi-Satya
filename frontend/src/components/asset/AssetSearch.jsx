@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   MagnifyingGlassIcon,
   XIcon,
@@ -6,199 +6,63 @@ import {
   ArrowCounterClockwiseIcon,
 } from "@phosphor-icons/react";
 import { RENTAL_FEATURE_ENABLED } from "../../config/featureFlags";
+import { ASSET_FILTER_PRESETS } from "../../data/assetFilterPresets";
 
-const JENIS_HAK_OPTIONS = [
-  "HAK PAKAI",
-  "HAK MILIK",
-  "HAK GUNA BANGUNAN",
-  "HAK PENGELOLAAN",
-];
+const normalizeOptions = (field, filterOptions) => {
+  const values = field.options || filterOptions[field.optionsKey] || [];
+  return values.map((option) =>
+    typeof option === "object"
+      ? option
+      : { value: String(option), label: String(option) },
+  );
+};
 
 export default function AssetSearch({
   onSearch,
   onFilterChange,
-  filterOptions = { kecamatan: [], kelurahan: [] },
+  filterOptions = {},
+  filterPreset = "pusatData",
   embedded = false,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [kecamatanFilter, setKecamatanFilter] = useState("");
-  const [kelurahanFilter, setKelurahanFilter] = useState("");
-  const [hasLocationFilter, setHasLocationFilter] = useState("");
-  const [hasNibarFilter, setHasNibarFilter] = useState("");
-  const [jenisHakFilter, setJenisHakFilter] = useState("");
-  const [statusSewaFilter, setStatusSewaFilter] = useState("");
-  const [isCertifiedFilter, setIsCertifiedFilter] = useState("");
-  const [sourceFilter, setSourceFilter] = useState("");
-  const [reconciliationFilter, setReconciliationFilter] = useState("");
+  const [filters, setFilters] = useState({});
   const [showFilters, setShowFilters] = useState(false);
 
-  // Available kelurahan — derived from all loaded asset data.
-  const kelurahanList = filterOptions.kelurahan || [];
+  const filterFields = useMemo(
+    () =>
+      (ASSET_FILTER_PRESETS[filterPreset] || ASSET_FILTER_PRESETS.pusatData)
+        .filter((field) => field.feature !== "rental" || RENTAL_FEATURE_ENABLED),
+    [filterPreset],
+  );
 
-  // Debounce search
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onSearch(searchTerm);
-    }, 500);
+    const timer = setTimeout(() => onSearch(searchTerm), 500);
     return () => clearTimeout(timer);
   }, [searchTerm, onSearch]);
 
-  const handleSearch = useCallback((e) => {
-    setSearchTerm(e.target.value);
-  }, []);
-
-  // Emit all filters at once
-  const emitFilters = useCallback(
-    (overrides = {}) => {
-      const current = {
-        kecamatan: kecamatanFilter,
-        desa_kelurahan: kelurahanFilter,
-        has_location: hasLocationFilter,
-        has_nibar: hasNibarFilter,
-        jenis_hak: jenisHakFilter,
-        status_sewa: statusSewaFilter,
-        is_certified: isCertifiedFilter,
-        sumber: sourceFilter,
-        reconciliation_status: reconciliationFilter,
-        ...overrides,
-      };
-      onFilterChange(current);
+  const updateFilter = useCallback(
+    (field, value) => {
+      setFilters((current) => {
+        const next = { ...current, [field.key]: value };
+        (field.resetKeys || []).forEach((key) => {
+          next[key] = "";
+        });
+        onFilterChange(next);
+        return next;
+      });
     },
-    [
-      onFilterChange,
-      kecamatanFilter,
-      kelurahanFilter,
-      hasLocationFilter,
-      hasNibarFilter,
-      jenisHakFilter,
-      statusSewaFilter,
-      isCertifiedFilter,
-      sourceFilter,
-      reconciliationFilter,
-    ],
+    [onFilterChange],
   );
 
-  const handleKecamatanChange = useCallback(
-    (e) => {
-      const val = e.target.value;
-      setKecamatanFilter(val);
-      setKelurahanFilter("");
-      emitFilters({ kecamatan: val, desa_kelurahan: "" });
-    },
-    [emitFilters],
-  );
-
-  const handleKelurahanChange = useCallback(
-    (e) => {
-      const val = e.target.value;
-      setKelurahanFilter(val);
-      emitFilters({ desa_kelurahan: val });
-    },
-    [emitFilters],
-  );
-
-  const handleLocationFilterChange = useCallback(
-    (event) => {
-      const value = event.target.value;
-      setHasLocationFilter(value);
-      emitFilters({ has_location: value });
-    },
-    [emitFilters],
-  );
-
-  const handleNibarFilterChange = useCallback(
-    (event) => {
-      const value = event.target.value;
-      setHasNibarFilter(value);
-      emitFilters({ has_nibar: value });
-    },
-    [emitFilters],
-  );
-
-  const handleJenisHakChange = useCallback(
-    (e) => {
-      const val = e.target.value;
-      setJenisHakFilter(val);
-      emitFilters({ jenis_hak: val });
-    },
-    [emitFilters],
-  );
-
-  const handleStatusSewaChange = useCallback(
-    (event) => {
-      const value = event.target.value;
-      setStatusSewaFilter(value);
-      emitFilters({ status_sewa: value });
-    },
-    [emitFilters],
-  );
-
-  const handleIsCertifiedChange = useCallback(
-    (event) => {
-      const value = event.target.value;
-      setIsCertifiedFilter(value);
-      emitFilters({ is_certified: value });
-    },
-    [emitFilters],
-  );
-
-  const handleSourceChange = useCallback(
-    (event) => {
-      const value = event.target.value;
-      setSourceFilter(value);
-      emitFilters({ sumber: value });
-    },
-    [emitFilters],
-  );
-
-  const handleReconciliationChange = useCallback(
-    (event) => {
-      const value = event.target.value;
-      setReconciliationFilter(value);
-      emitFilters({ reconciliation_status: value });
-    },
-    [emitFilters],
-  );
-
-  const handleClearFilters = useCallback(() => {
+  const clearFilters = useCallback(() => {
     setSearchTerm("");
-    setKecamatanFilter("");
-    setKelurahanFilter("");
-    setHasLocationFilter("");
-    setHasNibarFilter("");
-    setJenisHakFilter("");
-    setStatusSewaFilter("");
-    setIsCertifiedFilter("");
-    setSourceFilter("");
-    setReconciliationFilter("");
+    setFilters({});
     onSearch("");
-    onFilterChange({
-      kecamatan: "",
-      desa_kelurahan: "",
-      has_location: "",
-      has_nibar: "",
-      jenis_hak: "",
-      status_sewa: "",
-      is_certified: "",
-      sumber: "",
-      reconciliation_status: "",
-    });
+    onFilterChange({});
   }, [onSearch, onFilterChange]);
 
-  const allFilters = [
-    kecamatanFilter,
-    kelurahanFilter,
-    hasLocationFilter,
-    hasNibarFilter,
-    jenisHakFilter,
-    statusSewaFilter,
-    isCertifiedFilter,
-    sourceFilter,
-    reconciliationFilter,
-  ];
-  const hasActiveFilters = searchTerm || allFilters.some(Boolean);
-  const activeFilterCount = allFilters.filter(Boolean).length;
-
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const hasActiveControls = Boolean(searchTerm) || activeFilterCount > 0;
   const selectClass =
     "h-9 min-w-0 rounded-lg border border-border bg-surface px-2.5 text-[11px] font-medium text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15";
 
@@ -223,7 +87,7 @@ export default function AssetSearch({
             placeholder="Cari..."
             aria-label="Cari data"
             value={searchTerm}
-            onChange={handleSearch}
+            onChange={(event) => setSearchTerm(event.target.value)}
             className="h-10 w-full rounded-xl border border-border bg-surface-secondary pl-9 pr-9 text-[11px] font-semibold text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/15"
           />
           {searchTerm && (
@@ -255,10 +119,10 @@ export default function AssetSearch({
             </span>
           )}
         </button>
-        {hasActiveFilters && (
+        {hasActiveControls && (
           <button
             type="button"
-            onClick={handleClearFilters}
+            onClick={clearFilters}
             className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border px-3 text-[10px] font-bold text-text-secondary transition hover:border-accent hover:text-accent"
           >
             <ArrowCounterClockwiseIcon size={14} weight="bold" />
@@ -269,109 +133,27 @@ export default function AssetSearch({
 
       {showFilters && (
         <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border pt-2 md:grid-cols-3 xl:grid-cols-5">
-          <select
-            value={hasLocationFilter}
-            onChange={handleLocationFilterChange}
-            className={selectClass}
-            aria-label="Filter lokasi"
-          >
-            <option value="">Semua lokasi</option>
-            <option value="true">Ada lokasi</option>
-            <option value="false">Belum ada lokasi</option>
-          </select>
-          <select
-            value={isCertifiedFilter}
-            onChange={handleIsCertifiedChange}
-            className={selectClass}
-            aria-label="Filter sertifikat"
-          >
-            <option value="">Semua sertifikat</option>
-            <option value="true">Bersertifikat</option>
-            <option value="false">Belum bersertifikat</option>
-          </select>
-          <select
-            value={hasNibarFilter}
-            onChange={handleNibarFilterChange}
-            className={selectClass}
-            aria-label="Filter NIBAR"
-          >
-            <option value="">Semua NIBAR</option>
-            <option value="true">Ada NIBAR</option>
-            <option value="false">Tanpa NIBAR</option>
-          </select>
-          {RENTAL_FEATURE_ENABLED && (
-            <select
-              value={statusSewaFilter}
-              onChange={handleStatusSewaChange}
-              className={selectClass}
-              aria-label="Filter penyewaan"
-            >
-              <option value="">Semua status sewa</option>
-              <option value="tersewa">Tersewa</option>
-              <option value="tidak">Tidak tersewa</option>
-            </select>
-          )}
-          <select
-            value={kecamatanFilter}
-            onChange={handleKecamatanChange}
-            className={selectClass}
-            aria-label="Filter kecamatan"
-          >
-            <option value="">Semua kecamatan</option>
-            {(filterOptions.kecamatan || []).map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-          <select
-            value={kelurahanFilter}
-            onChange={handleKelurahanChange}
-            className={selectClass}
-            aria-label="Filter kelurahan"
-          >
-            <option value="">Semua kelurahan</option>
-            {kelurahanList.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-          <select
-            value={jenisHakFilter}
-            onChange={handleJenisHakChange}
-            className={selectClass}
-            aria-label="Filter jenis hak"
-          >
-            <option value="">Semua jenis hak</option>
-            {JENIS_HAK_OPTIONS.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-          <select
-            value={sourceFilter}
-            onChange={handleSourceChange}
-            className={selectClass}
-            aria-label="Filter asal data"
-          >
-            <option value="">Semua asal data</option>
-            <option value="BPN">BPN</option>
-            <option value="BPKA">BPKA</option>
-          </select>
-          <select
-            value={reconciliationFilter}
-            onChange={handleReconciliationChange}
-            className={selectClass}
-            aria-label="Filter rekonsiliasi"
-          >
-            <option value="">Semua rekonsiliasi</option>
-            <option value="belum_diperiksa">Belum diperiksa</option>
-            <option value="cocok">Cocok</option>
-            <option value="konflik">Konflik</option>
-            <option value="terverifikasi">Terverifikasi</option>
-          </select>
+          {filterFields.map((field) => {
+            const options = normalizeOptions(field, filterOptions);
+            return (
+              <label key={field.key} className="min-w-0">
+                <span className="sr-only">{field.label}</span>
+                <select
+                  value={filters[field.key] || ""}
+                  onChange={(event) => updateFilter(field, event.target.value)}
+                  className={`${selectClass} w-full`}
+                  aria-label={`Filter ${field.label.toLowerCase()}`}
+                >
+                  <option value="">{field.allLabel}</option>
+                  {options.map((option) => (
+                    <option key={`${field.key}-${option.value}`} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            );
+          })}
         </div>
       )}
     </div>

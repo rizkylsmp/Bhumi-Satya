@@ -1,152 +1,534 @@
-import SubstansiAssetPage from "../../components/asset/SubstansiAssetPage";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
+  ArrowCounterClockwiseIcon,
+  ArrowRightIcon,
+  ArrowsClockwiseIcon,
+  BuildingsIcon,
+  CheckCircleIcon,
+  FunnelIcon,
   GlobeHemisphereWestIcon,
+  MagnifyingGlassIcon,
   MapPinIcon,
-  PolygonIcon,
   NavigationArrowIcon,
+  PlusIcon,
+  PolygonIcon,
+  TrashIcon,
+  WarningCircleIcon,
+  XIcon,
 } from "@phosphor-icons/react";
+import Pagination from "../../components/asset/Pagination";
+import { useConfirm } from "../../components/ui/confirmContext";
+import { aset2dCatalogService } from "../../services/api";
+import { useAuthStore } from "../../stores/authStore";
+import { hasPermission } from "../../utils/permissions";
 
-const columns = [
-  {
-    key: "lokasi",
-    label: "Lokasi",
-    type: "location",
-    minWidth: "64",
-  },
-  {
-    key: "koordinat_lat",
-    label: "Latitude",
-    type: "coordinate",
-    sortable: true,
-  },
-  {
-    key: "koordinat_long",
-    label: "Longitude",
-    type: "coordinate",
-    sortable: true,
-  },
-  {
-    key: "luas",
-    label: "Luas (m²)",
-    type: "area",
-    sortable: true,
-    align: "right",
-  },
-  {
-    key: "polygon_bidang",
-    label: "Polygon",
-    minWidth: "200px",
-    render: (value) => {
-      const hasPolygon = value && value !== "null" && value !== "";
-      return (
-        <span
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border ${
-            hasPolygon
-              ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30"
-              : "bg-gray-50 dark:bg-gray-500/10 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-500/30"
-          }`}
-        >
-          <PolygonIcon size={14} weight={hasPolygon ? "fill" : "regular"} />
-          {hasPolygon ? "Tersedia" : "Belum ada"}
-        </span>
-      );
-    },
-  },
-];
+const getErrorMessage = (error, fallback) =>
+  error?.response?.data?.error || error?.response?.data?.message || fallback;
 
-const hasPolygon = (asset) =>
-  asset.polygon_bidang &&
-  asset.polygon_bidang !== "null" &&
-  asset.polygon_bidang !== "";
+const formatCoordinate = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(6) : "—";
+};
 
-const hasCoordinates = (asset) =>
-  asset.koordinat_lat !== null &&
-  asset.koordinat_lat !== undefined &&
-  asset.koordinat_lat !== "" &&
-  asset.koordinat_long !== null &&
-  asset.koordinat_long !== undefined &&
-  asset.koordinat_long !== "" &&
-  Number.isFinite(Number(asset.koordinat_lat)) &&
-  Number.isFinite(Number(asset.koordinat_long));
+function StatusBadge({ available, label, emptyLabel, icon: Icon }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[8px] font-black ${
+        available
+          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+          : "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+      }`}
+    >
+      <Icon size={11} weight={available ? "fill" : "bold"} />
+      {available ? label : emptyLabel}
+    </span>
+  );
+}
 
-const statsCards = (assets, totalItems, assetStats) => [
-  {
-    label: "Total Aset",
-    value: assetStats?.totalAset ?? totalItems,
-    icon: GlobeHemisphereWestIcon,
-    iconBg: "bg-cyan-100 dark:bg-cyan-900/30",
-    iconColor: "text-cyan-600 dark:text-cyan-400",
-  },
-  {
-    label: "Memiliki Koordinat",
-    value:
-      assetStats?.totalKoordinat ??
-      assets.filter((a) => a.koordinat_lat && a.koordinat_long).length,
-    icon: NavigationArrowIcon,
-    iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
-  },
-  {
-    label: "Memiliki Polygon",
-    value: assetStats?.totalPolygon ?? assets.filter(hasPolygon).length,
-    icon: PolygonIcon,
-    iconBg: "bg-blue-100 dark:bg-blue-900/30",
-    iconColor: "text-blue-600 dark:text-blue-400",
-  },
-  {
-    label: "Tanpa Koordinat",
-    value:
-      assetStats?.totalTanpaKoordinat ??
-      assets.filter((a) => !a.koordinat_lat || !a.koordinat_long).length,
-    icon: MapPinIcon,
-    iconBg: "bg-amber-100 dark:bg-amber-900/30",
-    iconColor: "text-amber-600 dark:text-amber-400",
-  },
-];
+function AddAsset2dDialog({ open, onClose, onAdded }) {
+  const [input, setInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [items, setItems] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [addingCode, setAddingCode] = useState(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const timeout = window.setTimeout(() => {
+      setSearch(input.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [input, open]);
+
+  const fetchCandidates = useCallback(async () => {
+    if (!open) return;
+    setLoading(true);
+    try {
+      const response = await aset2dCatalogService.candidates({
+        page,
+        limit: 8,
+        search: search || undefined,
+      });
+      setItems(response.data?.data || []);
+      setPagination(response.data?.pagination || null);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Gagal mencari aset Pusat Data"));
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [open, page, search]);
+
+  useEffect(() => {
+    fetchCandidates();
+  }, [fetchCandidates]);
+
+  const addAsset = async (asset) => {
+    setAddingCode(asset.kode_aset);
+    try {
+      const response = await aset2dCatalogService.create(asset.kode_aset);
+      toast.success(response.data?.message || "Aset ditambahkan ke Kelola 2D");
+      await fetchCandidates();
+      await onAdded();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Gagal menambahkan aset ke Kelola 2D"));
+    } finally {
+      setAddingCode(null);
+    }
+  };
+
+  if (!open) return null;
+  return (
+    <div
+      className="motion-backdrop fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm"
+      role="presentation"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-asset-2d-title"
+        className="flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl"
+      >
+        <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-surface">
+              <PlusIcon size={18} weight="bold" />
+            </span>
+            <div>
+              <h2 id="add-asset-2d-title" className="text-base font-black text-text-primary">
+                Pilih Aset untuk Kelola 2D
+              </h2>
+              <p className="mt-1 text-[10px] text-text-muted">
+                Sistem membuat satu kode bidang 2D yang terhubung ke kode aset terpilih.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted transition hover:bg-surface-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-accent"
+            aria-label="Tutup dialog"
+          >
+            <XIcon size={17} weight="bold" />
+          </button>
+        </header>
+
+        <div className="border-b border-border p-4">
+          <label className="relative block">
+            <span className="sr-only">Cari kode aset, nama, atau lokasi</span>
+            <MagnifyingGlassIcon size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input
+              autoFocus
+              type="search"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Cari kode aset, nama aset, atau lokasi…"
+              className="h-11 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-4 text-xs font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
+            />
+          </label>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 dark:[color-scheme:dark]">
+          {loading ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {[1, 2, 3, 4].map((item) => (
+                <div key={item} className="h-28 animate-pulse rounded-xl bg-surface-secondary" />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border px-6 py-12 text-center">
+              <CheckCircleIcon size={30} className="mx-auto text-emerald-500" weight="duotone" />
+              <p className="mt-3 text-xs font-black text-text-primary">Tidak ada aset yang dapat ditambahkan</p>
+              <p className="mt-1 text-[10px] text-text-muted">
+                Semua hasil pencarian sudah berada di Kelola 2D atau belum tersedia di Pusat Data.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {items.map((asset) => (
+                <article
+                  key={asset.id_aset}
+                  className="flex min-w-0 items-start gap-3 rounded-xl border border-border bg-surface p-3.5 transition hover:border-accent/40"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-300">
+                    <GlobeHemisphereWestIcon size={19} weight="duotone" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <span className="rounded-md bg-accent/10 px-2 py-1 font-mono text-[9px] font-black text-accent">
+                      {asset.kode_aset}
+                    </span>
+                    <p className="mt-1 truncate text-[11px] font-extrabold text-text-primary">
+                      {asset.nama_aset}
+                    </p>
+                    <p className="mt-1 flex items-center gap-1 truncate text-[9px] text-text-muted">
+                      <MapPinIcon size={10} />
+                      {asset.lokasi || asset.desa_kelurahan || "Lokasi belum diisi"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={addingCode === asset.kode_aset}
+                    onClick={() => addAsset(asset)}
+                    className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60"
+                  >
+                    {addingCode === asset.kode_aset
+                      ? <ArrowsClockwiseIcon size={13} className="animate-spin" />
+                      : <PlusIcon size={13} weight="bold" />}
+                    Pilih
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="border-t border-border p-4">
+          <Pagination pagination={pagination} onChange={setPage} itemLabel="aset" />
+        </div>
+      </section>
+    </div>
+  );
+}
 
 export default function DataSpasialPage() {
   const navigate = useNavigate();
+  const confirm = useConfirm();
+  const userRole = useAuthStore((state) => state.user?.role || "");
+  const canUpdate = hasPermission(userRole, "aset", "update");
+  const [input, setInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [coordinateStatus, setCoordinateStatus] = useState("all");
+  const [polygonStatus, setPolygonStatus] = useState("all");
+  const [buildingStatus, setBuildingStatus] = useState("all");
+  const [sortValue, setSortValue] = useState("updated_at:DESC");
+  const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [items, setItems] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [removingCode, setRemovingCode] = useState(null);
 
-  const renderMapAction = (asset) => {
-    const canOpenMap = hasCoordinates(asset);
-    const title = canOpenMap
-      ? `Lihat ${asset.nama_aset} di peta`
-      : "Koordinat belum tersedia";
+  const [sort, order] = useMemo(() => sortValue.split(":"), [sortValue]);
 
-    return (
-      <button
-        type="button"
-        onClick={() =>
-          navigate("/peta", {
-            state: {
-              highlightAssetId: asset.id_aset,
-              openWebgisPopup: true,
-              mapMode: "2d",
-            },
-          })
-        }
-        disabled={!canOpenMap}
-        title={title}
-        aria-label={title}
-        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3 text-[9px] font-black text-accent transition hover:border-accent/50 hover:bg-accent/15 focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:border-border disabled:bg-surface-secondary disabled:text-text-muted disabled:opacity-60"
-      >
-        <NavigationArrowIcon size={12} weight="bold" />
-        <span>Peta</span>
-      </button>
-    );
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setSearch(input.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [input]);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const catalogResponse = await aset2dCatalogService.list({
+        page,
+        limit,
+        search: search || undefined,
+        coordinate_status: coordinateStatus,
+        polygon_status: polygonStatus,
+        building_status: buildingStatus,
+        sort,
+        order,
+      });
+      setItems(catalogResponse.data?.data || []);
+      setPagination(catalogResponse.data?.pagination || null);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Gagal memuat Kelola 2D"));
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [buildingStatus, coordinateStatus, limit, order, page, polygonStatus, search, sort]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const removeItem = async (item) => {
+    const approved = await confirm({
+      title: "Keluarkan dari Kelola 2D?",
+      message: `${item.kode_2d} akan dikeluarkan dari Kelola 2D. Data aset di Pusat Data tidak dihapus.`,
+      confirmText: "Keluarkan",
+      variant: "danger",
+    });
+    if (!approved) return;
+    setRemovingCode(item.kode_2d);
+    try {
+      const response = await aset2dCatalogService.remove(item.kode_2d);
+      toast.success(response.data?.message || "Bidang dikeluarkan dari Kelola 2D");
+      if (items.length === 1 && page > 1) setPage((current) => current - 1);
+      else await fetchData();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Gagal mengeluarkan bidang 2D"));
+    } finally {
+      setRemovingCode(null);
+    }
+  };
+
+  const activeFilterCount = [coordinateStatus, polygonStatus, buildingStatus]
+    .filter((value) => value !== "all").length;
+  const hasActiveControls = Boolean(input) || activeFilterCount > 0;
+  const resetControls = () => {
+    setInput("");
+    setCoordinateStatus("all");
+    setPolygonStatus("all");
+    setBuildingStatus("all");
+    setPage(1);
   };
 
   return (
-    <SubstansiAssetPage
-      title="Data Spasial"
-      subtitle="Koordinat dan geometri aset."
-      icon={GlobeHemisphereWestIcon}
-      iconColor="from-cyan-500 to-cyan-600"
-      columns={columns}
-      statsCards={statsCards}
-      substansi="spasial"
-      renderRowActions={renderMapAction}
-    />
+    <div className="min-h-full bg-surface-secondary p-4 md:p-6">
+      <div className="mx-auto max-w-[1600px] space-y-5">
+        <header className="admin-page-header">
+          <div className="admin-page-header__identity">
+            <span className="admin-page-header__icon bg-linear-to-br from-cyan-500 to-blue-600 text-white">
+              <GlobeHemisphereWestIcon size={21} weight="duotone" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="admin-page-header__title">Kelola 2D</h1>
+              <p className="admin-page-header__description">
+                Pilih aset Pusat Data, lengkapi bidang 2D, lalu gunakan kode 2D untuk menambahkan bangunan 3D.
+              </p>
+            </div>
+          </div>
+          <div className="admin-page-header__actions">
+            <button
+              type="button"
+              onClick={fetchData}
+              disabled={loading}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 text-xs font-bold text-text-secondary transition hover:border-accent hover:text-accent disabled:opacity-50"
+            >
+              <ArrowsClockwiseIcon size={15} weight="bold" className={loading ? "animate-spin" : ""} />
+              Refresh
+            </button>
+            {canUpdate && (
+              <button
+                type="button"
+                onClick={() => setDialogOpen(true)}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-accent px-3 text-xs font-bold text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <PlusIcon size={15} weight="bold" />
+                Pilih Aset
+              </button>
+            )}
+          </div>
+        </header>
+
+        <section className="overflow-hidden rounded-2xl border border-border bg-surface">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 border-b border-border p-3">
+            <label className="relative min-w-56 flex-1">
+              <span className="sr-only">Cari bidang Kelola 2D</span>
+              <MagnifyingGlassIcon size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+              <input
+                type="search"
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                placeholder="Cari kode 2D, kode aset, nama, atau lokasi…"
+                className="h-10 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-3 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
+              />
+            </label>
+            <select
+              value={sortValue}
+              onChange={(event) => { setSortValue(event.target.value); setPage(1); }}
+              className="h-10 rounded-xl border border-border bg-surface-secondary px-3 text-[10px] font-bold text-text-secondary outline-none focus:border-accent"
+              aria-label="Urutkan bidang 2D"
+            >
+              <option value="updated_at:DESC">Terakhir diperbarui</option>
+              <option value="created_at:DESC">Terbaru ditambahkan</option>
+              <option value="kode_2d:ASC">Kode 2D A–Z</option>
+              <option value="kode_aset:ASC">Kode aset A–Z</option>
+              <option value="nama_aset:ASC">Nama aset A–Z</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => setShowFilters((value) => !value)}
+              aria-expanded={showFilters}
+              className={`inline-flex h-10 items-center gap-1.5 rounded-xl border px-3 text-[10px] font-bold transition ${
+                showFilters || activeFilterCount
+                  ? "border-accent/40 bg-accent/10 text-accent"
+                  : "border-border text-text-secondary hover:bg-surface-secondary"
+              }`}
+            >
+              <FunnelIcon size={14} weight={showFilters ? "fill" : "bold"} />
+              Filter
+              {activeFilterCount > 0 && (
+                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-bold text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            {hasActiveControls && (
+              <button
+                type="button"
+                onClick={resetControls}
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border px-3 text-[10px] font-bold text-text-secondary transition hover:border-accent hover:text-accent"
+              >
+                <ArrowCounterClockwiseIcon size={14} weight="bold" />
+                Reset
+              </button>
+            )}
+          </div>
+
+          {showFilters && (
+            <div className="grid grid-cols-2 gap-2 border-b border-border p-3 md:grid-cols-3">
+              <select value={coordinateStatus} onChange={(event) => { setCoordinateStatus(event.target.value); setPage(1); }} className="h-9 min-w-0 rounded-lg border border-border bg-surface px-2.5 text-[9px] font-bold text-text-secondary outline-none focus:border-accent" aria-label="Filter koordinat">
+                <option value="all">Semua koordinat</option>
+                <option value="available">Koordinat tersedia</option>
+                <option value="missing">Tanpa koordinat</option>
+              </select>
+              <select value={polygonStatus} onChange={(event) => { setPolygonStatus(event.target.value); setPage(1); }} className="h-9 min-w-0 rounded-lg border border-border bg-surface px-2.5 text-[9px] font-bold text-text-secondary outline-none focus:border-accent" aria-label="Filter polygon">
+                <option value="all">Semua polygon</option>
+                <option value="available">Polygon tersedia</option>
+                <option value="missing">Tanpa polygon</option>
+              </select>
+              <select value={buildingStatus} onChange={(event) => { setBuildingStatus(event.target.value); setPage(1); }} className="h-9 min-w-0 rounded-lg border border-border bg-surface px-2.5 text-[9px] font-bold text-text-secondary outline-none focus:border-accent" aria-label="Filter relasi 3D">
+                <option value="all">Semua relasi 3D</option>
+                <option value="linked">Memiliki bangunan 3D</option>
+                <option value="unlinked">Belum memiliki bangunan 3D</option>
+              </select>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="admin-data-table min-w-[1080px]">
+              <thead>
+                <tr className="border-b border-border bg-surface-secondary">
+                  <th className="px-4 py-3 text-left">Kode 2D / Aset</th>
+                  <th className="px-4 py-3 text-left">Nama dan Lokasi</th>
+                  <th className="px-4 py-3 text-left">Koordinat</th>
+                  <th className="px-4 py-3 text-left">Kelengkapan</th>
+                  <th className="px-4 py-3 text-left">Relasi 3D</th>
+                  <th className="sticky right-0 border-l border-border bg-surface-secondary px-4 py-3 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {loading ? (
+                  [1, 2, 3, 4, 5].map((item) => (
+                    <tr key={item}><td colSpan="6" className="px-4 py-3"><div className="h-12 animate-pulse rounded-lg bg-surface-secondary" /></td></tr>
+                  ))
+                ) : items.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-14 text-center">
+                      <GlobeHemisphereWestIcon size={32} className="mx-auto text-text-muted" />
+                      <p className="mt-3 text-xs font-black text-text-primary">Belum ada bidang di Kelola 2D</p>
+                      <p className="mt-1 text-[10px] text-text-muted">Pilih aset dari Pusat Data untuk membuat kode bidang 2D.</p>
+                    </td>
+                  </tr>
+                ) : items.map((item) => (
+                  <tr key={item.kode_2d} className="group transition hover:bg-accent/[0.025]">
+                    <td className="px-4 py-3">
+                      <span className="inline-flex rounded-lg bg-cyan-500/10 px-2.5 py-1.5 font-mono text-[10px] font-black text-cyan-700 dark:text-cyan-300">
+                        {item.kode_2d}
+                      </span>
+                      <p className="mt-1 font-mono text-[8px] font-bold text-text-muted">Aset {item.asset?.kode_aset || "—"}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="max-w-72 truncate text-[10px] font-bold text-text-primary">{item.asset?.nama_aset || "Nama aset belum diisi"}</p>
+                      <p className="mt-1 flex max-w-72 items-center gap-1 truncate text-[9px] text-text-muted"><MapPinIcon size={10} /> {item.asset?.lokasi || item.asset?.desa_kelurahan || "Lokasi belum diisi"}</p>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-[9px] text-text-secondary">
+                      <p>Lat {formatCoordinate(item.asset?.koordinat_lat)}</p>
+                      <p className="mt-1">Lng {formatCoordinate(item.asset?.koordinat_long)}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1.5">
+                        <StatusBadge available={item.has_coordinates} label="Koordinat tersedia" emptyLabel="Tanpa koordinat" icon={NavigationArrowIcon} />
+                        <StatusBadge available={item.has_polygon} label="Polygon tersedia" emptyLabel="Tanpa polygon" icon={PolygonIcon} />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[8px] font-black ${item.building_count > 0 ? "bg-violet-500/10 text-violet-700 dark:text-violet-300" : "bg-surface-secondary text-text-muted"}`}>
+                        <BuildingsIcon size={11} weight="fill" /> {item.building_count} bangunan 3D
+                      </span>
+                    </td>
+                    <td className="sticky right-0 border-l border-border bg-surface px-4 py-3 group-hover:bg-surface-secondary">
+                      <div className="flex justify-end gap-1.5">
+                        {(item.has_coordinates || item.has_polygon) && (
+                          <button
+                            type="button"
+                            onClick={() => navigate("/peta", { state: { highlightAssetId: item.id_aset, openWebgisPopup: true, mapMode: "2d" } })}
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-muted transition hover:border-accent hover:text-accent"
+                            title="Lihat di peta"
+                            aria-label={`Lihat ${item.kode_2d} di peta`}
+                          >
+                            <NavigationArrowIcon size={14} weight="bold" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/kelola-2d/${item.id_aset}/kelola?bagian=spasial`)}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90"
+                        >
+                          Kelola <ArrowRightIcon size={12} weight="bold" />
+                        </button>
+                        {canUpdate && (
+                          <button
+                            type="button"
+                            disabled={removingCode === item.kode_2d || item.building_count > 0}
+                            onClick={() => removeItem(item)}
+                            className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-500/10"
+                            title={item.building_count > 0 ? "Hapus bangunan 3D terlebih dahulu" : "Keluarkan dari Kelola 2D"}
+                            aria-label={`Keluarkan ${item.kode_2d} dari Kelola 2D`}
+                          >
+                            {removingCode === item.kode_2d
+                              ? <ArrowsClockwiseIcon size={14} className="animate-spin" />
+                              : item.building_count > 0
+                                ? <WarningCircleIcon size={14} weight="bold" />
+                                : <TrashIcon size={14} weight="bold" />}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            pagination={pagination}
+            onChange={setPage}
+            pageSize={limit}
+            pageSizeOptions={[10, 20, 50]}
+            onPageSizeChange={(value) => { setLimit(value); setPage(1); }}
+            embedded
+            itemLabel="bidang"
+          />
+        </section>
+      </div>
+
+      <AddAsset2dDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onAdded={fetchData}
+      />
+    </div>
   );
 }

@@ -1,20 +1,5 @@
 import SubstansiAssetPage from "../../components/asset/SubstansiAssetPage";
-import {
-  CurrencyDollarIcon,
-  HashIcon,
-  IdentificationCardIcon,
-  MapPinIcon,
-  RulerIcon,
-} from "@phosphor-icons/react";
-import {
-  formatCompactCurrency as formatCurrency,
-  formatNumberWithOptions,
-} from "../../utils/format";
-
-const formatArea = (value) =>
-  `${formatNumberWithOptions(Number(value) || 0, {
-    maximumFractionDigits: 2,
-  })} m²`;
+import { HashIcon } from "@phosphor-icons/react";
 
 const columns = [
   {
@@ -74,54 +59,6 @@ const columns = [
   },
 ];
 
-const statsCards = (assets, totalItems, assetStats) => [
-  {
-    label: "Tercatat di KIB",
-    value:
-      assetStats?.totalKib ??
-      assets.filter((asset) => asset.nibar).length ??
-      totalItems,
-    icon: IdentificationCardIcon,
-    iconBg: "bg-blue-100 dark:bg-blue-900/30",
-    iconColor: "text-blue-600 dark:text-blue-400",
-  },
-  {
-    label: "Total Luas KIB",
-    value: formatArea(
-      assetStats?.totalLuasKib ??
-        assets.reduce(
-          (total, asset) => total + (Number(asset.luas_kib) || 0),
-          0,
-        ),
-    ),
-    icon: RulerIcon,
-    iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
-  },
-  {
-    label: "Harga Perolehan",
-    value: formatCurrency(
-      assetStats?.totalHargaPerolehanKib ??
-        assets.reduce(
-          (total, asset) => total + (Number(asset.harga_perolehan) || 0),
-          0,
-        ),
-    ),
-    icon: CurrencyDollarIcon,
-    iconBg: "bg-violet-100 dark:bg-violet-900/30",
-    iconColor: "text-violet-600 dark:text-violet-400",
-  },
-  {
-    label: "Sudah Terplotting",
-    value:
-      assetStats?.totalKibTerplotting ??
-      assets.filter((asset) => asset.plotting_status).length,
-    icon: MapPinIcon,
-    iconBg: "bg-amber-100 dark:bg-amber-900/30",
-    iconColor: "text-amber-600 dark:text-amber-400",
-  },
-];
-
 export default function DataKibPage() {
   return (
     <SubstansiAssetPage
@@ -130,8 +67,8 @@ export default function DataKibPage() {
       icon={HashIcon}
       iconColor="from-blue-500 to-cyan-500"
       columns={columns}
-      statsCards={statsCards}
       substansi="kib"
+      filterPreset="kib"
     />
   );
 }

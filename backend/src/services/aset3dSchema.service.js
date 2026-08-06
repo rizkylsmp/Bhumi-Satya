@@ -57,17 +57,6 @@ const CREATE_CATALOG_SCHEMA_SQL = `
     "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
   );
 
-  INSERT INTO "aset_2d_catalog"
-    ("kode_2d", "id_aset", "status", "created_at", "updated_at")
-  SELECT
-    '2D-' || LPAD(aset."id_aset"::text, 6, '0'),
-    aset."id_aset",
-    'active',
-    NOW(),
-    NOW()
-  FROM "aset" aset
-  ON CONFLICT DO NOTHING;
-
   CREATE TABLE IF NOT EXISTS "aset_3d_catalog" (
     "kode_3d" VARCHAR(40) PRIMARY KEY,
     "id_aset" INTEGER NOT NULL
@@ -78,6 +67,7 @@ const CREATE_CATALOG_SCHEMA_SQL = `
       REFERENCES "aset_2d_catalog" ("kode_2d")
       ON UPDATE CASCADE
       ON DELETE CASCADE,
+    "building_name" VARCHAR(150) NULL,
     "status" VARCHAR(20) NOT NULL DEFAULT 'active',
     "created_by" INTEGER NULL
       REFERENCES "users" ("id_user")
@@ -91,6 +81,44 @@ const CREATE_CATALOG_SCHEMA_SQL = `
     ON "aset_3d_catalog" ("status");
   CREATE INDEX IF NOT EXISTS "aset_3d_catalog_created_at_idx"
     ON "aset_3d_catalog" ("created_at");
+
+  ALTER TABLE "aset_3d_catalog"
+    ADD COLUMN IF NOT EXISTS "building_name" VARCHAR(150) NULL;
+
+  DO $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'aset_2d_catalog'
+        AND column_name = 'is_managed'
+    ) THEN
+      ALTER TABLE "aset_2d_catalog"
+        ADD COLUMN "is_managed" BOOLEAN NOT NULL DEFAULT FALSE;
+
+      UPDATE "aset_2d_catalog" AS parcel
+      SET "is_managed" = TRUE
+      FROM "aset" AS asset
+      WHERE asset."id_aset" = parcel."id_aset"
+        AND (
+          (
+            asset."koordinat_lat" IS NOT NULL
+            AND asset."koordinat_long" IS NOT NULL
+          )
+          OR (
+            asset."polygon_bidang" IS NOT NULL
+            AND asset."polygon_bidang"::text NOT IN ('null', '""', '[]', '{}')
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM "aset_3d_catalog" AS building
+            WHERE building."kode_2d" = parcel."kode_2d"
+          )
+        );
+    END IF;
+  END
+  $$;
 
   ALTER TABLE "aset_3d_catalog"
     ADD COLUMN IF NOT EXISTS "kode_2d" VARCHAR(40);

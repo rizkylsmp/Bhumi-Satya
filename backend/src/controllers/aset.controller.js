@@ -53,6 +53,14 @@ const appendExplicitSourceFilters = (where, query = {}) => {
   return where;
 };
 
+const appendTextPresenceFilter = (where, field, value) => {
+  if (value === "true") {
+    where[field] = { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: "" }] };
+  } else if (value === "false") {
+    where[field] = { [Op.or]: [{ [Op.is]: null }, { [Op.eq]: "" }] };
+  }
+};
+
 const ACTIVE_SEWA_STATUSES = ["Disewakan", "Akan Berakhir", "Aktif"];
 
 const isActiveSewaStatus = (status) => ACTIVE_SEWA_STATUSES.includes(status);
@@ -132,6 +140,16 @@ export const getAll = async (req, res) => {
       order = "DESC",
       status_sewa,
       is_certified,
+      status_hukum,
+      status_sertifikat,
+      penggunaan_saat_ini,
+      plotting_status,
+      penggunaan_kib,
+      pajak_status,
+      has_value,
+      has_kode_barang,
+      has_nop,
+      has_taxpayer,
     } = req.query;
 
     // Build where clause
@@ -167,6 +185,7 @@ export const getAll = async (req, res) => {
         Sequelize.literal(`EXISTS (
           SELECT 1 FROM "aset_2d_catalog" parcel_search
           WHERE parcel_search."id_aset" = "Aset"."id_aset"
+            AND parcel_search."is_managed" = TRUE
             AND parcel_search."kode_2d" ILIKE ${Sequelize.escape(`%${search}%`)}
         )`),
       ];
@@ -179,6 +198,12 @@ export const getAll = async (req, res) => {
     if (desa_kelurahan) where.desa_kelurahan = desa_kelurahan;
     if (jenis_hak) where.jenis_hak = jenis_hak;
     if (opd_pengguna) where.opd_pengguna = { [Op.iLike]: `%${opd_pengguna}%` };
+    if (status_hukum) where.status_hukum = status_hukum;
+    if (status_sertifikat) where.status_sertifikat = status_sertifikat;
+    if (penggunaan_saat_ini) where.penggunaan_saat_ini = penggunaan_saat_ini;
+    if (plotting_status) where.plotting_status = plotting_status;
+    if (penggunaan_kib) where.penggunaan_kib = penggunaan_kib;
+    if (pajak_status) where.pajak_status = pajak_status;
 
     if (is_certified === "true") {
       where[Op.and] = [...(where[Op.and] || []), buildCertifiedCondition(true)];
@@ -203,10 +228,21 @@ export const getAll = async (req, res) => {
     }
 
     // NIBAR filter
-    if (has_nibar === "true") {
-      where.nibar = { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: "" }] };
-    } else if (has_nibar === "false") {
-      where.nibar = { [Op.or]: [{ [Op.is]: null }, { [Op.eq]: "" }] };
+    appendTextPresenceFilter(where, "nibar", has_nibar);
+    appendTextPresenceFilter(where, "kode_barang", has_kode_barang);
+    appendTextPresenceFilter(where, "nop", has_nop);
+    appendTextPresenceFilter(where, "nama_wajib_pajak", has_taxpayer);
+
+    if (has_value === "true") {
+      where[Op.and] = [
+        ...(where[Op.and] || []),
+        Sequelize.literal('COALESCE("nilai_aset", 0) > 0'),
+      ];
+    } else if (has_value === "false") {
+      where[Op.and] = [
+        ...(where[Op.and] || []),
+        Sequelize.literal('COALESCE("nilai_aset", 0) = 0'),
+      ];
     }
 
     if (status_sewa === "tersewa" || status_sewa === "tidak") {
@@ -247,7 +283,7 @@ export const getAll = async (req, res) => {
           {
             model: Aset2dCatalog,
             as: "catalog2d",
-            attributes: ["kode_2d", "status"],
+            attributes: ["kode_2d", "status", "is_managed"],
             required: false,
           },
         ],
@@ -264,7 +300,9 @@ export const getAll = async (req, res) => {
         plain.sewa_berakhir = activeSewa.tanggal_berakhir;
       }
       delete plain.sewas;
-      plain.kode_2d = plain.catalog2d?.kode_2d || null;
+      plain.kode_2d = plain.catalog2d?.is_managed
+        ? plain.catalog2d.kode_2d
+        : null;
       delete plain.catalog2d;
       return plain;
     });
@@ -309,39 +347,40 @@ export const getFilterOptions = async (req, res) => {
     const sourceWhere = {};
     appendExplicitSourceFilters(sourceWhere, req.query);
 
-    const kelurahanRows = await Aset.findAll({
-      attributes: [
-        [
-          Sequelize.fn("DISTINCT", Sequelize.col("desa_kelurahan")),
-          "desa_kelurahan",
-        ],
-      ],
-      where: {
-        ...sourceWhere,
-        desa_kelurahan: { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: "" }] },
-      },
-      order: [[Sequelize.col("desa_kelurahan"), "ASC"]],
-      raw: true,
-    });
+    const optionFields = {
+      kecamatan: "kecamatan",
+      kelurahan: "desa_kelurahan",
+      jenis_hak: "jenis_hak",
+      status_hukum: "status_hukum",
+      status_sertifikat: "status_sertifikat",
+      penggunaan_saat_ini: "penggunaan_saat_ini",
+      tahun: "tahun_perolehan",
+      opd_pengguna: "opd_pengguna",
+      plotting_status: "plotting_status",
+      penggunaan_kib: "penggunaan_kib",
+      pajak_status: "pajak_status",
+    };
 
-    const kecamatanRows = await Aset.findAll({
-      attributes: [
-        [Sequelize.fn("DISTINCT", Sequelize.col("kecamatan")), "kecamatan"],
-      ],
-      where: {
-        ...sourceWhere,
-        kecamatan: { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: "" }] },
-      },
-      order: [[Sequelize.col("kecamatan"), "ASC"]],
-      raw: true,
-    });
+    const optionEntries = await Promise.all(
+      Object.entries(optionFields).map(async ([key, field]) => {
+        const rows = await Aset.findAll({
+          attributes: [[Sequelize.fn("DISTINCT", Sequelize.col(field)), field]],
+          where: {
+            ...sourceWhere,
+            [field]: field === "tahun_perolehan"
+              ? { [Op.ne]: null }
+              : { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: "" }] },
+          },
+          order: [[Sequelize.col(field), "ASC"]],
+          raw: true,
+        });
+        return [key, rows.map((row) => row[field])];
+      }),
+    );
 
     res.json({
       success: true,
-      data: {
-        kelurahan: kelurahanRows.map((r) => r.desa_kelurahan),
-        kecamatan: kecamatanRows.map((r) => r.kecamatan),
-      },
+      data: Object.fromEntries(optionEntries),
     });
   } catch (error) {
     console.error("Error fetching filter options:", error);
@@ -669,7 +708,7 @@ export const getById = async (req, res) => {
         {
           model: Aset2dCatalog,
           as: "catalog2d",
-          attributes: ["kode_2d", "status"],
+          attributes: ["kode_2d", "status", "is_managed"],
           required: false,
         },
       ],
@@ -686,7 +725,9 @@ export const getById = async (req, res) => {
       success: true,
       data: {
         ...asset.toJSON(),
-        kode_2d: asset.catalog2d?.kode_2d || null,
+        kode_2d: asset.catalog2d?.is_managed
+          ? asset.catalog2d.kode_2d
+          : null,
         catalog2d: undefined,
       },
     });
@@ -831,7 +872,7 @@ export const create = async (req, res) => {
     });
 
     const newAset = await sequelize.transaction(async (transaction) => {
-      const createdAsset = await Aset.create({
+      return Aset.create({
       kode_aset,
       nama_aset,
       lokasi: lokasi || "-",
@@ -911,14 +952,6 @@ export const create = async (req, res) => {
       created_at: new Date(),
         updated_at: new Date(),
       }, { transaction });
-      await Aset2dCatalog.create({
-        kode_2d: `2D-${String(createdAsset.id_aset).padStart(6, "0")}`,
-        id_aset: createdAsset.id_aset,
-        status: "active",
-        created_at: new Date(),
-        updated_at: new Date(),
-      }, { transaction });
-      return createdAsset;
     });
 
     // Log audit
@@ -941,10 +974,7 @@ export const create = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Aset berhasil ditambahkan",
-      data: {
-        ...newAset.toJSON(),
-        kode_2d: `2D-${String(newAset.id_aset).padStart(6, "0")}`,
-      },
+      data: newAset.toJSON(),
     });
   } catch (error) {
     console.error("Error creating asset:", error);

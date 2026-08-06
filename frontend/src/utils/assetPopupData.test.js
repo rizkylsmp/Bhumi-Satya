@@ -55,6 +55,51 @@ describe("asset popup data", () => {
     });
   });
 
+  it("shows the shared building name in general and 3D data", () => {
+    const result = buildAssetPopupData({
+      kode_aset: "AST-001",
+      nama_aset: "Aset Induk",
+      kode_3d: "3D-001",
+      building_name_3d: "Nama Bangunan Lama",
+      popup_context: "3d",
+      active_model_3d: {
+        kode_3d: "3D-002",
+        building_name: "Gedung Laboratorium",
+        lod: "LOD2",
+      },
+    });
+
+    expect(result.catalogCode).toBe("3D-002");
+    expect(result.context).toBe("3d");
+    expect(result.general).toContainEqual({
+      label: "Nama Bangunan",
+      value: "Gedung Laboratorium",
+    });
+    expect(result.model).toMatchObject({
+      name: "Gedung Laboratorium",
+      available: true,
+    });
+  });
+
+  it("shows the building count when a 2D parcel is selected", () => {
+    const result = buildAssetPopupData({
+      kode_aset: "AST-002",
+      kode_2d: "2D-002",
+      popup_context: "2d",
+      building_count_3d: 4,
+    });
+
+    expect(result.parcelCode).toBe("2D-002");
+    expect(result.general).toContainEqual({
+      label: "Kode 2D",
+      value: "2D-002",
+    });
+    expect(result.general).toContainEqual({
+      label: "Jumlah Bangunan 3D",
+      value: "4 bangunan",
+    });
+  });
+
   it("creates the tax section only from available tax values", () => {
     const result = buildAssetPopupData({
       pajak_status: "Terverifikasi",

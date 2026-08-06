@@ -17,6 +17,10 @@ const Aset3dCatalog = sequelize.define(
       type: DataTypes.STRING(40),
       allowNull: false,
     },
+    building_name: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+    },
     status: {
       type: DataTypes.STRING(20),
       allowNull: false,

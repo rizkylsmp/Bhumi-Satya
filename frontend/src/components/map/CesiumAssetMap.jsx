@@ -21,8 +21,10 @@ import {
   Math as CesiumMath,
   Matrix4,
   Model,
+  Rectangle,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
+  SingleTileImageryProvider,
   Transforms,
   UrlTemplateImageryProvider,
   Viewer,
@@ -214,8 +216,21 @@ const focusCoordinates = (
   return true;
 };
 
-const createBasemapProvider = (basemapId) => {
-  const option = getBasemapOption(basemapId);
+const createBasemapProvider = async (basemapId, suppliedOption = null) => {
+  const option = suppliedOption || getBasemapOption(basemapId);
+  if (option?.kind === "single-image") {
+    const bounds = option.bounds;
+    if (!option.imageUrl || !bounds) return null;
+    return SingleTileImageryProvider.fromUrl(option.imageUrl, {
+      rectangle: Rectangle.fromDegrees(
+        bounds.west,
+        bounds.south,
+        bounds.east,
+        bounds.north,
+      ),
+      credit: option.attribution,
+    });
+  }
   if (!option?.cesiumUrl) return null;
   const provider = new UrlTemplateImageryProvider({
     url: option.cesiumUrl,
@@ -227,6 +242,15 @@ const createBasemapProvider = (basemapId) => {
   });
   return provider;
 };
+
+const getBasemapSignature = (option = {}) => JSON.stringify({
+  id: option.id || "",
+  kind: option.kind || "",
+  cesiumUrl: option.cesiumUrl || "",
+  imageUrl: option.imageUrl || "",
+  bounds: option.bounds || null,
+  opacity: option.opacity ?? 1,
+});
 
 const CesiumAssetMap = forwardRef(function CesiumAssetMap(
   {
@@ -240,7 +264,9 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     onFeatureClick,
     onOtherLayerClick,
     onStatusChange,
+    onBearingChange,
     basemapId = DEFAULT_BASEMAP_ID,
+    basemapOption = null,
     analysisTool = null,
     analysisPoints = [],
     onAnalysisClick,
@@ -250,6 +276,8 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
   const basemapIdRef = useRef(basemapId);
+  const basemapOptionRef = useRef(basemapOption);
+  const appliedBasemapSignatureRef = useRef("");
   const targetSpheresRef = useRef([]);
   const targetSphereByLocationIdRef = useRef(new Map());
   const targetModelByLocationIdRef = useRef(new Map());
@@ -264,6 +292,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
   const onFeatureClickRef = useRef(onFeatureClick);
   const onOtherLayerClickRef = useRef(onOtherLayerClick);
   const onStatusChangeRef = useRef(onStatusChange);
+  const onBearingChangeRef = useRef(onBearingChange);
   const analysisToolRef = useRef(analysisTool);
   const onAnalysisClickRef = useRef(onAnalysisClick);
   const analysisEntityIdsRef = useRef([]);
@@ -273,6 +302,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     onFeatureClickRef.current = onFeatureClick;
     onOtherLayerClickRef.current = onOtherLayerClick;
     onStatusChangeRef.current = onStatusChange;
+    onBearingChangeRef.current = onBearingChange;
     analysisToolRef.current = analysisTool;
     onAnalysisClickRef.current = onAnalysisClick;
   }, [
@@ -281,6 +311,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     onAnalysisClick,
     onFeatureClick,
     onOtherLayerClick,
+    onBearingChange,
     onStatusChange,
   ]);
 
@@ -337,17 +368,39 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
 
   useEffect(() => {
     basemapIdRef.current = basemapId;
+    basemapOptionRef.current = basemapOption;
     const viewer = viewerRef.current;
     if (!viewer || viewer.isDestroyed()) return;
-    const option = getBasemapOption(basemapId);
-    const provider = createBasemapProvider(option.id);
-    viewer.imageryLayers.removeAll();
-    if (provider) viewer.imageryLayers.addImageryProvider(provider);
-    viewer.scene.globe.baseColor = Color.fromCssColorString(
-      option.backgroundColor || "#cbd5e1",
-    );
-    viewer.scene.requestRender();
-  }, [basemapId]);
+    let cancelled = false;
+    const apply = async () => {
+      const option = basemapOption || getBasemapOption(basemapId);
+      const signature = getBasemapSignature(option);
+      if (appliedBasemapSignatureRef.current === signature) return;
+      const provider = await createBasemapProvider(option.id, option);
+      if (cancelled || viewer.isDestroyed()) return;
+      const previousLayers = Array.from(
+        { length: viewer.imageryLayers.length },
+        (_, index) => viewer.imageryLayers.get(index),
+      );
+      if (provider) {
+        viewer.imageryLayers.addImageryProvider(provider, 0);
+      }
+      previousLayers.forEach((layer) => {
+        if (viewer.imageryLayers.contains(layer)) {
+          viewer.imageryLayers.remove(layer, true);
+        }
+      });
+      viewer.scene.globe.baseColor = Color.fromCssColorString(
+        option.backgroundColor || "#cbd5e1",
+      );
+      appliedBasemapSignatureRef.current = signature;
+      viewer.scene.requestRender();
+    };
+    apply().catch((error) => console.error("Could not switch Cesium basemap:", error));
+    return () => {
+      cancelled = true;
+    };
+  }, [basemapId, basemapOption]);
 
   useImperativeHandle(
     forwardedRef,
@@ -502,6 +555,20 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
         viewer.scene.requestRender();
         return true;
       },
+      resetNorth() {
+        const viewer = viewerRef.current;
+        if (!viewer || viewer.isDestroyed()) return false;
+        viewer.camera.flyTo({
+          destination: Cartesian3.clone(viewer.camera.positionWC),
+          orientation: {
+            heading: 0,
+            pitch: viewer.camera.pitch,
+            roll: 0,
+          },
+          duration: 0.45,
+        });
+        return true;
+      },
     }),
     [],
   );
@@ -513,6 +580,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     let viewer;
     let resizeObserver;
     let clickHandler;
+    let removeBearingListener;
     const targetSpheres = [];
     const targetSphereByLocationId = new Map();
     const targetModelByLocationId = new Map();
@@ -526,8 +594,16 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
         failed: 0,
       });
 
-      const basemapOption = getBasemapOption(basemapIdRef.current);
-      const basemapProvider = createBasemapProvider(basemapOption.id);
+      const activeBasemapOption = basemapOptionRef.current
+        || getBasemapOption(basemapIdRef.current);
+      const basemapProvider = await createBasemapProvider(
+        activeBasemapOption.id,
+        activeBasemapOption,
+      );
+      // React StrictMode immediately cleans up the first development effect.
+      // Stop that stale async initialization before it creates a second Viewer
+      // inside the same container.
+      if (cancelled || !containerRef.current) return;
       viewer = new Viewer(containerRef.current, {
         animation: false,
         baseLayer: basemapProvider ? new ImageryLayer(basemapProvider) : false,
@@ -543,12 +619,17 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
         shouldAnimate: false,
         timeline: false,
         terrainProvider: new EllipsoidTerrainProvider(),
+        requestRenderMode: true,
+        maximumRenderTimeChange: Number.POSITIVE_INFINITY,
       });
       viewerRef.current = viewer;
+      appliedBasemapSignatureRef.current = getBasemapSignature(
+        activeBasemapOption,
+      );
       viewer.scene.backgroundColor = Color.fromCssColorString("#dce7ef");
       viewer.scene.globe.show = true;
       viewer.scene.globe.baseColor = Color.fromCssColorString(
-        basemapOption.backgroundColor || "#cbd5e1",
+        activeBasemapOption.backgroundColor || "#cbd5e1",
       );
       viewer.scene.globe.depthTestAgainstTerrain = false;
       viewer.scene.globe.showGroundAtmosphere = false;
@@ -564,6 +645,14 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           roll: 0,
         },
       });
+      viewer.camera.percentageChanged = 0.01;
+      const reportBearing = () => {
+        const degrees = CesiumMath.toDegrees(viewer.camera.heading);
+        const normalized = ((((degrees + 180) % 360) + 360) % 360) - 180;
+        onBearingChangeRef.current?.(normalized);
+      };
+      removeBearingListener = viewer.camera.changed.addEventListener(reportBearing);
+      reportBearing();
 
       resizeObserver = new ResizeObserver(() => {
         if (!viewer.isDestroyed()) viewer.resize();
@@ -649,6 +738,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
               return;
             }
             tileset.assetId = model.assetId;
+            tileset.modelData = model;
             viewer.scene.primitives.add(tileset);
             setModelVisualState(tileset);
             targetSpheres.push(tileset.boundingSphere);
@@ -679,6 +769,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
               return;
             }
             primitive.assetId = model.assetId;
+            primitive.modelData = model;
             viewer.scene.primitives.add(primitive);
             await waitForModelReady(primitive);
             setModelVisualState(primitive);
@@ -906,7 +997,12 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           setModelVisualState(pickedModel, "selected");
           setEntityVisualState(selectedEntity, "selected");
           viewer.scene.requestRender();
-          onFeatureClickRef.current?.(asset);
+          const selectedModel = pickedModel?.modelData || null;
+          onFeatureClickRef.current?.({
+            ...asset,
+            popup_context: selectedModel ? "3d" : "2d",
+            ...(selectedModel ? { active_model_3d: selectedModel } : {}),
+          });
         } else {
           const previousSelected = selectedModelRef.current;
           const previousSelectedEntity = selectedEntityRef.current;
@@ -943,6 +1039,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     return () => {
       cancelled = true;
       clickHandler?.destroy();
+      removeBearingListener?.();
       resizeObserver?.disconnect();
       targetSpheresRef.current = [];
       targetSphereByLocationIdRef.current = new Map();
@@ -950,6 +1047,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       fallbackTargetRef.current = null;
       hoveredModelRef.current = null;
       selectedModelRef.current = null;
+      appliedBasemapSignatureRef.current = "";
       viewerRef.current = null;
       if (viewer && !viewer.isDestroyed()) viewer.destroy();
     };

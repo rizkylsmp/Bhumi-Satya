@@ -68,6 +68,7 @@ const DataAdministratifPage = lazyWithRetry(
   () => import("../pages/aset/DataAdministratifPage"),
 );
 const DataSpasialPage = lazyWithRetry(() => import("../pages/aset/DataSpasialPage"));
+const OrthophotoPage = lazyWithRetry(() => import("../pages/OrthophotoPage"));
 const PenyewaanPage = lazyWithRetry(() => import("../pages/sewa/PenyewaanPage"));
 const SewaDetailPage = lazyWithRetry(() => import("../pages/sewa/SewaDetailPage"));
 const PermintaanPage = lazyWithRetry(() => import("../pages/sewa/PermintaanPage"));
@@ -321,6 +322,26 @@ const router = createHashRouter([
           <RoleGuard menuId="aset">
             <LazyPage>
               <DataSpasialPage />
+            </LazyPage>
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "orthophoto",
+        element: (
+          <RoleGuard menuId="aset">
+            <LazyPage>
+              <OrthophotoPage />
+            </LazyPage>
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "kelola-2d/:id/kelola",
+        element: (
+          <RoleGuard menuId="aset">
+            <LazyPage>
+              <AssetFormPage />
             </LazyPage>
           </RoleGuard>
         ),

@@ -32,6 +32,7 @@ import {
   CubeIcon,
   IdentificationCardIcon,
   ReceiptIcon,
+  ImageIcon,
 } from "@phosphor-icons/react";
 
 export default function Sidebar({
@@ -71,6 +72,8 @@ export default function Sidebar({
     }
     if (
       location.pathname.startsWith("/aset/spasial") ||
+      location.pathname.startsWith("/orthophoto") ||
+      location.pathname.startsWith("/kelola-2d") ||
       location.pathname.startsWith("/kelola-3d")
     ) {
       expanded.push("kelola-data");
@@ -175,6 +178,14 @@ export default function Sidebar({
               label: "Kelola 3D",
               path: "/kelola-3d",
             },
+            canAccessMenu(userRole, "aset") && {
+              icon: ImageIcon,
+              label: "Kelola Orthophoto",
+              path: "/orthophoto",
+              disabled: true,
+              status: "Dev",
+              description: "Dalam proses pengembangan",
+            },
           ].filter(Boolean),
         },
         RENTAL_FEATURE_ENABLED && canAccessMenu(userRole, "sewa-aset") && {
@@ -254,6 +265,12 @@ export default function Sidebar({
 
   const isActivePath = (path) => {
     if (location.pathname === path) return true;
+    if (
+      path === "/aset/spasial" &&
+      location.pathname.startsWith("/kelola-2d/")
+    ) {
+      return true;
+    }
     if (
       path === "/kelola-3d" &&
       location.pathname.startsWith("/kelola-3d/")
@@ -438,11 +455,19 @@ export default function Sidebar({
                                   return (
                                     <button
                                       key={grandchild.path}
+                                      type="button"
+                                      disabled={grandchild.disabled}
+                                      title={grandchild.description}
+                                      aria-label={grandchild.disabled
+                                        ? `${grandchild.label} — ${grandchild.description}`
+                                        : grandchild.label}
                                       onClick={() =>
                                         handleMenuClick(grandchild.path)
                                       }
                                       className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[10px] transition-colors ${
-                                        isGrandchildActive
+                                        grandchild.disabled
+                                          ? "cursor-not-allowed text-text-muted opacity-50"
+                                          : isGrandchildActive
                                           ? "bg-accent text-white font-semibold dark:bg-white dark:text-slate-900"
                                           : "text-text-muted hover:bg-surface-secondary hover:text-text-primary"
                                       }`}
@@ -458,6 +483,11 @@ export default function Sidebar({
                                       <span className="whitespace-nowrap">
                                         {grandchild.label}
                                       </span>
+                                      {grandchild.status && (
+                                        <span className="ml-auto rounded bg-surface-tertiary px-1 py-0.5 text-[7px] font-black uppercase tracking-wide text-text-muted">
+                                          {grandchild.status}
+                                        </span>
+                                      )}
                                     </button>
                                   );
                                 })}
@@ -559,11 +589,18 @@ export default function Sidebar({
                                       <button
                                         key={grandchild.path}
                                         type="button"
+                                        disabled={grandchild.disabled}
+                                        title={grandchild.description}
+                                        aria-label={grandchild.disabled
+                                          ? `${grandchild.label} — ${grandchild.description}`
+                                          : grandchild.label}
                                         onClick={() =>
                                           handleMenuClick(grandchild.path)
                                         }
                                         className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[10px] transition-colors ${
-                                          isGrandchildActive
+                                          grandchild.disabled
+                                            ? "cursor-not-allowed text-text-muted opacity-50"
+                                            : isGrandchildActive
                                             ? "bg-accent text-white font-semibold dark:bg-white dark:text-slate-900"
                                             : "text-text-muted hover:bg-surface-secondary hover:text-text-primary"
                                         }`}
@@ -579,6 +616,11 @@ export default function Sidebar({
                                         <span className="flex-1">
                                           {grandchild.label}
                                         </span>
+                                        {grandchild.status && (
+                                          <span className="rounded bg-surface-tertiary px-1 py-0.5 text-[7px] font-black uppercase tracking-wide text-text-muted">
+                                            {grandchild.status}
+                                          </span>
+                                        )}
                                         {grandchild.badge > 0 && (
                                           <span className="rounded-full bg-red-600 px-1.5 py-0.5 text-[8px] font-bold text-white">
                                             {grandchild.badge > 9

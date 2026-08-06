@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  BuildingsIcon,
   CaretDownIcon,
   CertificateIcon,
   MapPinAreaIcon,
@@ -24,12 +23,6 @@ const LAYERS = [
     label: "Nilai Tanah",
     color: "border-orange-500 bg-orange-500/70",
   },
-];
-
-const DATA_3D_FILTERS = [
-  { value: "all", label: "Semua" },
-  { value: "available", label: "Ada 3D" },
-  { value: "missing", label: "Tanpa 3D" },
 ];
 
 function SectionTitle({ icon: Icon, children }) {
@@ -86,8 +79,6 @@ export default function BPNLayerControl({
   setShowSudahSertifikat,
   showBelumSertifikat = true,
   setShowBelumSertifikat,
-  data3dFilter,
-  setData3dFilter,
   embedded = false,
 }) {
   const [isOpen, setIsOpen] = useState(true);
@@ -219,36 +210,6 @@ export default function BPNLayerControl({
             </section>
           )}
 
-          {setData3dFilter && (
-            <section className="p-3">
-              <SectionTitle icon={BuildingsIcon}>Ketersediaan 3D</SectionTitle>
-              <div
-                className="grid grid-cols-3 gap-1"
-                role="radiogroup"
-                aria-label="Filter ketersediaan data 3D"
-              >
-                {DATA_3D_FILTERS.map((option) => {
-                  const selected = (data3dFilter || "all") === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      onClick={() => setData3dFilter(option.value)}
-                      className={`min-h-8 rounded-lg border px-1.5 text-[9px] font-bold transition-colors focus-visible:ring-2 focus-visible:ring-accent ${
-                        selected
-                          ? "border-accent bg-accent/10 text-accent"
-                          : "border-border bg-surface text-text-muted hover:bg-surface-secondary hover:text-text-primary"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          )}
         </div>
       )}
     </div>
