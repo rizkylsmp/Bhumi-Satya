@@ -1,5 +1,14 @@
 export const changelogEntries = [
   {
+    id: "deployment-cache-recovery",
+    date: "2026-08-06",
+    type: "perbaikan",
+    title: "Memulihkan cache setelah deployment",
+    summary:
+      "Halaman utama tidak lagi tersangkut pada versi lama setelah pembaruan dan dapat membersihkan cache aplikasi secara otomatis tanpa menghapus sesi login.",
+    area: "Stabilitas",
+  },
+  {
     id: "orthophoto-basemap",
     date: "2026-08-05",
     type: "fitur",
