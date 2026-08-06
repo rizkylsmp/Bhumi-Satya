@@ -7,6 +7,7 @@ import PublicLayout from "../layouts/PublicLayout";
 import RootLayout from "../layouts/RootLayout";
 import { useAuthStore } from "../stores/authStore";
 import { normalizeRole } from "../utils/permissions";
+import { RENTAL_FEATURE_ENABLED } from "../config/featureFlags";
 
 const CHUNK_RELOAD_KEY = "bhumi-satya-chunk-reload-at";
 const CHUNK_RELOAD_COOLDOWN_MS = 60_000;
@@ -101,6 +102,10 @@ function LazyPage({ children }) {
 
 function LegacyMasyarakatLoginRedirect() {
   const location = useLocation();
+  if (!RENTAL_FEATURE_ENABLED) {
+    return <Navigate to="/beranda" replace />;
+  }
+
   const mode =
     new URLSearchParams(location.search).get("mode") === "register"
       ? "register"
@@ -117,17 +122,24 @@ function LegacyMasyarakatLoginRedirect() {
 
 function HomeRedirect() {
   const user = useAuthStore((state) => state.user);
-  const path =
-    normalizeRole(user?.role) === "masyarakat"
+  const isMasyarakat = normalizeRole(user?.role) === "masyarakat";
+  const path = isMasyarakat
+    ? RENTAL_FEATURE_ENABLED
       ? "/sewa/aset-tersedia"
-      : "/dashboard";
+      : "/beranda"
+    : "/dashboard";
   return <Navigate to={path} replace />;
 }
 
 function DashboardRoute() {
   const user = useAuthStore((state) => state.user);
   if (normalizeRole(user?.role) === "masyarakat") {
-    return <Navigate to="/sewa/aset-tersedia" replace />;
+    return (
+      <Navigate
+        to={RENTAL_FEATURE_ENABLED ? "/sewa/aset-tersedia" : "/beranda"}
+        replace
+      />
+    );
   }
 
   return (
@@ -181,10 +193,12 @@ const router = createHashRouter([
       },
       {
         path: "/sewa-aset",
-        element: (
+        element: RENTAL_FEATURE_ENABLED ? (
           <LazyPage>
             <PublicSewaPage />
           </LazyPage>
+        ) : (
+          <Navigate to="/beranda" replace />
         ),
       },
     ],
@@ -334,62 +348,74 @@ const router = createHashRouter([
       // Sewa Aset
       {
         path: "sewa/penyewaan",
-        element: (
+        element: RENTAL_FEATURE_ENABLED ? (
           <RoleGuard menuId="sewa-aset">
             <LazyPage>
               <PenyewaanPage />
             </LazyPage>
           </RoleGuard>
+        ) : (
+          <Navigate to="/dashboard" replace />
         ),
       },
       {
         path: "sewa/penyewaan/:id",
-        element: (
+        element: RENTAL_FEATURE_ENABLED ? (
           <RoleGuard menuId="sewa-aset">
             <LazyPage>
               <SewaDetailPage />
             </LazyPage>
           </RoleGuard>
+        ) : (
+          <Navigate to="/dashboard" replace />
         ),
       },
       {
         path: "sewa/permintaan",
-        element: (
+        element: RENTAL_FEATURE_ENABLED ? (
           <RoleGuard menuId="sewa-aset">
             <LazyPage>
               <PermintaanPage />
             </LazyPage>
           </RoleGuard>
+        ) : (
+          <Navigate to="/dashboard" replace />
         ),
       },
       {
         path: "sewa/aset-tersedia",
-        element: (
+        element: RENTAL_FEATURE_ENABLED ? (
           <RoleGuard menuId="sewa-masyarakat">
             <LazyPage>
               <AsetTersediaPage />
             </LazyPage>
           </RoleGuard>
+        ) : (
+          <Navigate to="/dashboard" replace />
         ),
       },
       {
         path: "sewa/diajukan",
-        element: (
+        element: RENTAL_FEATURE_ENABLED ? (
           <RoleGuard menuId="sewa-masyarakat">
             <LazyPage>
               <SewaDiajukanPage />
             </LazyPage>
           </RoleGuard>
+        ) : (
+          <Navigate to="/dashboard" replace />
         ),
       },
       {
         path: "sewa/disetujui",
-        element: (
+        element: RENTAL_FEATURE_ENABLED ? (
           <RoleGuard menuId="sewa-masyarakat">
             <LazyPage>
               <SewaDisetujuiPage />
             </LazyPage>
           </RoleGuard>
+        ) : (
+          <Navigate to="/dashboard" replace />
         ),
       },
       {

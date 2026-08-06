@@ -8,6 +8,7 @@ import {
 } from "../services/api";
 import { useAuthStore } from "../stores/authStore";
 import { ChartBarIcon, PulseIcon } from "@phosphor-icons/react";
+import { RENTAL_FEATURE_ENABLED } from "../config/featureFlags";
 
 const DashboardIntegratedPanel = lazy(() =>
   import("../components/dashboard/DashboardIntegratedPanel"),
@@ -41,7 +42,9 @@ export default function DashboardPage() {
         activitiesRes,
       ] = await Promise.all([
         asetService.getStats(),
-        sewaService.getStats(),
+        RENTAL_FEATURE_ENABLED
+          ? sewaService.getStats()
+          : Promise.resolve({ data: { data: null } }),
         aset3dCatalogService.list({ page: 1, limit: 1 }),
         isAdmin ? riwayatService.getAll({ limit: 5 }) : Promise.resolve(null),
       ]);
@@ -77,7 +80,7 @@ export default function DashboardPage() {
                 Dashboard Bhumi Satya
               </h1>
               <p className="admin-page-header__description">
-                Ringkasan Digital Twin dan penyewaan.
+                Ringkasan data aset dan Digital Twin.
               </p>
             </div>
           </div>

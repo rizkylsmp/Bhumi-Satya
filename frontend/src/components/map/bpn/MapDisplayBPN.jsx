@@ -2993,7 +2993,7 @@ const MapDisplayBPN = ({
                   {BASEMAP_OPTIONS.map((option) => {
                     const isActive = activeBasemap === option.id;
                     const OptionIcon =
-                      option.id === "satellite" ? ImageIcon : MapTrifoldIcon;
+                      option.kind === "imagery" ? ImageIcon : MapTrifoldIcon;
 
                     return (
                       <button

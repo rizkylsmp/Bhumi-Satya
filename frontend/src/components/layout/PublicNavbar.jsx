@@ -10,6 +10,7 @@ import {
   SunIcon,
 } from "@phosphor-icons/react";
 import { useThemeStore } from "../../stores/themeStore";
+import { RENTAL_FEATURE_ENABLED } from "../../config/featureFlags";
 import BrandMark from "../shared/BrandMark";
 
 const PUBLIC_LINKS = [
@@ -25,13 +26,13 @@ const PUBLIC_LINKS = [
     path: "/peta-publik",
     matches: ["/peta-publik"],
   },
-  {
+  RENTAL_FEATURE_ENABLED && {
     label: "Penyewaan",
     icon: StorefrontIcon,
     path: "/sewa-aset",
     matches: ["/sewa-aset"],
   },
-];
+].filter(Boolean);
 
 /** Navigasi persisten untuk seluruh halaman publik. */
 export default function PublicNavbar() {

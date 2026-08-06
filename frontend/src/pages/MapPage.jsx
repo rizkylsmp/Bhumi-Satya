@@ -12,6 +12,7 @@ import { downloadAssetPdf } from "../utils/pdfExport";
 import { downloadAssetGeojson } from "../utils/geojsonExport";
 import { hasUsableAsset3dData } from "../utils/asset3dGeojson";
 import { normalizeMapMarkers } from "../utils/mapAssets";
+import { RENTAL_FEATURE_ENABLED } from "../config/featureFlags";
 import {
   CaretDownIcon,
   MapTrifoldIcon,
@@ -227,24 +228,26 @@ function MapData2dControls({
         />
       </DropdownSection>
 
-      <DropdownSection
-        id="selection"
-        label="Filter Penyewaan"
-        open={openSection === "selection"}
-        onToggle={() => toggleSection("selection")}
-      >
-        <AssetMapFilter
-          hideSearch
-          selectedSewaLayers={selectedSewaLayers}
-          onSewaLayerToggle={handleSewaLayerToggle}
-          onSearch={handleSearch}
-          onSelectAsset={handleSelectSearchAsset}
-          assets={assets}
-          searchResults={searchFilter.trim().length >= 2 ? mapSearchResults : null}
-          searchLoading={isMapSearchLoading}
-          showStatistics={false}
-        />
-      </DropdownSection>
+      {RENTAL_FEATURE_ENABLED && (
+        <DropdownSection
+          id="selection"
+          label="Filter Penyewaan"
+          open={openSection === "selection"}
+          onToggle={() => toggleSection("selection")}
+        >
+          <AssetMapFilter
+            hideSearch
+            selectedSewaLayers={selectedSewaLayers}
+            onSewaLayerToggle={handleSewaLayerToggle}
+            onSearch={handleSearch}
+            onSelectAsset={handleSelectSearchAsset}
+            assets={assets}
+            searchResults={searchFilter.trim().length >= 2 ? mapSearchResults : null}
+            searchLoading={isMapSearchLoading}
+            showStatistics={false}
+          />
+        </DropdownSection>
+      )}
 
       <DropdownSection
         id="information"

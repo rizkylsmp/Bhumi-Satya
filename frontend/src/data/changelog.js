@@ -1,5 +1,23 @@
 export const changelogEntries = [
   {
+    id: "orthophoto-basemap",
+    date: "2026-08-05",
+    type: "fitur",
+    title: "Menambahkan basemap orthophoto",
+    summary:
+      "Basemap Orthophoto Clarity kini dapat dipilih pada Digital Twin 2D, mode 3D, dan preview model untuk melihat citra permukaan yang lebih jelas.",
+    area: "Digital Twin",
+  },
+  {
+    id: "temporarily-disable-rental-service",
+    date: "2026-08-05",
+    type: "peningkatan",
+    title: "Menonaktifkan sementara layanan penyewaan",
+    summary:
+      "Menu penyewaan, portal masyarakat, pendaftaran akun publik, serta informasi sewa disembunyikan sementara tanpa menghapus modul dari sistem.",
+    area: "Navigasi",
+  },
+  {
     id: "consistent-responsive-page-layout",
     date: "2026-08-04",
     type: "peningkatan",

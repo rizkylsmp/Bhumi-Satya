@@ -4,6 +4,7 @@ export const BASEMAP_OPTIONS = [
   {
     id: "satellite",
     label: "Satelit Esri",
+    kind: "imagery",
     tiles: [
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     ],
@@ -13,6 +14,20 @@ export const BASEMAP_OPTIONS = [
     maxzoom: 19,
     attribution:
       "Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+  },
+  {
+    id: "orthophoto",
+    label: "Orthophoto (Clarity)",
+    kind: "imagery",
+    tiles: [
+      "https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    ],
+    cesiumUrl:
+      "https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    tileSize: 256,
+    maxzoom: 20,
+    attribution:
+      "Esri, Vantor, Earthstar Geographics, and the GIS User Community",
   },
   {
     id: "light",

@@ -5,6 +5,7 @@ import {
   FunnelIcon,
   ArrowCounterClockwiseIcon,
 } from "@phosphor-icons/react";
+import { RENTAL_FEATURE_ENABLED } from "../../config/featureFlags";
 
 const JENIS_HAK_OPTIONS = [
   "HAK PAKAI",
@@ -298,16 +299,18 @@ export default function AssetSearch({
             <option value="true">Ada NIBAR</option>
             <option value="false">Tanpa NIBAR</option>
           </select>
-          <select
-            value={statusSewaFilter}
-            onChange={handleStatusSewaChange}
-            className={selectClass}
-            aria-label="Filter penyewaan"
-          >
-            <option value="">Semua status sewa</option>
-            <option value="tersewa">Tersewa</option>
-            <option value="tidak">Tidak tersewa</option>
-          </select>
+          {RENTAL_FEATURE_ENABLED && (
+            <select
+              value={statusSewaFilter}
+              onChange={handleStatusSewaChange}
+              className={selectClass}
+              aria-label="Filter penyewaan"
+            >
+              <option value="">Semua status sewa</option>
+              <option value="tersewa">Tersewa</option>
+              <option value="tidak">Tidak tersewa</option>
+            </select>
+          )}
           <select
             value={kecamatanFilter}
             onChange={handleKecamatanChange}

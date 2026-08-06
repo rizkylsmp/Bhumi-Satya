@@ -33,6 +33,7 @@ import {
   SignInIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
+import { RENTAL_FEATURE_ENABLED } from "../../config/featureFlags";
 
 const CHART_COLORS = {
   accent: "#0ea5e9",
@@ -269,22 +270,26 @@ export default function DashboardIntegratedPanel({
       iconClass:
         "from-blue-400 via-blue-600 to-indigo-700 dark:from-blue-400 dark:via-blue-500 dark:to-indigo-600",
     },
-    {
-      label: "Tersedia Disewa",
-      value: formatNumber(availableRentals),
-      detail: `${formatNumber(totalRentals)} unit dalam portofolio sewa`,
-      icon: BuildingsIcon,
-      iconClass:
-        "from-sky-400 via-blue-500 to-indigo-700 dark:from-sky-400 dark:via-blue-500 dark:to-indigo-600",
-    },
-    {
-      label: "Sewa Aktif",
-      value: formatNumber(activeRentals),
-      detail: `${formatNumber(sewaStats?.akanBerakhir)} akan berakhir`,
-      icon: HandshakeIcon,
-      iconClass:
-        "from-cyan-400 via-blue-600 to-indigo-700 dark:from-cyan-400 dark:via-blue-500 dark:to-indigo-600",
-    },
+    ...(RENTAL_FEATURE_ENABLED
+      ? [
+          {
+            label: "Tersedia Disewa",
+            value: formatNumber(availableRentals),
+            detail: `${formatNumber(totalRentals)} unit dalam portofolio sewa`,
+            icon: BuildingsIcon,
+            iconClass:
+              "from-sky-400 via-blue-500 to-indigo-700 dark:from-sky-400 dark:via-blue-500 dark:to-indigo-600",
+          },
+          {
+            label: "Sewa Aktif",
+            value: formatNumber(activeRentals),
+            detail: `${formatNumber(sewaStats?.akanBerakhir)} akan berakhir`,
+            icon: HandshakeIcon,
+            iconClass:
+              "from-cyan-400 via-blue-600 to-indigo-700 dark:from-cyan-400 dark:via-blue-500 dark:to-indigo-600",
+          },
+        ]
+      : []),
   ];
 
   const openDistrict = (district) => {
@@ -295,7 +300,9 @@ export default function DashboardIntegratedPanel({
   return (
     <div className="min-w-0 space-y-4">
       <section
-        className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
+        className={`grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 ${
+          RENTAL_FEATURE_ENABLED ? "xl:grid-cols-5" : "xl:grid-cols-3"
+        }`}
         aria-label="Ringkasan data"
       >
         {statCards.map((stat) => {
@@ -336,8 +343,16 @@ export default function DashboardIntegratedPanel({
         })}
       </section>
 
-      <section className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-3">
-        <article className="min-w-0 rounded-xl border border-border bg-surface p-4 xl:col-span-2">
+      <section
+        className={`grid min-w-0 grid-cols-1 gap-4 ${
+          RENTAL_FEATURE_ENABLED ? "xl:grid-cols-3" : "xl:grid-cols-1"
+        }`}
+      >
+        <article
+          className={`min-w-0 rounded-xl border border-border bg-surface p-4 ${
+            RENTAL_FEATURE_ENABLED ? "xl:col-span-2" : ""
+          }`}
+        >
           <PanelHeader
             title="Kesiapan Data Digital Twin"
             description="Kelengkapan data utama dibandingkan dengan seluruh bidang terdaftar."
@@ -417,6 +432,7 @@ export default function DashboardIntegratedPanel({
           )}
         </article>
 
+        {RENTAL_FEATURE_ENABLED && (
         <article className="min-w-0 rounded-xl border border-border bg-surface p-4">
           <PanelHeader
             title="Portofolio Penyewaan"
@@ -496,9 +512,14 @@ export default function DashboardIntegratedPanel({
             />
           )}
         </article>
+        )}
       </section>
 
-      <section className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
+      <section
+        className={`grid min-w-0 grid-cols-1 gap-4 ${
+          RENTAL_FEATURE_ENABLED ? "lg:grid-cols-2" : "lg:grid-cols-1"
+        }`}
+      >
         <article className="min-w-0 rounded-xl border border-border bg-surface p-4">
           <PanelHeader
             title="Sebaran Data Spasial"
@@ -575,6 +596,7 @@ export default function DashboardIntegratedPanel({
           )}
         </article>
 
+        {RENTAL_FEATURE_ENABLED && (
         <article className="min-w-0 rounded-xl border border-border bg-surface p-4">
           <PanelHeader
             title="Nilai Penyewaan Aktif"
@@ -642,9 +664,15 @@ export default function DashboardIntegratedPanel({
             />
           )}
         </article>
+        )}
       </section>
 
-      <section className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
+      <section
+        className={`grid min-w-0 grid-cols-1 gap-4 ${
+          RENTAL_FEATURE_ENABLED ? "lg:grid-cols-3" : "lg:grid-cols-1"
+        }`}
+      >
+        {RENTAL_FEATURE_ENABLED && (
         <article className="min-w-0 rounded-xl border border-border bg-surface p-4">
           <PanelHeader
             title="Ringkasan Penyewaan"
@@ -688,8 +716,13 @@ export default function DashboardIntegratedPanel({
             </div>
           </div>
         </article>
+        )}
 
-        <article className="min-w-0 overflow-hidden rounded-xl border border-border bg-surface lg:col-span-2">
+        <article
+          className={`min-w-0 overflow-hidden rounded-xl border border-border bg-surface ${
+            RENTAL_FEATURE_ENABLED ? "lg:col-span-2" : ""
+          }`}
+        >
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
             <div className="flex min-w-0 items-center gap-2">
               <ClipboardTextIcon

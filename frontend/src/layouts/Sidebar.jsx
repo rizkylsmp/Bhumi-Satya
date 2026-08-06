@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import { useSessionStore } from "../stores/sessionStore";
 import { canAccessMenu } from "../utils/permissions";
+import { RENTAL_FEATURE_ENABLED } from "../config/featureFlags";
 import {
   ChartBarIcon,
   FolderIcon,
@@ -75,7 +76,7 @@ export default function Sidebar({
       expanded.push("kelola-data");
       expanded.push("data-spasial");
     }
-    if (location.pathname.startsWith("/sewa")) {
+    if (RENTAL_FEATURE_ENABLED && location.pathname.startsWith("/sewa")) {
       if (userRole === "masyarakat") {
         expanded.push("sewa-masyarakat");
       } else {
@@ -128,7 +129,7 @@ export default function Sidebar({
     },
     (canAccessMenu(userRole, "aset") ||
       canAccessMenu(userRole, "kelola3d") ||
-      canAccessMenu(userRole, "sewa-aset")) && {
+      (RENTAL_FEATURE_ENABLED && canAccessMenu(userRole, "sewa-aset"))) && {
       id: "kelola-data",
       icon: FolderIcon,
       label: "Kelola Data",
@@ -176,7 +177,7 @@ export default function Sidebar({
             },
           ].filter(Boolean),
         },
-        canAccessMenu(userRole, "sewa-aset") && {
+        RENTAL_FEATURE_ENABLED && canAccessMenu(userRole, "sewa-aset") && {
           id: "sewa-aset",
           icon: HandshakeIcon,
           label: "Penyewaan",
@@ -195,7 +196,7 @@ export default function Sidebar({
         },
       ].filter(Boolean),
     },
-    canAccessMenu(userRole, "sewa-masyarakat") && {
+    RENTAL_FEATURE_ENABLED && canAccessMenu(userRole, "sewa-masyarakat") && {
       id: "sewa-masyarakat",
       icon: StorefrontIcon,
       label: "Sewa Masyarakat",

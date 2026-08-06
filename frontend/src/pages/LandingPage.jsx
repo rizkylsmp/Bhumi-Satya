@@ -43,6 +43,10 @@ import SewaPolygonMap from "../components/sewa/SewaPolygonMap";
 import ChatbotButton from "../components/chatbot/ChatbotButton";
 import ChatbotModal from "../components/chatbot/ChatbotModal";
 import { normalizeRole } from "../utils/permissions";
+import {
+  PUBLIC_REGISTRATION_ENABLED,
+  RENTAL_FEATURE_ENABLED,
+} from "../config/featureFlags";
 import BrandMark from "../components/shared/BrandMark";
 
 const initialRegisterForm = {
@@ -488,7 +492,8 @@ export default function LandingPage() {
     location.state?.openLoginPanel === true,
   );
   const [authMode, setAuthMode] = useState(
-    new URLSearchParams(location.search).get("mode") === "register"
+    PUBLIC_REGISTRATION_ENABLED &&
+      new URLSearchParams(location.search).get("mode") === "register"
       ? "register"
       : "login",
   );
@@ -523,7 +528,11 @@ export default function LandingPage() {
         location.state?.authMode ||
         new URLSearchParams(location.search).get("mode");
       setShowLoginPanel(true);
-      setAuthMode(requestedMode === "register" ? "register" : "login");
+      setAuthMode(
+        PUBLIC_REGISTRATION_ENABLED && requestedMode === "register"
+          ? "register"
+          : "login",
+      );
     }
   }, [
     location.key,
@@ -543,6 +552,12 @@ export default function LandingPage() {
 
   // Fetch available sewa
   useEffect(() => {
+    if (!RENTAL_FEATURE_ENABLED) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     sewaService
       .getPublicAvailable()
@@ -568,7 +583,7 @@ export default function LandingPage() {
   };
 
   const openAuthPanel = (mode = "login") => {
-    setAuthMode(mode);
+    setAuthMode(PUBLIC_REGISTRATION_ENABLED ? mode : "login");
     setForgotPasswordMode(false);
     setMfaStep(false);
     setLoginError("");
@@ -578,7 +593,12 @@ export default function LandingPage() {
   const handleApply = () => openAuthPanel("login");
 
   const getHomePath = (role) =>
-    normalizeRole(role) === "masyarakat" ? "/sewa/aset-tersedia" : "/dashboard";
+    RENTAL_FEATURE_ENABLED && normalizeRole(role) === "masyarakat"
+      ? "/sewa/aset-tersedia"
+      : "/dashboard";
+
+  const isDisabledMasyarakatAccount = (role) =>
+    !RENTAL_FEATURE_ENABLED && normalizeRole(role) === "masyarakat";
 
   // Login handlers
   const handleLogin = async (e) => {
@@ -612,6 +632,12 @@ export default function LandingPage() {
         setMfaStep(true);
         setOtpCode("");
         setLoginLoading(false);
+        return;
+      }
+      if (isDisabledMasyarakatAccount(response.data.user?.role)) {
+        const message = "Portal masyarakat sedang tidak digunakan.";
+        setLoginError(message);
+        toast.error(message);
         return;
       }
       setToken(response.data.token);
@@ -667,6 +693,12 @@ export default function LandingPage() {
         otpType === "authenticator"
           ? await authService.verifyMfaLogin(mfaToken, otpCode)
           : await authService.verifyLoginOtp(mfaToken, otpCode);
+      if (isDisabledMasyarakatAccount(response.data.user?.role)) {
+        const message = "Portal masyarakat sedang tidak digunakan.";
+        setLoginError(message);
+        toast.error(message);
+        return;
+      }
       setToken(response.data.token);
       setUser(response.data.user);
       startSession(response.data.sessionDuration);
@@ -792,9 +824,9 @@ export default function LandingPage() {
               </span>
             </h2>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-600 dark:text-slate-300 md:text-lg">
-              Bhumi Satya menghadirkan Digital Twin 2D dan 3D untuk memahami
-              kondisi ruang, sekaligus layanan penyewaan untuk menemukan objek
-              tersedia dan mengajukan pemanfaatan secara online.
+              Bhumi Satya menghadirkan Digital Twin dalam mode 2D dan 3D untuk
+              memahami kondisi ruang, lokasi aset, dan informasi pertanahan
+              secara terpadu.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <button
@@ -805,14 +837,16 @@ export default function LandingPage() {
                 <MapTrifoldIcon size={19} weight="fill" />
                 Jelajahi Digital Twin
               </button>
-              <button
-                type="button"
-                onClick={() => scrollTo(sewaRef)}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/70 px-5 py-3 text-sm font-bold text-slate-700 backdrop-blur-sm transition hover:border-emerald-300 hover:bg-white hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-white dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:border-emerald-300/40 dark:hover:bg-white/15 dark:hover:text-emerald-100 dark:focus:ring-emerald-200 dark:focus:ring-offset-emerald-950"
-              >
-                <StorefrontIcon size={19} weight="duotone" />
-                Lihat Penyewaan
-              </button>
+              {RENTAL_FEATURE_ENABLED && (
+                <button
+                  type="button"
+                  onClick={() => scrollTo(sewaRef)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/70 px-5 py-3 text-sm font-bold text-slate-700 backdrop-blur-sm transition hover:border-emerald-300 hover:bg-white hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-white dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:border-emerald-300/40 dark:hover:bg-white/15 dark:hover:text-emerald-100 dark:focus:ring-emerald-200 dark:focus:ring-offset-emerald-950"
+                >
+                  <StorefrontIcon size={19} weight="duotone" />
+                  Lihat Penyewaan
+                </button>
+              )}
             </div>
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-slate-600 dark:text-slate-300">
               <span className="inline-flex items-center gap-2">
@@ -821,7 +855,7 @@ export default function LandingPage() {
                   weight="fill"
                   className="text-sky-600 dark:text-sky-300"
                 />
-                Digital Twin 2D & 3D
+                Digital Twin
               </span>
               <span className="inline-flex items-center gap-2">
                 <ShieldCheckIcon
@@ -831,14 +865,16 @@ export default function LandingPage() {
                 />
                 Data ruang terhubung
               </span>
-              <span className="inline-flex items-center gap-2">
-                <StackIcon
-                  size={15}
-                  weight="fill"
-                  className="text-amber-600 dark:text-amber-300"
-                />
-                Penyewaan dalam satu alur
-              </span>
+              {RENTAL_FEATURE_ENABLED && (
+                <span className="inline-flex items-center gap-2">
+                  <StackIcon
+                    size={15}
+                    weight="fill"
+                    className="text-amber-600 dark:text-amber-300"
+                  />
+                  Penyewaan dalam satu alur
+                </span>
+              )}
             </div>
           </div>
           <aside className="rounded-3xl border border-emerald-100 bg-white/75 p-5 shadow-2xl shadow-emerald-950/10 backdrop-blur-xl dark:border-white/15 dark:bg-white/10 dark:shadow-slate-950/30 sm:p-6">
@@ -848,11 +884,11 @@ export default function LandingPage() {
                   Satu Platform Terintegrasi
                 </p>
                 <h3 className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
-                  Digital Twin & layanan penyewaan
+                  Digital Twin pertanahan terpadu
                 </h3>
                 <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                  Pahami kondisi ruang secara visual, lalu lanjutkan ke layanan
-                  penyewaan melalui alur yang saling terhubung.
+                  Pahami kondisi ruang, bidang tanah, dan bangunan secara visual
+                  melalui data 2D dan 3D yang saling terhubung.
                 </p>
               </div>
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-300/15 dark:text-emerald-200">
@@ -873,7 +909,9 @@ export default function LandingPage() {
                   description: "Objek dalam peta",
                   icon: BuildingsIcon,
                 },
-                {
+                ...(RENTAL_FEATURE_ENABLED
+                  ? [
+                      {
                   label: "Pilihan sewa",
                   value: items.length || "—",
                   description: "Objek ditawarkan",
@@ -884,7 +922,9 @@ export default function LandingPage() {
                   value: "Online",
                   description: "Alur masyarakat",
                   icon: PaperPlaneTiltIcon,
-                },
+                      },
+                    ]
+                  : []),
               ].map((stat) => (
                 <div
                   key={stat.label}
@@ -907,7 +947,11 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-3">
+            <div
+              className={`mt-4 grid gap-3 ${
+                RENTAL_FEATURE_ENABLED ? "grid-cols-2" : "grid-cols-1"
+              }`}
+            >
               <button
                 type="button"
                 onClick={() => navigate("/peta-publik")}
@@ -916,6 +960,7 @@ export default function LandingPage() {
                 Digital Twin
                 <ArrowRightIcon size={16} weight="bold" />
               </button>
+              {RENTAL_FEATURE_ENABLED && (
               <button
                 type="button"
                 onClick={() => scrollTo(sewaRef)}
@@ -924,6 +969,7 @@ export default function LandingPage() {
                 Penyewaan
                 <ArrowRightIcon size={16} weight="bold" />
               </button>
+              )}
             </div>
           </aside>
         </div>
@@ -944,7 +990,7 @@ export default function LandingPage() {
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-bold text-text-primary">
-              Digital Twin 2D
+              Digital Twin
             </h3>
             <p className="text-sm text-text-muted">
               Eksplorasi data ruang dalam konteks lokasi yang saling terhubung
@@ -1092,7 +1138,8 @@ export default function LandingPage() {
       </section>
 
       {/* ==================== SEWA ASET SECTION ==================== */}
-      <section
+      {RENTAL_FEATURE_ENABLED && (
+        <section
         ref={sewaRef}
         className="bg-surface border-t border-b border-border"
       >
@@ -1166,10 +1213,12 @@ export default function LandingPage() {
             </div>
           )}
         </div>
-      </section>
+        </section>
+      )}
 
       {/* ==================== REQUEST CTA ==================== */}
-      <section
+      {RENTAL_FEATURE_ENABLED && (
+        <section
         ref={kontakRef}
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14"
       >
@@ -1332,7 +1381,8 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+        </section>
+      )}
 
       {/* ==================== LOGIN SIDE PANEL ==================== */}
       <div
@@ -1388,15 +1438,17 @@ export default function LandingPage() {
                 Bhumi Satya
               </h2>
               <p className="text-text-muted text-sm mt-1.5">
-                {authMode === "register"
+                {PUBLIC_REGISTRATION_ENABLED && authMode === "register"
                   ? "Buat akun masyarakat untuk menggunakan layanan penyewaan"
-                  : "Masuk ke akun Anda untuk melanjutkan"}
+                  : "Masuk ke sistem Bhumi Satya"}
               </p>
             </div>
 
             {/* Form */}
             <div className="px-6 md:px-8 pb-6">
-              {!mfaStep && !forgotPasswordMode && (
+              {PUBLIC_REGISTRATION_ENABLED &&
+                !mfaStep &&
+                !forgotPasswordMode && (
                 <div className="mb-5 grid grid-cols-2 rounded-xl border border-border bg-surface-secondary p-1">
                   {[
                     { key: "login", label: "Masuk" },
@@ -1673,7 +1725,7 @@ export default function LandingPage() {
                     Kembali ke Login
                   </button>
                 </form>
-              ) : authMode === "register" ? (
+              ) : PUBLIC_REGISTRATION_ENABLED && authMode === "register" ? (
                 <form onSubmit={handleRegister} className="space-y-5">
                   <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
                     <p className="text-sm font-bold text-text-primary">
@@ -1897,7 +1949,7 @@ export default function LandingPage() {
       </div>
 
       {/* ==================== DETAIL MODAL ==================== */}
-      {selectedItem && (
+      {RENTAL_FEATURE_ENABLED && selectedItem && (
         <AssetDetailModal
           item={selectedItem}
           onClose={() => setSelectedItem(null)}
