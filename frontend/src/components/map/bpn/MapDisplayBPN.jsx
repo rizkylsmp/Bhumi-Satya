@@ -581,6 +581,11 @@ const MapDisplayBPN = ({
           : [null];
 
       return activeModels.map((model, modelIndex) => {
+        const modelCatalog = Array.isArray(asset?.catalogs3d)
+          ? asset.catalogs3d.find(
+              (catalog) => String(catalog?.kode_3d || "") === String(model?.kode_3d || ""),
+            )
+          : null;
         const rawLatitude = parseCoordinateValue(model?.location_lat)
           ?? parseCoordinateValue(
             asset?.koordinat_lat ?? asset?.latitude ?? asset?.lat,
@@ -601,6 +606,16 @@ const MapDisplayBPN = ({
             : `asset-${assetId}-${modelIndex}`,
           assetId,
           modelId,
+          area2dCode:
+            model?.kode_2d
+            || modelCatalog?.kode_2d
+            || asset?.kode_2d
+            || null,
+          area2dLocation:
+            asset?.lokasi
+            || asset?.desa_kelurahan
+            || asset?.kecamatan
+            || "Lokasi bidang belum dilengkapi",
           name:
             model?.building_name
             || asset?.building_name_3d

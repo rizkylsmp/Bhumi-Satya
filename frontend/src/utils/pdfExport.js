@@ -56,9 +56,14 @@ function makeFilename(prefix, value) {
   return `${prefix}-${key || "dokumen"}.pdf`;
 }
 
-function wrapText(text, fontSize, maxWidth = PAGE_WIDTH - MARGIN_X * 2) {
+function wrapText(
+  text,
+  fontSize,
+  maxWidth = PAGE_WIDTH - MARGIN_X * 2,
+  minChars = 24,
+) {
   const clean = sanitizeText(text);
-  const maxChars = Math.max(24, Math.floor(maxWidth / (fontSize * 0.52)));
+  const maxChars = Math.max(minChars, Math.floor(maxWidth / (fontSize * 0.52)));
   const words = clean.split(" ");
   const lines = [];
   let current = "";
@@ -514,7 +519,7 @@ export function buildPdf({ title, subtitle, sections, media = [], brandLogo = nu
     for (let index = 0; index < section.rows.length; index += 2) {
       const pairs = [section.rows[index], section.rows[index + 1]].filter(Boolean);
       const prepared = pairs.map(([label, value]) => ({
-        labelLines: wrapText(label, 8, TABLE_LABEL_WIDTH - 10),
+        labelLines: wrapText(label, 8, TABLE_LABEL_WIDTH - 10, 1),
         valueLines: wrapText(
           value,
           8,
@@ -767,73 +772,186 @@ export function getPdfBuildingIdentity(asset) {
   };
 }
 
-export async function downloadAssetPdf(asset) {
-  const identity = getPdfBuildingIdentity(asset);
-  const title = "Laporan Data Bangunan";
-  const subtitle = identity.name || identity.code || asset?.nibar || "Data Bangunan";
-  const coordinates = getAssetCoordinates(asset);
+const humanizeValue = (value) => {
+  if (!value) return null;
+  return String(value)
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+
+export function buildBuildingPdfDocument(catalog) {
+  const asset = catalog?.asset || catalog?.aset || {};
+  const activeModel = catalog?.active_model || catalog?.activeModel || {};
+  const buildingCode = catalog?.kode_3d || "-";
+  const buildingName = catalog?.building_name || buildingCode;
+  const latitude = catalog?.center_y ?? activeModel?.location_lat ?? asset?.koordinat_lat;
+  const longitude = catalog?.center_x ?? activeModel?.location_long ?? asset?.koordinat_long;
+
+  return {
+    title: "Laporan Data Bangunan",
+    subtitle: `${buildingName} - ${buildingCode}`,
+    coordinates: { latitude, longitude },
+    photoUrl: firstPhoto(asset?.foto_aset),
+    filenameKey: buildingCode,
+    sections: [
+      {
+        heading: "Identitas Bangunan",
+        rows: buildRows([
+          ["ID Primary Key", asset?.id_aset ?? asset?.id],
+          ["Kode Bangunan", buildingCode],
+          ["Nama Bangunan", buildingName],
+          ["Kode Bidang 2D", catalog?.kode_2d],
+          ["Kode Tanah", asset?.kode_aset],
+          ["Nama Tanah", asset?.nama_aset],
+          ["Status Katalog", humanizeValue(catalog?.status)],
+        ]),
+      },
+      {
+        heading: "Informasi Model 3D",
+        rows: buildRows([
+          ["Status Model", humanizeValue(catalog?.model_status)],
+          ["Jumlah Versi", catalog?.model_count],
+          ["LOD Aktif", activeModel?.lod],
+          ["Versi Aktif", activeModel?.version],
+          ["Format", catalog?.model_format || activeModel?.format || activeModel?.model_type],
+          ["Nama File", activeModel?.original_name],
+          ["Diperbarui", formatDate(catalog?.model_updated_at || catalog?.updated_at)],
+        ]),
+      },
+      {
+        heading: "Dimensi dan Posisi",
+        rows: buildRows([
+          ["Tinggi Bangunan", formatNumber(asset?.building_height_m, " m")],
+          ["Jumlah Lantai", asset?.building_floors],
+          ["Elevasi Dasar", formatNumber(asset?.building_base_elevation_m, " m")],
+          ["Latitude", latitude],
+          ["Longitude", longitude],
+          ["CRS Model", asset?.model_3d_source_crs],
+        ]),
+      },
+      {
+        heading: "Lokasi Tanah",
+        rows: buildRows([
+          ["Lokasi", asset?.lokasi],
+          ["Kecamatan", asset?.kecamatan],
+          ["Desa/Kelurahan", asset?.desa_kelurahan],
+          ["OPD Pengguna", asset?.opd_pengguna],
+          ["Luas Tanah", formatNumber(asset?.luas, " m2")],
+          ["Penggunaan", asset?.penggunaan_saat_ini],
+        ]),
+      },
+    ],
+  };
+}
+
+export async function downloadBuildingPdf(catalog) {
+  const document = buildBuildingPdfDocument(catalog);
   const [media, brandLogo] = await Promise.all([
     prepareDocumentMedia({
-      photoUrl: firstPhoto(asset?.foto_aset),
-      ...coordinates,
+      photoUrl: document.photoUrl,
+      ...document.coordinates,
     }),
     createBrandLogo().catch(() => null),
   ]);
-  const sections = [
-    {
-      heading: "Identitas Bangunan",
-      rows: buildRows([
-        ["ID Primary Key", identity.id],
-        ["Kode Bangunan", identity.code],
-        ["Nama Bangunan", identity.name],
-        ["Jenis Aset", asset?.jenis_aset],
-        ["Sumber Data", asset?.sumber],
-        ["Status", asset?.status],
-        ["Tahun Perolehan", asset?.tahun_perolehan],
-      ]),
-    },
-    {
-      heading: "Legalitas dan Sertifikat",
-      rows: buildRows([
-        ["Status Sertifikat", asset?.status_sertifikat],
-        ["Nomor Sertifikat", asset?.nomor_sertifikat],
-        ["Jenis Hak", asset?.jenis_hak],
-        ["NIB", asset?.nib],
-        ["NIBAR", asset?.nibar],
-        ["KW", asset?.kw],
-        ["Atas Nama", asset?.atas_nama],
-        ["Status Hukum", asset?.status_hukum],
-      ]),
-    },
-    {
-      heading: "Lokasi dan Fisik",
-      rows: buildRows([
-        ["Lokasi", asset?.lokasi],
-        ["Kecamatan", asset?.kecamatan],
-        ["Desa/Kelurahan", asset?.desa_kelurahan],
-        ["Penggunaan Saat Ini", asset?.penggunaan_saat_ini],
-        ["Luas", formatNumber(asset?.luas, " m2")],
-        ["Luas Lapangan", formatNumber(asset?.luas_lapangan, " m2")],
-        ["Koordinat", asset?.koordinat_lat && asset?.koordinat_long ? `${asset.koordinat_lat}, ${asset.koordinat_long}` : "-"],
-      ]),
-    },
-    {
-      heading: "Nilai dan Pemanfaatan",
-      rows: buildRows([
-        ["Nilai Aset", formatCurrency(asset?.nilai_aset)],
-        ["Harga Perolehan", formatCurrency(asset?.harga_perolehan)],
-        ["OPD Pengguna", asset?.opd_pengguna],
-        ["Status Sewa", asset?.status_sewa],
-        ["Penyewa Aktif", asset?.penyewa_aktif],
-        ["Sewa Berakhir", formatDate(asset?.sewa_berakhir)],
-        ["Keterangan", asset?.keterangan],
-      ]),
-    },
-  ];
 
   triggerPdfDownload(
-    makeFilename("bangunan", identity.code || asset?.nibar || subtitle),
-    buildPdf({ title, subtitle, sections, media, brandLogo }),
+    makeFilename("bangunan", document.filenameKey),
+    buildPdf({
+      title: document.title,
+      subtitle: document.subtitle,
+      sections: document.sections,
+      media,
+      brandLogo,
+    }),
+  );
+}
+
+export function buildLandPdfDocument(asset) {
+  const identity = {
+    id: asset?.id_aset ?? asset?.id ?? asset?.id_asset ?? null,
+    code: asset?.kode_tanah || asset?.kode_aset || null,
+    name: asset?.nama_tanah || asset?.nama_aset || null,
+  };
+
+  return {
+    title: "Laporan Data Tanah",
+    subtitle: identity.name || identity.code || asset?.nibar || "Data Tanah",
+    coordinates: getAssetCoordinates(asset),
+    photoUrl: firstPhoto(asset?.foto_aset),
+    filenameKey: identity.code || asset?.nibar,
+    sections: [
+      {
+        heading: "Identitas Tanah",
+        rows: buildRows([
+          ["ID Primary Key", identity.id],
+          ["Kode Tanah", identity.code],
+          ["Nama Tanah", identity.name],
+          ["Jenis Aset", asset?.jenis_aset],
+          ["Sumber Data", asset?.sumber],
+          ["Status", asset?.status],
+          ["Tahun Perolehan", asset?.tahun_perolehan],
+        ]),
+      },
+      {
+        heading: "Legalitas dan Sertifikat",
+        rows: buildRows([
+          ["Status Sertifikat", asset?.status_sertifikat],
+          ["Nomor Sertifikat", asset?.nomor_sertifikat],
+          ["Jenis Hak", asset?.jenis_hak],
+          ["NIB", asset?.nib],
+          ["NIBAR", asset?.nibar],
+          ["KW", asset?.kw],
+          ["Atas Nama", asset?.atas_nama],
+          ["Status Hukum", asset?.status_hukum],
+        ]),
+      },
+      {
+        heading: "Lokasi dan Fisik",
+        rows: buildRows([
+          ["Lokasi", asset?.lokasi],
+          ["Kecamatan", asset?.kecamatan],
+          ["Desa/Kelurahan", asset?.desa_kelurahan],
+          ["Penggunaan Saat Ini", asset?.penggunaan_saat_ini],
+          ["Luas", formatNumber(asset?.luas, " m2")],
+          ["Luas Lapangan", formatNumber(asset?.luas_lapangan, " m2")],
+          ["Koordinat", asset?.koordinat_lat && asset?.koordinat_long ? `${asset.koordinat_lat}, ${asset.koordinat_long}` : "-"],
+        ]),
+      },
+      {
+        heading: "Nilai dan Pemanfaatan",
+        rows: buildRows([
+          ["Nilai Aset", formatCurrency(asset?.nilai_aset)],
+          ["Harga Perolehan", formatCurrency(asset?.harga_perolehan)],
+          ["OPD Pengguna", asset?.opd_pengguna],
+          ["Status Sewa", asset?.status_sewa],
+          ["Penyewa Aktif", asset?.penyewa_aktif],
+          ["Sewa Berakhir", formatDate(asset?.sewa_berakhir)],
+          ["Keterangan", asset?.keterangan],
+        ]),
+      },
+    ],
+  };
+}
+
+export async function downloadAssetPdf(asset) {
+  const document = buildLandPdfDocument(asset);
+  const [media, brandLogo] = await Promise.all([
+    prepareDocumentMedia({
+      photoUrl: document.photoUrl,
+      ...document.coordinates,
+    }),
+    createBrandLogo().catch(() => null),
+  ]);
+
+  triggerPdfDownload(
+    makeFilename("tanah", document.filenameKey || document.subtitle),
+    buildPdf({
+      title: document.title,
+      subtitle: document.subtitle,
+      sections: document.sections,
+      media,
+      brandLogo,
+    }),
   );
 }
 

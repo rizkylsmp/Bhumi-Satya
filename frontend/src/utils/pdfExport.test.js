@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildPdf, getPdfBuildingIdentity } from "./pdfExport";
+import {
+  buildBuildingPdfDocument,
+  buildLandPdfDocument,
+  buildPdf,
+  getPdfBuildingIdentity,
+} from "./pdfExport";
 
 describe("PDF export template", () => {
   it("builds a valid A4 PDF with the Bhumi Satya data-sheet sections", () => {
@@ -84,5 +89,55 @@ describe("PDF export template", () => {
 
     expect(pdf).toContain("/BrandLogo");
     expect(pdf).not.toContain("(BS)");
+  });
+
+  it("builds a building catalog document from 3D and linked land data", () => {
+    const document = buildBuildingPdfDocument({
+      kode_3d: "3D-000007",
+      kode_2d: "2D-000004",
+      building_name: "Gedung Pelayanan",
+      status: "active",
+      model_status: "needs_review",
+      model_count: 2,
+      center_x: 112.907,
+      center_y: -7.645,
+      active_model: {
+        lod: "LOD2",
+        version: 3,
+        format: "GLB",
+        original_name: "gedung.glb",
+      },
+      asset: {
+        id_aset: 17,
+        kode_aset: "TNH-001",
+        nama_aset: "Kompleks Pelayanan",
+        lokasi: "Kota Pasuruan",
+        building_height_m: 12,
+      },
+    });
+
+    expect(document.subtitle).toBe("Gedung Pelayanan - 3D-000007");
+    expect(document.coordinates).toEqual({ latitude: -7.645, longitude: 112.907 });
+    expect(document.sections[0].rows).toContainEqual(["ID Primary Key", 17]);
+    expect(document.sections[0].rows).toContainEqual(["Kode Bangunan", "3D-000007"]);
+    expect(document.sections[1].rows).toContainEqual(["Status Model", "Needs Review"]);
+  });
+
+  it("uses land identity labels for the Pusat Data Tanah PDF", () => {
+    const document = buildLandPdfDocument({
+      id_aset: 21,
+      kode_aset: "TNH-000021",
+      nama_aset: "Tanah Kompleks Pelayanan",
+      koordinat_lat: -7.645,
+      koordinat_long: 112.907,
+    });
+
+    expect(document.title).toBe("Laporan Data Tanah");
+    expect(document.subtitle).toBe("Tanah Kompleks Pelayanan");
+    expect(document.filenameKey).toBe("TNH-000021");
+    expect(document.sections[0].heading).toBe("Identitas Tanah");
+    expect(document.sections[0].rows).toContainEqual(["Kode Tanah", "TNH-000021"]);
+    expect(document.sections[0].rows).toContainEqual(["Nama Tanah", "Tanah Kompleks Pelayanan"]);
+    expect(document.sections[0].rows).not.toContainEqual(["Kode Bangunan", "TNH-000021"]);
   });
 });

@@ -543,7 +543,7 @@ export default function Kelola3dDetailPage() {
       setCatalog(nextCatalog);
       setBuildingName(nextCatalog?.building_name || "");
     } catch (error) {
-      toast.error(errorMessage(error, "Gagal memuat detail aset Kelola 3D"));
+      toast.error(errorMessage(error, "Gagal memuat detail bangunan 3D"));
       setCatalog(null);
     } finally {
       setCatalogLoading(false);
@@ -1117,7 +1117,7 @@ export default function Kelola3dDetailPage() {
             onClick={() => navigate("/kelola-3d")}
             className="transition hover:text-accent"
           >
-            Kelola 3D
+            Pusat Data Bangunan
           </button>
           <CaretRightIcon size={12} />
           <span className="text-text-primary">Detail</span>
@@ -1130,7 +1130,7 @@ export default function Kelola3dDetailPage() {
                 type="button"
                 onClick={() => navigate("/kelola-3d")}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-secondary text-text-secondary transition hover:border-accent hover:text-accent focus-visible:ring-2 focus-visible:ring-accent"
-                aria-label="Kembali ke daftar Kelola 3D"
+                aria-label="Kembali ke Pusat Data Bangunan"
               >
                 <ArrowLeftIcon size={16} weight="bold" />
               </button>
@@ -1139,7 +1139,7 @@ export default function Kelola3dDetailPage() {
               </span>
               <div className="min-w-0">
                 <p className="text-[9px] font-black uppercase tracking-[0.14em] text-accent">
-                  Detail Kelola 3D
+                  Detail Bangunan 3D
                 </p>
                 <h1 className="mt-0.5 truncate text-lg font-black text-text-primary md:text-xl">
                   {catalogLoading
@@ -1484,7 +1484,7 @@ export default function Kelola3dDetailPage() {
           <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(32rem,0.95fr)]">
             <div className="space-y-4">
               <nav
-                aria-label="Navigasi Detail Kelola 3D"
+                aria-label="Navigasi detail bangunan 3D"
                 className="sticky top-0 z-20 overflow-x-auto rounded-xl border border-border bg-surface/95 p-2 shadow-sm backdrop-blur"
               >
                 <div

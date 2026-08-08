@@ -14,6 +14,7 @@ import {
   TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
+import { groupLocationsByArea2d } from "../../../utils/model3dCatalogGroups";
 import ShadowAnalysisPanel from "./ShadowAnalysisPanel";
 
 const TABS = [
@@ -185,6 +186,7 @@ export default function Model3dControlPanel({
 }) {
   const [activeTab, setActiveTab] = useState("data3d");
   const [selectedLod, setSelectedLod] = useState(null);
+  const [expandedArea2d, setExpandedArea2d] = useState(undefined);
   const allIds = locations.map((location) => String(location.id));
   const selectedIds = visibleLocationIds === null
     ? allIds
@@ -198,6 +200,12 @@ export default function Model3dControlPanel({
   const effectiveSelectedLod = selectedLod
     || LOD_OPTIONS.find((option) => locationsByLod[option.id].length > 0)?.id
     || "lod3";
+  const activeLodGroups = groupLocationsByArea2d(
+    locationsByLod[effectiveSelectedLod],
+  );
+  const effectiveExpandedArea2d = expandedArea2d === undefined
+    ? activeLodGroups[0]?.key
+    : expandedArea2d;
 
   const updateSelection = (nextIds) => {
     const normalizedIds = Array.from(new Set(nextIds.map(String)));
@@ -208,6 +216,7 @@ export default function Model3dControlPanel({
     const matchingIds = locationsByLod[lodId].map((location) => String(location.id));
     if (!matchingIds.length) return;
     setSelectedLod(lodId);
+    setExpandedArea2d(undefined);
     updateSelection(matchingIds);
   };
 
@@ -344,43 +353,82 @@ export default function Model3dControlPanel({
                 </p>
               </div>
             ) : (
-              <div className="max-h-52 space-y-1 overflow-y-auto pr-0.5">
-                {locationsByLod[effectiveSelectedLod].map((location) => {
-                  const isVisible = selectedIds.includes(String(location.id));
+              <div className="max-h-60 space-y-1 overflow-y-auto pr-0.5">
+                {activeLodGroups.map((group) => {
+                  const isExpanded = effectiveExpandedArea2d === group.key;
+                  const visibleCount = group.items.filter((location) =>
+                    selectedIds.includes(String(location.id))).length;
+
                   return (
-                    <article
-                      key={location.id}
-                      className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2 py-1.5"
-                    >
-                      <span
-                        className={`h-2 w-2 shrink-0 rounded-full ${
-                          isVisible ? "bg-emerald-500" : "bg-text-muted"
-                        }`}
-                        title={isVisible ? "Ditampilkan" : "Disembunyikan"}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className="truncate text-[9px] font-extrabold text-text-primary"
-                          title={location.name}
-                        >
-                          {location.name}
-                        </p>
-                        <p className="flex items-center gap-1 truncate text-[7px] text-text-muted">
-                          <MapPinIcon size={8} weight="fill" />
-                          {location.location}
-                        </p>
-                      </div>
+                    <div key={group.key} className="overflow-hidden rounded-lg border border-border bg-surface">
                       <button
                         type="button"
-                        onClick={() => onFocusModels?.(location)}
-                        className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-accent/30 bg-accent/10 px-1.5 text-[7px] font-extrabold text-accent transition-colors hover:border-accent hover:bg-accent hover:text-surface focus-visible:ring-2 focus-visible:ring-accent"
-                        aria-label={`Fly To ${location.name}`}
-                        title={`Fly To ${location.name}`}
+                        onClick={() => setExpandedArea2d(isExpanded ? null : group.key)}
+                        aria-expanded={isExpanded}
+                        aria-controls={`area-2d-${group.key}`}
+                        className="flex min-h-10 w-full items-center gap-2 px-2 py-1.5 text-left transition-colors hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
                       >
-                        <CrosshairIcon size={10} weight="bold" />
-                        Fly
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
+                          <MapTrifoldIcon size={14} weight="duotone" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-mono text-[9px] font-black text-text-primary" title={group.code}>
+                            {group.code}
+                          </span>
+                          <span className="block truncate text-[7px] text-text-muted" title={group.location}>
+                            {group.location}
+                          </span>
+                        </span>
+                        <span className="shrink-0 rounded-full bg-surface-secondary px-1.5 py-0.5 text-[7px] font-black text-text-secondary">
+                          {visibleCount}/{group.items.length}
+                        </span>
+                        <CaretDownIcon
+                          size={11}
+                          weight="bold"
+                          className={`shrink-0 text-text-muted transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                        />
                       </button>
-                    </article>
+
+                      {isExpanded && (
+                        <div id={`area-2d-${group.key}`} className="space-y-1 border-t border-border bg-surface-secondary/45 p-1.5">
+                          {group.items.map((location) => {
+                            const isVisible = selectedIds.includes(String(location.id));
+                            return (
+                              <article
+                                key={location.id}
+                                className="flex items-center gap-2 rounded-md border border-border bg-surface px-2 py-1.5"
+                              >
+                                <span
+                                  className={`h-2 w-2 shrink-0 rounded-full ${
+                                    isVisible ? "bg-emerald-500" : "bg-text-muted"
+                                  }`}
+                                  title={isVisible ? "Ditampilkan" : "Disembunyikan"}
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-[9px] font-extrabold text-text-primary" title={location.name}>
+                                    {location.name}
+                                  </p>
+                                  <p className="flex items-center gap-1 truncate text-[7px] text-text-muted">
+                                    <MapPinIcon size={8} weight="fill" />
+                                    {location.location}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => onFocusModels?.(location)}
+                                  className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-accent/30 bg-accent/10 px-1.5 text-[7px] font-extrabold text-accent transition-colors hover:border-accent hover:bg-accent hover:text-surface focus-visible:ring-2 focus-visible:ring-accent"
+                                  aria-label={`Fly To ${location.name}`}
+                                  title={`Fly To ${location.name}`}
+                                >
+                                  <CrosshairIcon size={10} weight="bold" />
+                                  Fly
+                                </button>
+                              </article>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>

@@ -21,13 +21,18 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { useConfirm } from "../components/ui/confirmContext";
-import { aset3dCatalogService, assetModel3dService } from "../services/api";
+import {
+  aset3dCatalogService,
+  asetService,
+  assetModel3dService,
+} from "../services/api";
 import { useAuthStore } from "../stores/authStore";
 import { hasPermission } from "../utils/permissions";
 import Pagination from "../components/asset/Pagination";
 import SortableTableHeader from "../components/shared/SortableTableHeader";
 import useColumnResize from "../hooks/useColumnResize";
 import useTableSort from "../hooks/useTableSort";
+import { downloadBuildingPdf } from "../utils/pdfExport";
 
 const errorMessage = (error, fallback) =>
   error?.response?.data?.error || error?.response?.data?.message || fallback;
@@ -67,13 +72,14 @@ const sortOptions = [
   { value: "center_x:ASC", label: "Center X terkecil" },
   { value: "center_y:ASC", label: "Center Y terkecil" },
   { value: "kode_3d:ASC", label: "Kode 3D A–Z" },
-  { value: "kode_aset:ASC", label: "Kode bangunan A–Z" },
+  { value: "kode_2d:ASC", label: "Kode bidang 2D A–Z" },
   { value: "building_name:ASC", label: "Nama bangunan A–Z" },
 ];
 const DEFAULT_SORT = "created_at:DESC";
 const BATCH_LOD_OPTIONS = ["LOD1", "LOD2", "LOD2.5", "LOD3", "LOD4"];
 const CATALOG_COLUMN_WIDTHS = {
-  kode_3d: 190,
+  kode_2d: 160,
+  kode_3d: 180,
   nama: 250,
   lokasi: 240,
   data_bangunan: 230,
@@ -81,7 +87,7 @@ const CATALOG_COLUMN_WIDTHS = {
   center: 170,
   model_url: 180,
   updated_at: 190,
-  actions: 144,
+  actions: 184,
 };
 
 const getCatalogSortValue = (item, key) => {
@@ -435,7 +441,7 @@ function AddAssetDialog({ open, onClose, onAdded }) {
       await fetchCandidates();
       onAdded();
     } catch (error) {
-      toast.error(errorMessage(error, "Gagal menambahkan aset ke Kelola 3D"));
+      toast.error(errorMessage(error, "Gagal menambahkan bangunan ke Pusat Data Bangunan"));
     } finally {
       setAddingId(null);
     }
@@ -542,6 +548,7 @@ export default function Kelola3dPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [deletingCode, setDeletingCode] = useState(null);
+  const [downloadingPdfCode, setDownloadingPdfCode] = useState(null);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -568,7 +575,7 @@ export default function Kelola3dPage() {
       setItems(response.data?.data || []);
       setPagination(response.data?.pagination || null);
     } catch (error) {
-      toast.error(errorMessage(error, "Gagal memuat daftar Kelola 3D"));
+      toast.error(errorMessage(error, "Gagal memuat Pusat Data Bangunan"));
       setItems([]);
     } finally {
       setLoading(false);
@@ -627,6 +634,31 @@ export default function Kelola3dPage() {
     }
   };
 
+  const handleDownloadPdf = async (item) => {
+    const toastId = toast.loading("Menyiapkan PDF bangunan...");
+    setDownloadingPdfCode(item.kode_3d);
+    try {
+      let asset = item.asset || {};
+      const assetId = asset.id_aset || asset.id;
+      if (assetId) {
+        try {
+          const response = await asetService.getById(assetId);
+          asset = { ...asset, ...(response.data?.data || {}) };
+        } catch {
+          // Data katalog tetap cukup untuk membuat PDF tanpa media tambahan.
+        }
+      }
+      await downloadBuildingPdf({ ...item, asset });
+      toast.success("PDF bangunan mulai diunduh", { id: toastId });
+    } catch (error) {
+      toast.error(errorMessage(error, "Gagal membuat PDF bangunan"), {
+        id: toastId,
+      });
+    } finally {
+      setDownloadingPdfCode(null);
+    }
+  };
+
   const activeFilterCount = [
     modelStatus,
     format,
@@ -652,7 +684,7 @@ export default function Kelola3dPage() {
               <CubeIcon size={21} weight="duotone" />
             </span>
             <div className="min-w-0">
-              <h1 className="admin-page-header__title">Kelola 3D</h1>
+              <h1 className="admin-page-header__title">Pusat Data Bangunan</h1>
             </div>
           </div>
           <div className="admin-page-header__actions">
@@ -756,11 +788,12 @@ export default function Kelola3dPage() {
           )}
 
           <div className="overflow-x-auto">
-            <table className="admin-data-table min-w-[1754px] table-fixed">
+            <table className="admin-data-table min-w-[1904px] table-fixed">
               <thead>
                 <tr className="border-b border-border bg-linear-to-r from-surface-secondary to-surface">
                   {[
-                    ["kode_3d", "Bidang 2D / Bangunan 3D"],
+                    ["kode_2d", "Kode Bidang 2D"],
+                    ["kode_3d", "Kode Bangunan 3D"],
                     ["nama", "Nama / Kategori"],
                     ["lokasi", "Lokasi"],
                     ["data_bangunan", "Data Bangunan"],
@@ -797,11 +830,12 @@ export default function Kelola3dPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {loading ? [1, 2, 3, 4, 5].map((item) => <tr key={item}><td colSpan="9" className="px-4 py-3"><div className="h-14 animate-pulse rounded-lg bg-surface-secondary" /></td></tr>) : items.length === 0 ? (
-                  <tr><td colSpan="9" className="px-6 py-14 text-center"><CubeIcon size={32} className="mx-auto text-text-muted" /><p className="mt-3 text-xs font-black text-text-primary">Belum ada bangunan di Kelola 3D</p><p className="mt-1 text-[10px] text-text-muted">Pilih bidang 2D lalu tambahkan bangunan 3D pertama.</p></td></tr>
+                {loading ? [1, 2, 3, 4, 5].map((item) => <tr key={item}><td colSpan="10" className="px-4 py-3"><div className="h-14 animate-pulse rounded-lg bg-surface-secondary" /></td></tr>) : items.length === 0 ? (
+                  <tr><td colSpan="10" className="px-6 py-14 text-center"><CubeIcon size={32} className="mx-auto text-text-muted" /><p className="mt-3 text-xs font-black text-text-primary">Belum ada data bangunan</p><p className="mt-1 text-[10px] text-text-muted">Pilih bidang 2D lalu tambahkan bangunan 3D pertama.</p></td></tr>
                 ) : sortedItems.map((item) => (
                   <tr key={item.kode_3d} className="group transition hover:bg-accent/[0.025]">
-                    <td className="px-4 py-3"><p className="font-mono text-[9px] font-bold text-text-muted">{item.kode_2d || "Kode 2D —"}</p><span className="mt-1 inline-flex rounded-lg bg-violet-50 px-2.5 py-1.5 font-mono text-[10px] font-black text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">{item.kode_3d}</span></td>
+                    <td className="px-4 py-3"><span className="inline-flex rounded-lg bg-sky-50 px-2.5 py-1.5 font-mono text-[10px] font-black text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">{item.kode_2d || "—"}</span></td>
+                    <td className="px-4 py-3"><span className="inline-flex rounded-lg bg-violet-50 px-2.5 py-1.5 font-mono text-[10px] font-black text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">{item.kode_3d || "—"}</span></td>
                     <td className="px-4 py-3"><p className="max-w-64 truncate text-[10px] font-bold text-text-primary">{item.building_name || "Nama bangunan belum diisi"}</p><p className="mt-1 text-[8px] font-bold uppercase text-text-muted">ID {item.asset?.id_aset ?? "-"} · {item.asset?.kode_aset || "—"} · {item.category || "Bangunan"} · {item.model_format || "Tanpa model"}</p></td>
                     <td className="px-4 py-3"><p className="flex max-w-64 items-center gap-1 truncate text-[9px] text-text-secondary"><MapPinIcon size={10} /> {item.asset?.lokasi || item.asset?.desa_kelurahan || "—"}</p><p className="mt-1 max-w-64 truncate text-[8px] text-text-muted">{item.asset?.opd_pengguna || "OPD belum diisi"}</p></td>
                     <td className="px-4 py-3">
@@ -876,7 +910,7 @@ export default function Kelola3dPage() {
                         Diperbarui {formatDate(item.model_updated_at || item.updated_at)}
                       </p>
                     </td>
-                    <td className="sticky right-0 z-10 w-36 min-w-36 border-l border-border bg-surface px-4 py-3 group-hover:bg-surface-secondary"><div className="flex justify-end gap-1.5"><button type="button" onClick={() => navigate(`/kelola-3d/${encodeURIComponent(item.kode_3d)}`)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent"><span>Kelola</span><ArrowRightIcon size={12} weight="bold" /></button>{canUpdate && <button type="button" disabled={deletingCode === item.kode_3d} onClick={() => removeItem(item)} className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted transition hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-red-500/10" aria-label={`Hapus aset 3D ${item.kode_3d}`} title="Hapus aset 3D">{deletingCode === item.kode_3d ? <ArrowsClockwiseIcon size={14} className="animate-spin" /> : <TrashIcon size={14} weight="bold" />}</button>}</div></td>
+                    <td className="sticky right-0 z-10 w-46 min-w-46 border-l border-border bg-surface px-4 py-3 group-hover:bg-surface-secondary"><div className="flex justify-end gap-1.5"><button type="button" onClick={() => navigate(`/kelola-3d/${encodeURIComponent(item.kode_3d)}`)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent"><span>Kelola</span><ArrowRightIcon size={12} weight="bold" /></button><button type="button" disabled={downloadingPdfCode === item.kode_3d} onClick={() => handleDownloadPdf(item)} className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-muted transition hover:border-accent hover:text-accent focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-wait disabled:opacity-50" aria-label={`Download PDF ${item.kode_3d}`} title="Download PDF">{downloadingPdfCode === item.kode_3d ? <ArrowsClockwiseIcon size={14} className="animate-spin" /> : <DownloadSimpleIcon size={14} weight="bold" />}</button>{canUpdate && <button type="button" disabled={deletingCode === item.kode_3d} onClick={() => removeItem(item)} className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted transition hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-red-500/10" aria-label={`Hapus aset 3D ${item.kode_3d}`} title="Hapus aset 3D">{deletingCode === item.kode_3d ? <ArrowsClockwiseIcon size={14} className="animate-spin" /> : <TrashIcon size={14} weight="bold" />}</button>}</div></td>
                   </tr>
                 ))}
               </tbody>

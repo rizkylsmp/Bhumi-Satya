@@ -184,7 +184,7 @@ export default function AssetPage() {
   };
 
   const handleOpenEditForm = (assetId) => {
-    navigate(`/aset/${assetId}/edit`);
+    navigate(`/aset/${assetId}/kelola`);
   };
 
   const handleViewAsset = async (assetId) => {
@@ -199,16 +199,16 @@ export default function AssetPage() {
   };
 
   const handleDownloadAssetPdf = async (asset) => {
-    const toastId = toast.loading("Menyiapkan PDF aset...");
+    const toastId = toast.loading("Menyiapkan PDF tanah...");
     try {
       const assetId = asset?.id_aset || asset?.id;
       const response = assetId ? await asetService.getById(assetId) : null;
       await downloadAssetPdf(response?.data?.data || asset);
-      toast.success("PDF aset mulai diunduh", { id: toastId });
+      toast.success("PDF tanah mulai diunduh", { id: toastId });
     } catch (error) {
       console.error("Error preparing asset PDF:", error);
       await downloadAssetPdf(asset);
-      toast.success("PDF aset dibuat dari data tabel", { id: toastId });
+      toast.success("PDF tanah dibuat dari data tabel", { id: toastId });
     }
   };
 
@@ -321,10 +321,10 @@ export default function AssetPage() {
           </div>
           <div>
             <h1 className="admin-page-header__title">
-              Pusat Data
+              Pusat Data Tanah
             </h1>
             <p className="admin-page-header__description">
-              Master data aset terpadu.
+              Master data tanah terpadu.
             </p>
           </div>
         </div>
@@ -454,7 +454,7 @@ export default function AssetPage() {
                           column="kode_aset"
                           className="min-w-[170px]"
                         >
-                          Kode Bangunan
+                          Kode Tanah
                         </TableHeader>
                         <TableHeader
                           sortable
@@ -588,14 +588,14 @@ export default function AssetPage() {
                           column="kode_aset"
                           className="w-[13%]"
                         >
-                          Kode Bangunan
+                          Kode Tanah
                         </TableHeader>
                         <TableHeader
                           sortable
                           column="nama_aset"
                           className="w-[18%]"
                         >
-                          Nama Bangunan
+                          Nama Tanah
                         </TableHeader>
                         <TableHeader className="w-[19%]">
                           Lokasi
@@ -674,7 +674,7 @@ export default function AssetPage() {
                         </TableHeader>
                       </>
                     )}
-                    <th className="sticky right-0 z-30 w-[180px] bg-surface-secondary px-3 py-3 text-center text-[11px] font-semibold text-text-muted uppercase tracking-wider border-l border-border/50">
+                    <th className="sticky right-0 z-30 w-[184px] bg-surface-secondary px-3 py-3 text-center text-[11px] font-semibold text-text-muted uppercase tracking-wider border-l border-border/50">
                       Kelola
                     </th>
                   </tr>
@@ -1064,7 +1064,7 @@ export default function AssetPage() {
 
                         {/* Sticky Aksi Column */}
                         <td
-                          className={`sticky right-0 z-20 w-[180px] border-l border-border/50 px-2.5 py-2 transition-colors ${
+                          className={`sticky right-0 z-20 w-[184px] border-l border-border/50 px-2.5 py-2 transition-colors ${
                             isHovered
                               ? "bg-accent/5 dark:bg-accent/10"
                               : "bg-surface"
@@ -1091,6 +1091,7 @@ export default function AssetPage() {
                               onDownloadGeojson={handleDownloadAssetGeojson}
                               showEdit={canUpdate}
                               showDelete={canDelete}
+                              catalogStyle
                             />
                           </div>
                         </td>
@@ -1158,6 +1159,7 @@ export default function AssetPage() {
                         onDownloadGeojson={handleDownloadAssetGeojson}
                         showEdit={canUpdate}
                         showDelete={canDelete}
+                        catalogStyle
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">

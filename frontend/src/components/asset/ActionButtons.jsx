@@ -4,6 +4,7 @@ import {
   TrashIcon,
   MapPinIcon,
   DownloadSimpleIcon,
+  ArrowRightIcon,
 } from "@phosphor-icons/react";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -20,6 +21,7 @@ export default function ActionButtons({
   showEdit = true,
   showDelete = true,
   highlightEdit = false,
+  catalogStyle = false,
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -51,15 +53,27 @@ export default function ActionButtons({
   };
 
   return (
-    <div className="flex flex-nowrap gap-1 justify-center items-center">
+    <div className={`flex flex-nowrap items-center gap-1.5 ${catalogStyle ? "justify-end" : "justify-center"}`}>
+      {catalogStyle && (onEdit || onView) && (
+        <button
+          type="button"
+          onClick={() => (onEdit ? onEdit(assetId) : onView?.())}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-[9px] font-black text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent"
+          title={onEdit ? "Kelola data tanah" : "Lihat data tanah"}
+        >
+          <span>{onEdit ? "Kelola" : "Lihat"}</span>
+          <ArrowRightIcon size={12} weight="bold" />
+        </button>
+      )}
+
       {/* View Button - Always visible */}
-      <button
+      {!catalogStyle && <button
         onClick={() => onView?.()}
         className="group relative p-2 text-text-muted hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
         title="Lihat detail"
       >
         <EyeIcon size={18} weight="bold" />
-      </button>
+      </button>}
 
       {/* Show on Map Button */}
       {onShowOnMap && (
@@ -78,10 +92,10 @@ export default function ActionButtons({
           <button
             ref={buttonRef}
             onClick={toggleDownloadMenu}
-            className="group relative p-2 text-text-muted hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all"
+            className={`${catalogStyle ? "flex h-9 w-9 items-center justify-center rounded-lg border border-border" : "group relative rounded-lg p-2"} text-text-muted transition hover:border-accent hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400`}
             title="Unduh dokumen"
           >
-            <DownloadSimpleIcon size={18} weight="bold" />
+            <DownloadSimpleIcon size={catalogStyle ? 14 : 18} weight="bold" />
           </button>
           {showMenu &&
             createPortal(
@@ -123,7 +137,7 @@ export default function ActionButtons({
       )}
 
       {/* Edit Button */}
-      {showEdit && onEdit && highlightEdit ? (
+      {!catalogStyle && showEdit && onEdit && highlightEdit ? (
         <button
           onClick={() => onEdit(assetId)}
           className="group relative flex items-center gap-1.5 px-3 py-1.5 bg-accent text-surface rounded-lg text-xs font-semibold hover:opacity-90 transition-all"
@@ -132,7 +146,7 @@ export default function ActionButtons({
           <PencilSimpleIcon size={14} weight="bold" />
           <span>Ubah</span>
         </button>
-      ) : showEdit && onEdit ? (
+      ) : !catalogStyle && showEdit && onEdit ? (
         <button
           onClick={() => onEdit(assetId)}
           className="group relative p-2 text-text-muted hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-all"
@@ -146,10 +160,10 @@ export default function ActionButtons({
       {showDelete && onDelete && (
         <button
           onClick={() => onDelete(assetId)}
-          className="group relative p-2 text-text-muted hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+          className={`${catalogStyle ? "flex h-9 w-9 items-center justify-center rounded-lg" : "group relative rounded-lg p-2"} text-text-muted transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400`}
           title="Hapus"
         >
-          <TrashIcon size={18} weight="bold" />
+          <TrashIcon size={catalogStyle ? 14 : 18} weight="bold" />
         </button>
       )}
     </div>

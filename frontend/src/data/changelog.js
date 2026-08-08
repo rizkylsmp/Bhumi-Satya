@@ -1,5 +1,50 @@
 export const changelogEntries = [
   {
+    id: "building-code-columns-land-actions",
+    date: "2026-08-08",
+    type: "peningkatan",
+    title: "Memperjelas identitas dan aksi pusat data",
+    summary:
+      "Pusat Data Bangunan kini memisahkan Kode Bidang 2D dan Kode Bangunan 3D, sementara aksi Pusat Data Tanah memakai pola Kelola, unduh, dan hapus yang lebih ringkas.",
+    area: "Pusat Data",
+  },
+  {
+    id: "land-data-identity-labels",
+    date: "2026-08-08",
+    type: "peningkatan",
+    title: "Menyesuaikan identitas data tanah",
+    summary:
+      "Tabel dan PDF Pusat Data Tanah kini menggunakan label Kode Tanah dan Nama Tanah agar identitasnya tidak tertukar dengan data bangunan.",
+    area: "Pusat Data Tanah",
+  },
+  {
+    id: "building-catalog-pdf-download",
+    date: "2026-08-08",
+    type: "fitur",
+    title: "Menambahkan PDF Pusat Data Bangunan",
+    summary:
+      "Setiap data bangunan kini dapat diunduh sebagai PDF yang memuat identitas, model 3D, dimensi, lokasi tanah, foto kondisi, dan sketsa lokasi.",
+    area: "Pusat Data Bangunan",
+  },
+  {
+    id: "lod-catalog-grouped-by-2d-area",
+    date: "2026-08-08",
+    type: "peningkatan",
+    title: "Meringkas katalog LOD berdasarkan bidang 2D",
+    summary:
+      "Daftar bangunan pada setiap LOD kini dikelompokkan per kode 2D dalam panel yang dapat dibuka, sehingga katalog lebih ringkas dan mudah ditelusuri.",
+    area: "Digital Twin",
+  },
+  {
+    id: "organized-land-building-map-navigation",
+    date: "2026-08-08",
+    type: "peningkatan",
+    title: "Menata navigasi tanah, bangunan, dan peta",
+    summary:
+      "Sidebar kini memisahkan Kelola Tanah, Kelola Bangunan, dan Peta; pusat data tanah maupun bangunan berada di kelompoknya masing-masing, sementara Digital Twin serta Orthophoto berada di menu Peta.",
+    area: "Navigasi",
+  },
+  {
     id: "pdf-brand-logo-coordinate-callout",
     date: "2026-08-08",
     type: "peningkatan",

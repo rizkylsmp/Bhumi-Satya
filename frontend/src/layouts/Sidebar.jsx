@@ -6,7 +6,7 @@ import { canAccessMenu } from "../utils/permissions";
 import { RENTAL_FEATURE_ENABLED } from "../config/featureFlags";
 import {
   ChartBarIcon,
-  FolderIcon,
+  PolygonIcon,
   MapTrifoldIcon,
   ClockCounterClockwiseIcon,
   BellIcon,
@@ -30,6 +30,7 @@ import {
   ClipboardTextIcon,
   GlobeHemisphereWestIcon,
   CubeIcon,
+  BuildingsIcon,
   IdentificationCardIcon,
   ReceiptIcon,
   ImageIcon,
@@ -68,22 +69,35 @@ export default function Sidebar({
         && ["legal", "fisik", "kib", "pajak", "administratif"].includes(assetFormSection)
       )
     ) {
-      expanded.push("kelola-data");
+      expanded.push("kelola-tanah");
+    }
+    if (
+      location.pathname === "/aset"
+      || location.pathname === "/aset/tambah"
+      || /^\/aset\/[^/]+\/(?:edit|kelola)$/.test(location.pathname)
+    ) {
+      expanded.push("kelola-tanah");
     }
     if (
       location.pathname.startsWith("/aset/spasial") ||
-      location.pathname.startsWith("/orthophoto") ||
-      location.pathname.startsWith("/kelola-2d") ||
-      location.pathname.startsWith("/kelola-3d")
+      location.pathname.startsWith("/kelola-2d")
     ) {
-      expanded.push("kelola-data");
-      expanded.push("data-spasial");
+      expanded.push("kelola-tanah");
+    }
+    if (
+      location.pathname.startsWith("/peta") ||
+      location.pathname.startsWith("/orthophoto")
+    ) {
+      expanded.push("peta");
+    }
+    if (location.pathname.startsWith("/kelola-3d")) {
+      expanded.push("kelola-bangunan");
     }
     if (RENTAL_FEATURE_ENABLED && location.pathname.startsWith("/sewa")) {
       if (userRole === "masyarakat") {
         expanded.push("sewa-masyarakat");
       } else {
-        expanded.push("kelola-data");
+        expanded.push("kelola-tanah");
         expanded.push("sewa-aset");
       }
     }
@@ -120,23 +134,37 @@ export default function Sidebar({
       label: "Dashboard",
       path: "/dashboard",
     },
-    canAccessMenu(userRole, "peta") && {
+    (canAccessMenu(userRole, "peta") || canAccessMenu(userRole, "aset")) && {
+      id: "peta",
       icon: MapTrifoldIcon,
-      label: "Digital Twin",
-      path: "/peta",
-    },
-    canAccessMenu(userRole, "aset") && {
-      icon: DatabaseIcon,
-      label: "Pusat Data",
-      path: "/aset",
+      label: "Peta",
+      children: [
+        canAccessMenu(userRole, "peta") && {
+          icon: CubeIcon,
+          label: "Digital Twin",
+          path: "/peta",
+        },
+        canAccessMenu(userRole, "aset") && {
+          icon: ImageIcon,
+          label: "Kelola Orthophoto",
+          path: "/orthophoto",
+          disabled: true,
+          status: "Dev",
+          description: "Dalam proses pengembangan",
+        },
+      ].filter(Boolean),
     },
     (canAccessMenu(userRole, "aset") ||
-      canAccessMenu(userRole, "kelola3d") ||
       (RENTAL_FEATURE_ENABLED && canAccessMenu(userRole, "sewa-aset"))) && {
-      id: "kelola-data",
-      icon: FolderIcon,
-      label: "Kelola Data",
+      id: "kelola-tanah",
+      icon: PolygonIcon,
+      label: "Kelola Tanah",
       children: [
+        canAccessMenu(userRole, "aset") && {
+          icon: DatabaseIcon,
+          label: "Pusat Data Tanah",
+          path: "/aset",
+        },
         {
           icon: ScalesIcon,
           label: "Data Legal",
@@ -162,31 +190,10 @@ export default function Sidebar({
           label: "Data Pajak",
           path: "/aset/pajak",
         },
-        (canAccessMenu(userRole, "aset") ||
-          canAccessMenu(userRole, "kelola3d")) && {
-          id: "data-spasial",
+        canAccessMenu(userRole, "aset") && {
           icon: GlobeHemisphereWestIcon,
           label: "Data Spasial",
-          children: [
-            canAccessMenu(userRole, "aset") && {
-              icon: MapTrifoldIcon,
-              label: "Kelola 2D",
-              path: "/aset/spasial",
-            },
-            canAccessMenu(userRole, "kelola3d") && {
-              icon: CubeIcon,
-              label: "Kelola 3D",
-              path: "/kelola-3d",
-            },
-            canAccessMenu(userRole, "aset") && {
-              icon: ImageIcon,
-              label: "Kelola Orthophoto",
-              path: "/orthophoto",
-              disabled: true,
-              status: "Dev",
-              description: "Dalam proses pengembangan",
-            },
-          ].filter(Boolean),
+          path: "/aset/spasial",
         },
         RENTAL_FEATURE_ENABLED && canAccessMenu(userRole, "sewa-aset") && {
           id: "sewa-aset",
@@ -206,6 +213,18 @@ export default function Sidebar({
           ],
         },
       ].filter(Boolean),
+    },
+    canAccessMenu(userRole, "kelola3d") && {
+      id: "kelola-bangunan",
+      icon: BuildingsIcon,
+      label: "Kelola Bangunan",
+      children: [
+        {
+          icon: DatabaseIcon,
+          label: "Pusat Data Bangunan",
+          path: "/kelola-3d",
+        },
+      ],
     },
     RENTAL_FEATURE_ENABLED && canAccessMenu(userRole, "sewa-masyarakat") && {
       id: "sewa-masyarakat",
@@ -428,9 +447,9 @@ export default function Sidebar({
                       {item.children.map((child) => {
                         const childHasChildren =
                           child.children && child.children.length > 0;
-                        const isChildActive = childHasChildren
+                        const isChildActive = !child.disabled && (childHasChildren
                           ? isParentActive(child.children)
-                          : isActivePath(child.path);
+                          : isActivePath(child.path));
                         if (childHasChildren) {
                           return (
                             <div
@@ -498,9 +517,17 @@ export default function Sidebar({
                         return (
                           <button
                             key={child.path || child.label}
+                            type="button"
+                            disabled={child.disabled}
+                            title={child.description}
+                            aria-label={child.disabled
+                              ? `${child.label} — ${child.description}`
+                              : child.label}
                             onClick={() => handleMenuClick(child.path)}
                             className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] transition-all duration-200 ${
-                              isChildActive
+                              child.disabled
+                                ? "cursor-not-allowed text-text-muted opacity-50"
+                                : isChildActive
                                 ? "bg-linear-to-r from-accent to-accent/90 text-white font-semibold dark:from-white dark:to-slate-100 dark:text-slate-900"
                                 : "text-text-muted hover:bg-surface-secondary hover:text-text-primary"
                             }`}
@@ -512,6 +539,11 @@ export default function Sidebar({
                             <span className="whitespace-nowrap">
                               {child.label}
                             </span>
+                            {child.status && (
+                              <span className="ml-auto rounded bg-surface-tertiary px-1 py-0.5 text-[7px] font-black uppercase tracking-wide text-text-muted">
+                                {child.status}
+                              </span>
+                            )}
                             {child.badge > 0 && (
                               <span className="ml-auto rounded-full bg-red-600 px-1.5 py-0.5 text-[8px] font-bold text-white">
                                 {child.badge > 9 ? "9+" : child.badge}
@@ -541,9 +573,9 @@ export default function Sidebar({
                     {item.children.map((child) => {
                       const childHasChildren =
                         child.children && child.children.length > 0;
-                      const isChildActive = childHasChildren
+                      const isChildActive = !child.disabled && (childHasChildren
                         ? isParentActive(child.children)
-                        : isActivePath(child.path);
+                        : isActivePath(child.path));
                       const childExpanded =
                         childHasChildren && isExpanded(child.id);
                       if (childHasChildren) {
@@ -640,9 +672,17 @@ export default function Sidebar({
                       return (
                         <button
                           key={child.path || child.label}
+                          type="button"
+                          disabled={child.disabled}
+                          title={child.description}
+                          aria-label={child.disabled
+                            ? `${child.label} — ${child.description}`
+                            : child.label}
                           onClick={() => handleMenuClick(child.path)}
                           className={`group flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] transition-all duration-200 ${
-                            isChildActive
+                            child.disabled
+                              ? "cursor-not-allowed text-text-muted opacity-50"
+                              : isChildActive
                               ? "bg-linear-to-r from-accent to-accent/90 text-white font-semibold dark:from-white dark:to-slate-100 dark:text-slate-900"
                               : "text-text-muted hover:bg-surface-secondary hover:text-text-primary"
                           }`}
@@ -652,6 +692,11 @@ export default function Sidebar({
                             weight={isChildActive ? "fill" : "regular"}
                           />
                           <span className="flex-1">{child.label}</span>
+                          {child.status && (
+                            <span className="rounded bg-surface-tertiary px-1 py-0.5 text-[7px] font-black uppercase tracking-wide text-text-muted">
+                              {child.status}
+                            </span>
+                          )}
                           {child.badge > 0 && (
                             <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold ${
                               isChildActive
