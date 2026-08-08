@@ -1,5 +1,14 @@
 export const changelogEntries = [
   {
+    id: "pdf-brand-logo-coordinate-callout",
+    date: "2026-08-08",
+    type: "peningkatan",
+    title: "Memperjelas identitas dan lokasi pada PDF",
+    summary:
+      "Header PDF kini memakai logo Bhumi Satya dan marker sketsa lokasi menampilkan latitude serta longitude dalam callout yang mudah dibaca.",
+    area: "Dokumen PDF",
+  },
+  {
     id: "realtime-3d-shadow-analysis",
     date: "2026-08-08",
     type: "fitur",

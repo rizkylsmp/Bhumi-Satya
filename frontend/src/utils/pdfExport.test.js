@@ -73,4 +73,16 @@ describe("PDF export template", () => {
     expect(pdf).toContain("/Im1");
     expect(pdf).toContain("Koordinat belum tersedia");
   });
+
+  it("embeds the Bhumi Satya logo in the document header", () => {
+    const pdf = buildPdf({
+      title: "Laporan Data Aset",
+      subtitle: "AST-003",
+      sections: [],
+      brandLogo: { data: "mock-logo-jpeg", width: 256, height: 256 },
+    });
+
+    expect(pdf).toContain("/BrandLogo");
+    expect(pdf).not.toContain("(BS)");
+  });
 });

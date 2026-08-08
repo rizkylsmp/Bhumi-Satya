@@ -195,6 +195,38 @@ async function createJpegFromUrl(url, width = 720, height = 420) {
   };
 }
 
+async function createBrandLogo() {
+  if (typeof document === "undefined") return null;
+  const image = await loadImage("/bhumi-satya-logo.png");
+  const width = 256;
+  const height = 256;
+  const padding = 18;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, width, height);
+  const scale = Math.min(
+    (width - padding * 2) / image.naturalWidth,
+    (height - padding * 2) / image.naturalHeight,
+  );
+  const logoWidth = image.naturalWidth * scale;
+  const logoHeight = image.naturalHeight * scale;
+  context.drawImage(
+    image,
+    (width - logoWidth) / 2,
+    (height - logoHeight) / 2,
+    logoWidth,
+    logoHeight,
+  );
+  return {
+    data: dataUrlToBinary(canvas.toDataURL("image/jpeg", 0.94)),
+    width,
+    height,
+  };
+}
+
 async function createMapSketch(latitude, longitude) {
   const lat = Number(latitude);
   const lng = Number(longitude);
@@ -261,6 +293,44 @@ async function createMapSketch(latitude, longitude) {
   context.fill();
   context.restore();
 
+  const coordinateLines = [
+    `Latitude  : ${lat.toFixed(6)}`,
+    `Longitude : ${lng.toFixed(6)}`,
+  ];
+  const tooltipWidth = 244;
+  const tooltipHeight = 62;
+  const tooltipX = Math.min(width - tooltipWidth - 18, markerX + 28);
+  const tooltipY = markerY - tooltipHeight - 42;
+  const tooltipRadius = 10;
+  context.save();
+  context.shadowColor = "rgba(15, 23, 42, 0.28)";
+  context.shadowBlur = 12;
+  context.shadowOffsetY = 4;
+  context.fillStyle = "rgba(15, 23, 42, 0.92)";
+  context.beginPath();
+  context.roundRect(
+    tooltipX,
+    tooltipY,
+    tooltipWidth,
+    tooltipHeight,
+    tooltipRadius,
+  );
+  context.fill();
+  context.shadowColor = "transparent";
+  context.beginPath();
+  context.moveTo(tooltipX + 18, tooltipY + tooltipHeight);
+  context.lineTo(markerX + 7, markerY - 25);
+  context.lineTo(tooltipX + 40, tooltipY + tooltipHeight);
+  context.closePath();
+  context.fill();
+  context.fillStyle = "#ffffff";
+  context.font = "600 18px Arial, sans-serif";
+  context.textBaseline = "middle";
+  coordinateLines.forEach((line, index) => {
+    context.fillText(line, tooltipX + 16, tooltipY + 20 + index * 24);
+  });
+  context.restore();
+
   return {
     data: dataUrlToBinary(canvas.toDataURL("image/jpeg", 0.88)),
     width,
@@ -290,14 +360,20 @@ async function prepareDocumentMedia({ photoUrl, latitude, longitude }) {
   ];
 }
 
-export function buildPdf({ title, subtitle, sections, media = [] }) {
+export function buildPdf({ title, subtitle, sections, media = [], brandLogo = null }) {
   const pages = [];
   let imageCounter = 0;
   const preparedMedia = media.slice(0, 2).map((item) => ({
     ...item,
     imageName: item.image ? `Im${(imageCounter += 1)}` : null,
   }));
-  const embeddedImages = preparedMedia.filter((item) => item.imageName);
+  const brandLogoName = brandLogo ? "BrandLogo" : null;
+  const embeddedImages = [
+    ...(brandLogoName
+      ? [{ image: brandLogo, imageName: brandLogoName }]
+      : []),
+    ...preparedMedia.filter((item) => item.imageName),
+  ];
   let content = [];
   let y;
 
@@ -329,15 +405,16 @@ export function buildPdf({ title, subtitle, sections, media = [] }) {
       0.9,
     );
 
-    addRectangle(content, MARGIN_X + 31, headerBottom + 29, 44, 34, {
-      fill: [0.06, 0.38, 0.34],
-      stroke: false,
-    });
-    addCenteredText(content, MARGIN_X + 31, 44, headerBottom + 39, "BS", {
-      font: "F2",
-      size: 17,
-      color: [1, 1, 1],
-    });
+    if (brandLogoName) {
+      addImage(
+        content,
+        brandLogoName,
+        MARGIN_X + 31,
+        headerBottom + 25,
+        44,
+        44,
+      );
+    }
     addCenteredText(content, MARGIN_X, brandWidth, headerBottom + 14, "BHUMI SATYA", {
       font: "F2",
       size: 8,
@@ -695,10 +772,13 @@ export async function downloadAssetPdf(asset) {
   const title = "Laporan Data Bangunan";
   const subtitle = identity.name || identity.code || asset?.nibar || "Data Bangunan";
   const coordinates = getAssetCoordinates(asset);
-  const media = await prepareDocumentMedia({
-    photoUrl: firstPhoto(asset?.foto_aset),
-    ...coordinates,
-  });
+  const [media, brandLogo] = await Promise.all([
+    prepareDocumentMedia({
+      photoUrl: firstPhoto(asset?.foto_aset),
+      ...coordinates,
+    }),
+    createBrandLogo().catch(() => null),
+  ]);
   const sections = [
     {
       heading: "Identitas Bangunan",
@@ -753,7 +833,7 @@ export async function downloadAssetPdf(asset) {
 
   triggerPdfDownload(
     makeFilename("bangunan", identity.code || asset?.nibar || subtitle),
-    buildPdf({ title, subtitle, sections, media }),
+    buildPdf({ title, subtitle, sections, media, brandLogo }),
   );
 }
 
@@ -768,10 +848,13 @@ export async function downloadSewaPdf(sewa) {
   const title = "Laporan Penyewaan Bangunan";
   const subtitle = buildingName || buildingCode || "Data Penyewaan";
   const coordinates = getAssetCoordinates(aset);
-  const media = await prepareDocumentMedia({
-    photoUrl: firstPhoto(aset?.foto_aset, sewa?.foto_sewa),
-    ...coordinates,
-  });
+  const [media, brandLogo] = await Promise.all([
+    prepareDocumentMedia({
+      photoUrl: firstPhoto(aset?.foto_aset, sewa?.foto_sewa),
+      ...coordinates,
+    }),
+    createBrandLogo().catch(() => null),
+  ]);
   const sections = [
     {
       heading: "Identitas Penyewaan",
@@ -819,7 +902,7 @@ export async function downloadSewaPdf(sewa) {
 
   triggerPdfDownload(
     makeFilename("penyewaan", sewa?.no_lot || sewa?.id_sewa || subtitle),
-    buildPdf({ title, subtitle, sections, media }),
+    buildPdf({ title, subtitle, sections, media, brandLogo }),
   );
 }
 import {
