@@ -237,6 +237,13 @@ export default function AssetTable({
               No
             </TableHeader>
             <TableHeader
+              className="w-20"
+              columnWidths={columnWidths}
+              onResizeStart={onResizeStart}
+            >
+              ID
+            </TableHeader>
+            <TableHeader
               sortable
               column="kode_aset"
               columnWidths={columnWidths}
@@ -245,7 +252,7 @@ export default function AssetTable({
               sortBy={sortBy}
               sortOrder={sortOrder}
             >
-              Kode Aset
+              Kode Bangunan
             </TableHeader>
             <TableHeader
               sortable
@@ -257,7 +264,7 @@ export default function AssetTable({
               sortBy={sortBy}
               sortOrder={sortOrder}
             >
-              Nama Aset
+              Nama Bangunan
             </TableHeader>
             <TableHeader
               className="min-w-50"
@@ -342,14 +349,20 @@ export default function AssetTable({
                   </span>
                 </td>
 
-                {/* Kode Aset */}
+                <td className="px-4 py-4">
+                  <span className="font-mono text-xs font-semibold text-text-muted">
+                    {asset.id_aset ?? asset.id ?? "-"}
+                  </span>
+                </td>
+
+                {/* Kode Bangunan */}
                 <td className="px-4 py-4">
                   <span className="inline-flex items-center gap-2 px-2.5 py-1 bg-surface-secondary rounded-lg text-sm font-mono font-semibold text-text-primary">
                     {asset.kode_aset}
                   </span>
                 </td>
 
-                {/* Nama Aset */}
+                {/* Nama Bangunan */}
                 <td className="px-4 py-4">
                   <span className="text-sm font-medium text-text-primary wrap-break-word max-w-80">
                     {asset.nama_aset}

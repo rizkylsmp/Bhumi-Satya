@@ -13,7 +13,7 @@ export const createKode3dBase = (kodeAset, assetId = null) => {
     .replace(/^-+|-+$/g, "");
 
   if (!normalized) {
-    throw new Error("Kode aset diperlukan untuk membuat kode 3D");
+    throw new Error("Kode bangunan diperlukan untuk membuat kode 3D");
   }
 
   return `3D-${normalized}`.slice(0, COMPACT_CODE_LENGTH).replace(/-+$/g, "");

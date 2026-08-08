@@ -14,12 +14,15 @@ import {
   TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
+import ShadowAnalysisPanel from "./ShadowAnalysisPanel";
+
 const TABS = [
   { id: "data3d", label: "Level of Detail" },
   { id: "data2d", label: "Layer Controls" },
   { id: "tampilan", label: "Navigation" },
   { id: "status", label: "Node Status" },
   { id: "analisis", label: "Tools" },
+  { id: "shadow", label: "Analisis Bayangan" },
   { id: "information", label: "Informasi" },
 ];
 
@@ -172,6 +175,13 @@ export default function Model3dControlPanel({
   analysisResult = null,
   onAnalysisToolChange,
   onClearAnalysis,
+  shadowEnabled = false,
+  shadowDate,
+  shadowMinutes,
+  onShadowEnabledChange,
+  onShadowDateChange,
+  onShadowMinutesChange,
+  onUseCurrentShadowTime,
 }) {
   const [activeTab, setActiveTab] = useState("data3d");
   const [selectedLod, setSelectedLod] = useState(null);
@@ -591,6 +601,18 @@ export default function Model3dControlPanel({
               </button>
             )}
           </section>
+        )}
+
+        {activeTab === "shadow" && (
+          <ShadowAnalysisPanel
+            enabled={shadowEnabled}
+            date={shadowDate}
+            minutes={shadowMinutes}
+            onEnabledChange={onShadowEnabledChange}
+            onDateChange={onShadowDateChange}
+            onMinutesChange={onShadowMinutesChange}
+            onUseCurrentTime={onUseCurrentShadowTime}
+          />
         )}
 
         {activeTab === "information" && (

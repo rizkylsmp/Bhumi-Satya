@@ -41,6 +41,10 @@ import {
   getModelFocusZoom,
   resolveModelOffsetLocation,
 } from "../../../utils/model3dTransform";
+import {
+  createJakartaShadowDateTime,
+  getJakartaDateTimeParts,
+} from "../../../utils/shadowAnalysis";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "../mapDefaults";
 import {
   BASEMAP_OPTIONS,
@@ -496,6 +500,17 @@ const MapDisplayBPN = ({
   const [analysisPoints, setAnalysisPoints] = useState([]);
   const [analysisGeometry, setAnalysisGeometry] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [shadowAnalysis, setShadowAnalysis] = useState(() => ({
+    enabled: false,
+    ...getJakartaDateTimeParts(),
+  }));
+  const shadowDateTime = useMemo(
+    () => createJakartaShadowDateTime(
+      shadowAnalysis.date,
+      shadowAnalysis.minutes,
+    ),
+    [shadowAnalysis.date, shadowAnalysis.minutes],
+  );
 
   const updateCompassBearing = useCallback((value) => {
     const numeric = Number(value);
@@ -2939,6 +2954,20 @@ const MapDisplayBPN = ({
       analysisPointCount={analysisPoints.length}
       onAnalysisToolChange={changeAnalysisTool}
       onClearAnalysis={clearAnalysis}
+      shadowEnabled={shadowAnalysis.enabled}
+      shadowDate={shadowAnalysis.date}
+      shadowMinutes={shadowAnalysis.minutes}
+      onShadowEnabledChange={(enabled) =>
+        setShadowAnalysis((current) => ({ ...current, enabled }))}
+      onShadowDateChange={(date) =>
+        setShadowAnalysis((current) => ({ ...current, date }))}
+      onShadowMinutesChange={(minutes) =>
+        setShadowAnalysis((current) => ({ ...current, minutes }))}
+      onUseCurrentShadowTime={() =>
+        setShadowAnalysis((current) => ({
+          ...current,
+          ...getJakartaDateTimeParts(),
+        }))}
     />
   );
 
@@ -3229,6 +3258,8 @@ const MapDisplayBPN = ({
               basemapOption={basemapOptions.find((option) => option.id === activeBasemap)}
               analysisTool={analysisTool}
               analysisPoints={analysisPoints}
+              shadowEnabled={shadowAnalysis.enabled}
+              shadowDateTime={shadowDateTime?.getTime() ?? null}
               onAnalysisClick={({ longitude, latitude, asset }) => {
                 handleAnalysisClick(
                   { lngLat: { lng: longitude, lat: latitude } },

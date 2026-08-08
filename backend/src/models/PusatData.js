@@ -12,12 +12,12 @@ const PusatData = sequelize.define(
     kode_aset: {
       type: DataTypes.STRING(50),
       allowNull: true,
-      comment: "Kode aset BPN",
+      comment: "Kode bangunan BPN",
     },
     nama_aset: {
       type: DataTypes.STRING(150),
       allowNull: true,
-      comment: "Nama aset",
+      comment: "Nama bangunan",
     },
     status: {
       type: DataTypes.STRING(50),

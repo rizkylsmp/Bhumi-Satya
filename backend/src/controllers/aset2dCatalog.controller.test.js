@@ -9,7 +9,7 @@ import {
 } from "./aset2dCatalog.controller.js";
 
 describe("aset2d catalog helpers", () => {
-  it("membuat kode 2D dari kode aset", () => {
+  it("membuat kode 2D dari kode bangunan", () => {
     assert.equal(
       buildCodeBase({ kode_aset: "AST/STPN 001", id_aset: 7 }),
       "2D-AST-STPN-001",

@@ -473,6 +473,11 @@ export default function SewaDetailPage() {
                   {aset.kode_aset}
                 </span>
               )}
+              {(aset?.id_aset ?? sewa.id_aset) && (
+                <span className="rounded-lg border border-border bg-surface-secondary px-2 py-0.5 font-mono text-xs text-text-muted">
+                  ID {aset?.id_aset ?? sewa.id_aset}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -678,7 +683,7 @@ export default function SewaDetailPage() {
                 />
                 <InfoField
                   icon={BuildingsIcon}
-                  label="Nama Aset"
+                  label="Nama Bangunan"
                   value={aset?.nama_aset || sewa.nama_aset}
                 />
               </div>

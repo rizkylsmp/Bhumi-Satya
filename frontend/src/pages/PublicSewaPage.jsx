@@ -384,6 +384,11 @@ function RentalCard({ item, onClick }) {
               <h2 className="mt-1 line-clamp-2 text-base font-bold leading-snug text-text-primary">
                 {item.nama_aset}
               </h2>
+              {(aset.id_aset ?? item.id_aset) && (
+                <p className="mt-1 font-mono text-[10px] font-semibold text-text-muted">
+                  ID {aset.id_aset ?? item.id_aset}
+                </p>
+              )}
             </div>
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
               <BuildingsIcon size={20} weight="duotone" />
@@ -480,6 +485,11 @@ function RentalDetail({ item, onClose, onLogin }) {
           <h2 id="rental-detail-title" className="mt-1 text-2xl font-bold text-text-primary">
             {item.nama_aset}
           </h2>
+          {(aset.id_aset ?? item.id_aset) && (
+            <p className="mt-1 font-mono text-xs font-semibold text-text-muted">
+              ID {aset.id_aset ?? item.id_aset}
+            </p>
+          )}
           <p className="mt-3 flex items-start gap-2 text-sm text-text-secondary">
             <MapPinIcon size={17} weight="fill" className="mt-0.5 shrink-0 text-rose-500" />
             {location || "Lokasi belum tersedia"}

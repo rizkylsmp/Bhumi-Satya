@@ -1234,7 +1234,7 @@ export default function Kelola3dDetailPage() {
                   type="search"
                   value={parcelSearch}
                   onChange={(event) => setParcelSearch(event.target.value)}
-                  placeholder="Cari kode 2D, kode aset, atau nama…"
+                  placeholder="Cari kode 2D, kode bangunan, atau nama…"
                   className="h-9 w-full rounded-lg border border-border bg-surface-secondary pl-9 pr-3 text-[10px] font-semibold text-text-primary outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15"
                   autoFocus
                 />
@@ -1294,7 +1294,7 @@ export default function Kelola3dDetailPage() {
             <SectionTitle
               icon={StackIcon}
               title="Pilih Aset untuk Dikelola"
-              description="Mulai dari kode aset yang tersinkron dari Pusat Data Aset"
+              description="Mulai dari kode bangunan yang tersinkron dari Pusat Data"
               action={
                 <button
                   type="button"
@@ -1316,14 +1316,14 @@ export default function Kelola3dDetailPage() {
                   Langkah 1
                 </span>
                 <h2 className="mt-3 text-sm font-black text-text-primary">
-                  Temukan kode aset
+                  Temukan kode bangunan
                 </h2>
                 <p className="mt-1 text-[10px] leading-relaxed text-text-muted">
                   Cari berdasarkan kode, nama, atau lokasi. Pilihan aset
                   menentukan model, daftar ruang, dan preview yang ditampilkan.
                 </p>
                 <label className="relative mt-4 block">
-                  <span className="sr-only">Cari kode atau nama aset</span>
+                  <span className="sr-only">Cari kode atau nama bangunan</span>
                   <MagnifyingGlassIcon
                     size={16}
                     className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted"
@@ -1411,10 +1411,10 @@ export default function Kelola3dDetailPage() {
                             </span>
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-[11px] font-black text-text-primary">
-                                {asset.kode_aset || "Tanpa kode aset"}
+                                {asset.kode_aset || "Tanpa kode bangunan"}
                               </span>
                               <span className="mt-0.5 block truncate text-[9px] font-semibold text-text-secondary">
-                                {asset.nama_aset || "Nama aset belum diisi"}
+                                {asset.nama_aset || "Nama bangunan belum diisi"}
                               </span>
                             </span>
                           </div>
@@ -1461,7 +1461,7 @@ export default function Kelola3dDetailPage() {
                   </p>
                   <p className="mt-1 truncate text-sm font-black text-text-primary">
                     {selectedAsset.kode_aset || "Tanpa kode"} ·{" "}
-                    {selectedAsset.nama_aset || "Nama aset belum diisi"}
+                    {selectedAsset.nama_aset || "Nama bangunan belum diisi"}
                   </p>
                   <p className="mt-0.5 flex items-center gap-1 truncate text-[9px] text-text-muted">
                     <MapPinIcon size={11} />{" "}
@@ -3363,7 +3363,7 @@ export default function Kelola3dDetailPage() {
                           Preview belum tersedia
                         </p>
                         <p className="mt-1 max-w-sm text-[10px] leading-relaxed text-slate-400">
-                          Pilih kode aset dari daftar tersinkron untuk menampilkan
+                          Pilih kode bangunan dari daftar tersinkron untuk menampilkan
                           lokasi atau model 3D.
                         </p>
                       </div>

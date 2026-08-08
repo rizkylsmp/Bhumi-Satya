@@ -149,7 +149,7 @@ export const submitRequest = async (req, res) => {
     if (!nama_aset || !nama_pemohon || !no_telepon || !tujuan_sewa) {
       return res.status(400).json({
         error:
-          "Nama aset, nama pemohon, nomor telepon, dan tujuan sewa wajib diisi",
+          "Nama bangunan, nama pemohon, nomor telepon, dan tujuan sewa wajib diisi",
       });
     }
 
@@ -452,7 +452,7 @@ export const update = async (req, res) => {
     }
 
     if (updateData.nama_aset !== undefined && !updateData.nama_aset) {
-      return res.status(400).json({ error: "Nama aset wajib diisi" });
+      return res.status(400).json({ error: "Nama bangunan wajib diisi" });
     }
 
     if (updateData.nama_pemohon !== undefined && !updateData.nama_pemohon) {

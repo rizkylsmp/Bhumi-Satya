@@ -1,5 +1,50 @@
 export const changelogEntries = [
   {
+    id: "realtime-3d-shadow-analysis",
+    date: "2026-08-08",
+    type: "fitur",
+    title: "Menambahkan analisis bayangan 3D",
+    summary:
+      "Analisis bayangan kini mempertahankan warna polygon 2D, membuat basemap terang pada siang dan gelap pada malam, serta menampilkan tepi bayangan yang lebih lembut.",
+    area: "Digital Twin",
+  },
+  {
+    id: "system-building-identity",
+    date: "2026-08-08",
+    type: "peningkatan",
+    title: "Menyelaraskan identitas bangunan",
+    summary:
+      "Seluruh sistem kini menggunakan istilah kode bangunan dan nama bangunan serta menampilkan ID primary key pada daftar dan detail utama.",
+    area: "Seluruh Sistem",
+  },
+  {
+    id: "pdf-photo-and-location-sketch",
+    date: "2026-08-08",
+    type: "peningkatan",
+    title: "Menambahkan foto dan sketsa lokasi ke PDF",
+    summary:
+      "Dokumen PDF kini menyertakan foto kondisi eksisting serta citra peta satelit dengan marker pada koordinat lokasi.",
+    area: "Dokumen PDF",
+  },
+  {
+    id: "official-data-sheet-pdf-layout",
+    date: "2026-08-07",
+    type: "peningkatan",
+    title: "Memperbarui tampilan dokumen PDF",
+    summary:
+      "Unduhan data aset dan penyewaan kini memakai format lembar data resmi dengan header Bhumi Satya, tabel berbagian, dan penomoran halaman.",
+    area: "Dokumen PDF",
+  },
+  {
+    id: "public-digital-twin-hero-stats",
+    date: "2026-08-07",
+    type: "peningkatan",
+    title: "Memperjelas ringkasan publik Digital Twin",
+    summary:
+      "Hero Beranda kini menampilkan jumlah bidang 2D, bangunan 3D, objek tersedia disewa, dan kecamatan yang tercakup berdasarkan data publik.",
+    area: "Beranda",
+  },
+  {
     id: "configurable-production-database-ssl",
     date: "2026-08-07",
     type: "perbaikan",

@@ -45,11 +45,12 @@ export const buildAssetPopupData = (asset = {}, modelOverride = null) => {
     ? Number(asset.building_count_3d)
     : inferredBuildingCount;
   const general = [
-    ["Kode Aset", assetCode],
-    ["Nama Aset", assetName],
+    ["ID Primary Key", firstValue(asset.id_aset, asset.id)],
+    ["Kode Bangunan", assetCode],
+    ["Nama Bangunan", assetName],
     ["Kode 2D", context === "2d" ? parcelCode : null],
     ["Kode 3D", context === "2d" ? null : catalogCode],
-    ["Nama Bangunan", context === "2d" ? null : buildingName],
+    ["Nama Bangunan 3D", context === "2d" ? null : buildingName],
     [
       "Jumlah Bangunan 3D",
       context === "2d" ? `${buildingCount} bangunan` : null,

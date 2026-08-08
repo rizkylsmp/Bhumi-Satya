@@ -359,7 +359,7 @@ export const create = async (req, res) => {
   try {
     const kodeAset = String(req.body?.kode_aset || "").trim();
     if (!kodeAset) {
-      return res.status(400).json({ success: false, error: "Kode aset wajib dipilih" });
+      return res.status(400).json({ success: false, error: "Kode bangunan wajib dipilih" });
     }
     const asset = await Aset.findOne({ where: { kode_aset: kodeAset } });
     if (!asset) {

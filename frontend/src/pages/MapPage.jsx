@@ -473,7 +473,7 @@ export default function MapPage({ publicMode = false }) {
 
   const handleDownloadAssetPdf = async (asset) => {
     if (publicMode) {
-      downloadAssetPdf(asset);
+      await downloadAssetPdf(asset);
       return;
     }
 
@@ -481,13 +481,13 @@ export default function MapPage({ publicMode = false }) {
       const assetId = asset?.id_aset || asset?.id;
       if (assetId) {
         const response = await asetService.getById(assetId);
-        downloadAssetPdf(response?.data?.data || asset);
+        await downloadAssetPdf(response?.data?.data || asset);
         return;
       }
-      downloadAssetPdf(asset);
+      await downloadAssetPdf(asset);
     } catch (error) {
       console.error("Error downloading asset PDF:", error);
-      downloadAssetPdf(asset);
+      await downloadAssetPdf(asset);
     }
   };
 

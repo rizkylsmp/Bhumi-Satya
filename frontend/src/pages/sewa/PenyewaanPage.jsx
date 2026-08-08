@@ -189,11 +189,11 @@ export default function PenyewaanPage() {
     const toastId = toast.loading("Menyiapkan PDF penyewaan...");
     try {
       const response = await sewaService.getById(item.id_sewa);
-      downloadSewaPdf(response.data.data || response.data || item);
+      await downloadSewaPdf(response.data.data || response.data || item);
       toast.success("PDF penyewaan mulai diunduh", { id: toastId });
     } catch (error) {
       console.error("Error preparing sewa PDF:", error);
-      downloadSewaPdf(item);
+      await downloadSewaPdf(item);
       toast.success("PDF penyewaan dibuat dari data card", { id: toastId });
     }
   };
@@ -354,7 +354,7 @@ export default function PenyewaanPage() {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Cari nama aset, penyewa, nomor kontrak..."
+              placeholder="Cari nama bangunan, penyewa, nomor kontrak..."
               className="h-9 w-full rounded-lg border border-border bg-surface-secondary pl-9 pr-9 text-xs text-text-primary placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/15"
             />
             {searchInput && (
@@ -510,6 +510,9 @@ export default function PenyewaanPage() {
                     <h3 className="font-semibold text-sm text-text-primary line-clamp-2 group-hover:text-accent transition-colors">
                       {item.nama_aset}
                     </h3>
+                    <p className="mt-1 font-mono text-[9px] font-semibold text-text-muted">
+                      ID {item.aset?.id_aset ?? item.id_aset ?? "-"}
+                    </p>
                     {item.lokasi_aset && (
                       <p className="flex items-center gap-1 text-xs text-text-muted mt-1">
                         <MapPinIcon size={12} className="shrink-0" />

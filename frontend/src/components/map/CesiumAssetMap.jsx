@@ -18,13 +18,16 @@ import {
   HeadingPitchRange,
   HeadingPitchRoll,
   ImageryLayer,
+  JulianDate,
   Math as CesiumMath,
   Matrix4,
   Model,
   Rectangle,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
+  ShadowMode,
   SingleTileImageryProvider,
+  SunLight,
   Transforms,
   UrlTemplateImageryProvider,
   Viewer,
@@ -252,6 +255,85 @@ const getBasemapSignature = (option = {}) => JSON.stringify({
   opacity: option.opacity ?? 1,
 });
 
+const getSimulationAppearance = (simulationDate) => {
+  if (!simulationDate) {
+    return {
+      brightness: 1,
+      contrast: 1,
+      saturation: 1,
+      sunlightIntensity: 2,
+    };
+  }
+  const jakartaHours = (
+    simulationDate.getUTCHours()
+    + 7
+    + simulationDate.getUTCMinutes() / 60
+  ) % 24;
+  const sunrise = 5.5;
+  const sunset = 18.5;
+  const daylightPosition = jakartaHours > sunrise && jakartaHours < sunset
+    ? (jakartaHours - sunrise) / (sunset - sunrise)
+    : 0;
+  const daylight = daylightPosition > 0
+    ? Math.pow(Math.sin(daylightPosition * Math.PI), 0.55)
+    : 0;
+
+  return {
+    brightness: 0.32 + daylight * 0.76,
+    contrast: 0.94 + daylight * 0.08,
+    saturation: 0.58 + daylight * 0.42,
+    sunlightIntensity: 0.5 + daylight * 1.5,
+  };
+};
+
+const applyShadowAnalysis = (viewer, enabled, dateTime) => {
+  if (!viewer || viewer.isDestroyed()) return;
+  const isEnabled = Boolean(enabled);
+  const numericDateTime = Number(dateTime);
+  const simulationDate = dateTime == null || !Number.isFinite(numericDateTime)
+    ? null
+    : new Date(numericDateTime);
+
+  viewer.shadows = isEnabled;
+  viewer.scene.shadowMap.enabled = isEnabled;
+  viewer.scene.shadowMap.softShadows = isEnabled;
+  viewer.scene.shadowMap.darkness = 0.26;
+  viewer.scene.shadowMap.fadingEnabled = true;
+  viewer.scene.shadowMap.normalOffset = true;
+  viewer.scene.shadowMap.maximumDistance = 2800;
+  if (isEnabled) {
+    viewer.scene.shadowMap.size = Math.min(
+      2048,
+      viewer.scene.context.maximumTextureSize || 2048,
+    );
+  }
+  viewer.scene.highDynamicRange = false;
+  viewer.scene.gamma = 2.2;
+  viewer.scene.globe.enableLighting = isEnabled;
+  viewer.scene.globe.showGroundAtmosphere = false;
+  viewer.scene.globe.dynamicAtmosphereLighting = false;
+  viewer.scene.globe.dynamicAtmosphereLightingFromSun = false;
+  viewer.scene.globe.shadows = isEnabled
+    ? ShadowMode.RECEIVE_ONLY
+    : ShadowMode.DISABLED;
+  const appearance = getSimulationAppearance(simulationDate);
+  viewer.scene.light = new SunLight({
+    color: Color.WHITE,
+    intensity: isEnabled ? appearance.sunlightIntensity : 2,
+  });
+  for (let index = 0; index < viewer.imageryLayers.length; index += 1) {
+    const layer = viewer.imageryLayers.get(index);
+    layer.brightness = isEnabled ? appearance.brightness : 1;
+    layer.contrast = isEnabled ? appearance.contrast : 1;
+    layer.saturation = isEnabled ? appearance.saturation : 1;
+  }
+  viewer.clock.shouldAnimate = false;
+  if (simulationDate && !Number.isNaN(simulationDate.getTime())) {
+    viewer.clock.currentTime = JulianDate.fromDate(simulationDate);
+  }
+  viewer.scene.requestRender();
+};
+
 const CesiumAssetMap = forwardRef(function CesiumAssetMap(
   {
     assets = [],
@@ -269,6 +351,8 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     basemapOption = null,
     analysisTool = null,
     analysisPoints = [],
+    shadowEnabled = false,
+    shadowDateTime = null,
     onAnalysisClick,
   },
   forwardedRef,
@@ -279,6 +363,8 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
   const pointDataSourceRef = useRef(null);
   const showMarkersRef = useRef(showMarkers);
   const showPolygonsRef = useRef(showPolygons);
+  const shadowEnabledRef = useRef(shadowEnabled);
+  const shadowDateTimeRef = useRef(shadowDateTime);
   const basemapIdRef = useRef(basemapId);
   const basemapOptionRef = useRef(basemapOption);
   const appliedBasemapSignatureRef = useRef("");
@@ -333,6 +419,12 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     }
     viewer.scene.requestRender();
   }, [showMarkers, showPolygons]);
+
+  useEffect(() => {
+    shadowEnabledRef.current = shadowEnabled;
+    shadowDateTimeRef.current = shadowDateTime;
+    applyShadowAnalysis(viewerRef.current, shadowEnabled, shadowDateTime);
+  }, [shadowDateTime, shadowEnabled]);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -413,7 +505,11 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
         option.backgroundColor || "#cbd5e1",
       );
       appliedBasemapSignatureRef.current = signature;
-      viewer.scene.requestRender();
+      applyShadowAnalysis(
+        viewer,
+        shadowEnabledRef.current,
+        shadowDateTimeRef.current,
+      );
     };
     apply().catch((error) => console.error("Could not switch Cesium basemap:", error));
     return () => {
@@ -652,6 +748,11 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       );
       viewer.scene.globe.depthTestAgainstTerrain = false;
       viewer.scene.globe.showGroundAtmosphere = false;
+      applyShadowAnalysis(
+        viewer,
+        shadowEnabledRef.current,
+        shadowDateTimeRef.current,
+      );
       viewer.camera.setView({
         destination: Cartesian3.fromDegrees(
           DEFAULT_MAP_CENTER[0],
@@ -696,6 +797,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           );
           entity.polygon.outline = true;
           entity.polygon.outlineColor = Color.fromCssColorString("#ede9fe");
+          entity.polygon.shadows = ShadowMode.ENABLED;
         });
         await viewer.dataSources.add(buildings);
         fallbackTargetRef.current = buildings;
@@ -721,6 +823,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           entity.polygon.outline = true;
           entity.polygon.outlineColor = Color.fromCssColorString(style.outline);
           entity.polygon.outlineWidth = 1;
+          entity.polygon.shadows = ShadowMode.DISABLED;
           if (entity.id != null) assetEntityById.set(String(entity.id), entity);
         });
         await viewer.dataSources.add(polygons);
@@ -762,6 +865,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
             }
             tileset.assetId = model.assetId;
             tileset.modelData = model;
+            tileset.shadows = ShadowMode.ENABLED;
             viewer.scene.primitives.add(tileset);
             setModelVisualState(tileset);
             targetSpheres.push(tileset.boundingSphere);
@@ -793,6 +897,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
             }
             primitive.assetId = model.assetId;
             primitive.modelData = model;
+            primitive.shadows = ShadowMode.ENABLED;
             viewer.scene.primitives.add(primitive);
             await waitForModelReady(primitive);
             setModelVisualState(primitive);

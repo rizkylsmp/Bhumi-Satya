@@ -243,7 +243,7 @@ export default function MapSearchOverlay({
                   type="search"
                   value={query}
                   onChange={(event) => updateQuery(event.target.value)}
-                  placeholder="Cari kode aset, nama, lokasi, NIBAR…"
+                  placeholder="Cari kode bangunan, nama, lokasi, NIBAR…"
                   className="h-12 w-full rounded-xl border border-border bg-surface-secondary pl-11 pr-11 text-sm font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 placeholder:font-normal placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"
                 />
                 {query && (
@@ -335,10 +335,13 @@ export default function MapSearchOverlay({
                           </span>
                           <div className="min-w-0 flex-1">
                             <h3 className="truncate text-xs font-black text-text-primary">
-                              {asset.nama_aset || "Aset tanpa nama"}
+                              {asset.nama_aset || "Bangunan tanpa nama"}
                             </h3>
                             <p className="mt-0.5 truncate font-mono text-[9px] font-bold text-accent">
-                              {asset.kode_aset || "Kode aset belum tersedia"}
+                              {asset.kode_aset || "Kode bangunan belum tersedia"}
+                            </p>
+                            <p className="mt-0.5 font-mono text-[8px] font-semibold text-text-muted">
+                              ID {asset.id_aset ?? asset.id ?? "-"}
                             </p>
                           </div>
                           {lods && (

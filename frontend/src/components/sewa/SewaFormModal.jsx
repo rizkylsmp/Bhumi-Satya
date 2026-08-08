@@ -504,6 +504,9 @@ export default function SewaFormModal({
                                 <span className="text-sm font-medium text-text-primary truncate">
                                   {aset.nama_aset}
                                 </span>
+                                <span className="font-mono text-[9px] font-semibold text-text-muted">
+                                  ID {aset.id_aset ?? aset.id ?? "-"}
+                                </span>
                               </div>
                               {aset.lokasi && (
                                 <p className="text-xs text-text-muted mt-0.5 truncate">
@@ -554,7 +557,7 @@ export default function SewaFormModal({
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {selectedAset.kode_aset && (
                     <div>
-                      <span className="text-text-muted">Kode Aset:</span>{" "}
+                      <span className="text-text-muted">Kode Bangunan:</span>{" "}
                       <span className="font-mono font-medium text-text-primary">
                         {selectedAset.kode_aset}
                       </span>

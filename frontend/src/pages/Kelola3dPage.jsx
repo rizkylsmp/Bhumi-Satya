@@ -67,7 +67,7 @@ const sortOptions = [
   { value: "center_x:ASC", label: "Center X terkecil" },
   { value: "center_y:ASC", label: "Center Y terkecil" },
   { value: "kode_3d:ASC", label: "Kode 3D A–Z" },
-  { value: "kode_aset:ASC", label: "Kode aset A–Z" },
+  { value: "kode_aset:ASC", label: "Kode bangunan A–Z" },
   { value: "building_name:ASC", label: "Nama bangunan A–Z" },
 ];
 const DEFAULT_SORT = "created_at:DESC";
@@ -315,7 +315,7 @@ function BatchImportDialog({ open, onClose, onCompleted }) {
         <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
           <div className="min-h-0 border-b border-border p-4 lg:border-b-0 lg:border-r">
             <p className="text-[8px] font-black uppercase tracking-[0.14em] text-text-muted">1 · Pilih kode 2D</p>
-            <label className="relative mt-2 block"><span className="sr-only">Cari kode 2D</span><MagnifyingGlassIcon size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" /><input type="search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Cari kode 2D atau nama aset…" className="h-10 w-full rounded-xl border border-border bg-surface-secondary pl-9 pr-3 text-[10px] font-semibold text-text-primary outline-none focus:border-accent" /></label>
+            <label className="relative mt-2 block"><span className="sr-only">Cari kode 2D</span><MagnifyingGlassIcon size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" /><input type="search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Cari kode 2D atau nama bangunan…" className="h-10 w-full rounded-xl border border-border bg-surface-secondary pl-9 pr-3 text-[10px] font-semibold text-text-primary outline-none focus:border-accent" /></label>
             <div className="mt-2 max-h-[48vh] space-y-1.5 overflow-y-auto pr-1 dark:[color-scheme:dark]">
               {candidatesLoading ? [1, 2, 3].map((row) => <div key={row} className="h-16 animate-pulse rounded-xl bg-surface-secondary" />) : candidates.map((candidate) => {
                 const active = selectedParcel?.kode_2d === candidate.kode_2d;
@@ -460,9 +460,9 @@ function AddAssetDialog({ open, onClose, onAdded }) {
 
         <div className="border-b border-border p-4">
           <label className="relative block">
-            <span className="sr-only">Cari bidang berdasarkan kode 2D, kode aset, nama, atau lokasi</span>
+            <span className="sr-only">Cari bidang berdasarkan kode 2D, kode bangunan, nama, atau lokasi</span>
             <MagnifyingGlassIcon size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input autoFocus type="search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Cari kode 2D, kode aset, nama, atau lokasi…" className="h-11 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-4 text-xs font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
+            <input autoFocus type="search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Cari kode 2D, kode bangunan, nama, atau lokasi…" className="h-11 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-4 text-xs font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
           </label>
         </div>
 
@@ -697,7 +697,7 @@ export default function Kelola3dPage() {
             <label className="relative min-w-56 flex-1">
               <span className="sr-only">Cari katalog 3D</span>
               <MagnifyingGlassIcon size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-              <input type="search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Cari kode 3D, nama bangunan, aset, lokasi…" className="h-10 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-3 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
+              <input type="search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Cari kode 3D, nama bangunan, atau lokasi…" className="h-10 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-3 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
             </label>
             <select value={sortValue} onChange={(event) => { setSortValue(event.target.value); setPage(1); }} className="h-10 rounded-xl border border-border bg-surface-secondary px-3 text-[10px] font-bold text-text-secondary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15">
               {sortOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -802,7 +802,7 @@ export default function Kelola3dPage() {
                 ) : sortedItems.map((item) => (
                   <tr key={item.kode_3d} className="group transition hover:bg-accent/[0.025]">
                     <td className="px-4 py-3"><p className="font-mono text-[9px] font-bold text-text-muted">{item.kode_2d || "Kode 2D —"}</p><span className="mt-1 inline-flex rounded-lg bg-violet-50 px-2.5 py-1.5 font-mono text-[10px] font-black text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">{item.kode_3d}</span></td>
-                    <td className="px-4 py-3"><p className="max-w-64 truncate text-[10px] font-bold text-text-primary">{item.building_name || "Nama bangunan belum diisi"}</p><p className="mt-1 text-[8px] font-bold uppercase text-text-muted">{item.asset?.kode_aset || "—"} · {item.category || "Bangunan"} · {item.model_format || "Tanpa model"}</p></td>
+                    <td className="px-4 py-3"><p className="max-w-64 truncate text-[10px] font-bold text-text-primary">{item.building_name || "Nama bangunan belum diisi"}</p><p className="mt-1 text-[8px] font-bold uppercase text-text-muted">ID {item.asset?.id_aset ?? "-"} · {item.asset?.kode_aset || "—"} · {item.category || "Bangunan"} · {item.model_format || "Tanpa model"}</p></td>
                     <td className="px-4 py-3"><p className="flex max-w-64 items-center gap-1 truncate text-[9px] text-text-secondary"><MapPinIcon size={10} /> {item.asset?.lokasi || item.asset?.desa_kelurahan || "—"}</p><p className="mt-1 max-w-64 truncate text-[8px] text-text-muted">{item.asset?.opd_pengguna || "OPD belum diisi"}</p></td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1.5">

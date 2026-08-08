@@ -203,11 +203,11 @@ export default function AssetPage() {
     try {
       const assetId = asset?.id_aset || asset?.id;
       const response = assetId ? await asetService.getById(assetId) : null;
-      downloadAssetPdf(response?.data?.data || asset);
+      await downloadAssetPdf(response?.data?.data || asset);
       toast.success("PDF aset mulai diunduh", { id: toastId });
     } catch (error) {
       console.error("Error preparing asset PDF:", error);
-      downloadAssetPdf(asset);
+      await downloadAssetPdf(asset);
       toast.success("PDF aset dibuat dari data tabel", { id: toastId });
     }
   };
@@ -446,6 +446,7 @@ export default function AssetPage() {
                 <thead>
                   <tr className="bg-surface-secondary border-b border-border">
                     <TableHeader className="w-12">No</TableHeader>
+                    <TableHeader className="w-[72px]">ID</TableHeader>
                     {useCompactAssetTable ? (
                       <>
                         <TableHeader
@@ -453,7 +454,7 @@ export default function AssetPage() {
                           column="kode_aset"
                           className="min-w-[170px]"
                         >
-                          Kode Aset
+                          Kode Bangunan
                         </TableHeader>
                         <TableHeader
                           sortable
@@ -587,14 +588,14 @@ export default function AssetPage() {
                           column="kode_aset"
                           className="w-[13%]"
                         >
-                          Kode Aset
+                          Kode Bangunan
                         </TableHeader>
                         <TableHeader
                           sortable
                           column="nama_aset"
                           className="w-[18%]"
                         >
-                          Nama Aset
+                          Nama Bangunan
                         </TableHeader>
                         <TableHeader className="w-[19%]">
                           Lokasi
@@ -698,6 +699,12 @@ export default function AssetPage() {
                         <td className="px-3 py-3">
                           <span className="text-sm text-text-muted font-medium">
                             {(currentPage - 1) * itemsPerPage + idx + 1}
+                          </span>
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <span className="font-mono text-xs font-semibold text-text-muted">
+                            {asset.id_aset ?? asset.id ?? "-"}
                           </span>
                         </td>
 
@@ -1107,6 +1114,9 @@ export default function AssetPage() {
                         <div className="flex items-center gap-2 mb-1">
                           <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[10px] font-bold text-surface">
                             {rowNumber}
+                          </span>
+                          <span className="rounded bg-surface-secondary px-1.5 py-0.5 font-mono text-[9px] font-semibold text-text-muted">
+                            ID {asset.id_aset ?? asset.id ?? "-"}
                           </span>
                           {useCompactAssetTable ? (
                             <span className="text-xs font-semibold text-text-primary">

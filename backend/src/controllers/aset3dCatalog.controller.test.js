@@ -47,7 +47,7 @@ test("does not derive a building name from the asset or an individual LOD", () =
     building_name: null,
     status: "active",
     aset: {
-      nama_aset: "Nama Aset Tidak Digunakan",
+      nama_aset: "Nama Bangunan Tidak Digunakan",
       models3d: [{
         id_model_3d: 8,
         kode_3d: "3D-000002",

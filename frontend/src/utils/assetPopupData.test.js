@@ -7,6 +7,7 @@ import {
 describe("asset popup data", () => {
   it("uses only available asset fields", () => {
     const result = buildAssetPopupData({
+      id_aset: 17,
       kode_aset: "AST-001",
       nama_aset: "Gedung Utama",
       jenis_aset: "Bangunan",
@@ -21,8 +22,9 @@ describe("asset popup data", () => {
     expect(result.location).toBe("Jl. Tata Bumi");
     expect(result.area).toBe("1250.5");
     expect(result.details).toEqual([
-      { label: "Kode Aset", value: "AST-001" },
-      { label: "Nama Aset", value: "Gedung Utama" },
+      { label: "ID Primary Key", value: 17 },
+      { label: "Kode Bangunan", value: "AST-001" },
+      { label: "Nama Bangunan", value: "Gedung Utama" },
       { label: "Jenis Aset", value: "Bangunan" },
       { label: "Luas Terdata", value: "1250.5", format: "area" },
     ]);
@@ -72,7 +74,7 @@ describe("asset popup data", () => {
     expect(result.catalogCode).toBe("3D-002");
     expect(result.context).toBe("3d");
     expect(result.general).toContainEqual({
-      label: "Nama Bangunan",
+      label: "Nama Bangunan 3D",
       value: "Gedung Laboratorium",
     });
     expect(result.model).toMatchObject({

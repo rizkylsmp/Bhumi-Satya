@@ -141,7 +141,7 @@ export default function AsetTersediaPage() {
             type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Cari nama aset atau lokasi"
+            placeholder="Cari nama bangunan atau lokasi"
             className="w-full h-11 rounded-xl border border-border bg-surface-secondary pl-10 pr-4 text-sm text-text-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/10"
           />
         </div>
@@ -291,6 +291,11 @@ function AvailableCard({ item, onRequest }) {
       <div className="p-4 space-y-3">
         <div>
           <h2 className="font-bold text-text-primary line-clamp-2">{item.nama_aset}</h2>
+          {(item.aset?.id_aset ?? item.id_aset) && (
+            <p className="mt-1 font-mono text-[10px] font-semibold text-text-muted">
+              ID {item.aset?.id_aset ?? item.id_aset}
+            </p>
+          )}
           <p className="flex items-center gap-1.5 text-sm text-text-muted mt-1">
             <MapPinIcon size={14} className="shrink-0" />
             <span className="truncate">{item.lokasi_aset || item.aset?.lokasi || "-"}</span>

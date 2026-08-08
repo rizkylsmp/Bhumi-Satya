@@ -837,7 +837,7 @@ export const create = async (req, res) => {
     if (!kode_aset || !nama_aset) {
       return res.status(400).json({
         success: false,
-        error: "Kode aset dan nama aset wajib diisi",
+        error: "Kode bangunan dan nama bangunan wajib diisi",
       });
     }
 
@@ -853,7 +853,7 @@ export const create = async (req, res) => {
     if (existingAset) {
       return res.status(400).json({
         success: false,
-        error: "Kode aset sudah digunakan",
+        error: "Kode bangunan sudah digunakan",
       });
     }
 
@@ -1010,7 +1010,7 @@ export const update = async (req, res) => {
       if (existingAset) {
         return res.status(400).json({
           success: false,
-          error: "Kode aset sudah digunakan",
+          error: "Kode bangunan sudah digunakan",
         });
       }
     }

@@ -483,6 +483,7 @@ export default function LandingPage() {
 
   // Map data
   const [mapAssets, setMapAssets] = useState([]);
+  const [mapLoading, setMapLoading] = useState(true);
   const [mapSearch, setMapSearch] = useState("");
   const [focusedAsset, setFocusedAsset] = useState(null);
   const [selectedMapAsset, setSelectedMapAsset] = useState(null);
@@ -550,7 +551,8 @@ export default function LandingPage() {
     petaService
       .getPublicMarkers()
       .then((res) => setMapAssets(normalizeMapMarkers(res.data.data || [])))
-      .catch(() => setMapAssets([]));
+      .catch(() => setMapAssets([]))
+      .finally(() => setMapLoading(false));
   }, []);
 
   // Fetch available sewa
@@ -580,6 +582,30 @@ export default function LandingPage() {
         a.desa_kelurahan?.toLowerCase().includes(q),
     );
   }, [mapAssets, mapSearch]);
+
+  const publicStats = useMemo(() => {
+    const parcelCodes = new Set(
+      mapAssets.map((asset) => asset.kode_2d).filter(Boolean),
+    );
+    const buildingCodes = new Set(
+      mapAssets.flatMap((asset) => asset.kode_3d_list || []).filter(Boolean),
+    );
+    const buildingCount = buildingCodes.size || mapAssets.reduce(
+      (total, asset) => total + (Number(asset.building_count_3d) || 0),
+      0,
+    );
+    const districts = new Set(
+      mapAssets
+        .map((asset) => String(asset.kecamatan || "").trim())
+        .filter(Boolean),
+    );
+
+    return {
+      parcels: parcelCodes.size,
+      buildings: buildingCount,
+      districts: districts.size,
+    };
+  }, [mapAssets]);
 
   const scrollTo = (ref) => {
     ref.current?.scrollIntoView({ behavior: "smooth" });
@@ -901,30 +927,30 @@ export default function LandingPage() {
             <div className="mt-6 grid grid-cols-2 gap-3">
               {[
                 {
-                  label: "Digital Twin",
-                  value: "2D + 3D",
-                  description: "Visual ruang terpadu",
+                  label: "Bidang 2D",
+                  value: mapLoading ? "—" : formatNumber(publicStats.parcels),
+                  description: "Bidang terpetakan",
                   icon: MapTrifoldIcon,
                 },
                 {
-                  label: "Data terhubung",
-                  value: mapAssets.length || "—",
-                  description: "Objek dalam peta",
+                  label: "Bangunan 3D",
+                  value: mapLoading ? "—" : formatNumber(publicStats.buildings),
+                  description: "Bangunan tervisualisasi",
                   icon: BuildingsIcon,
                 },
                 ...(RENTAL_FEATURE_ENABLED
                   ? [
                       {
-                  label: "Pilihan sewa",
-                  value: items.length || "—",
+                  label: "Tersedia Disewa",
+                  value: loading ? "—" : formatNumber(items.length),
                   description: "Objek ditawarkan",
                   icon: StorefrontIcon,
                 },
                 {
-                  label: "Pengajuan",
-                  value: "Online",
-                  description: "Alur masyarakat",
-                  icon: PaperPlaneTiltIcon,
+                  label: "Kecamatan",
+                  value: mapLoading ? "—" : formatNumber(publicStats.districts),
+                  description: "Wilayah tercakup",
+                  icon: MapPinIcon,
                       },
                     ]
                   : []),

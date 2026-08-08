@@ -125,7 +125,7 @@ function AddAsset2dDialog({ open, onClose, onAdded }) {
                 Pilih Aset untuk Kelola 2D
               </h2>
               <p className="mt-1 text-[10px] text-text-muted">
-                Sistem membuat satu kode bidang 2D yang terhubung ke kode aset terpilih.
+                Sistem membuat satu kode bidang 2D yang terhubung ke kode bangunan terpilih.
               </p>
             </div>
           </div>
@@ -141,14 +141,14 @@ function AddAsset2dDialog({ open, onClose, onAdded }) {
 
         <div className="border-b border-border p-4">
           <label className="relative block">
-            <span className="sr-only">Cari kode aset, nama, atau lokasi</span>
+            <span className="sr-only">Cari kode bangunan, nama, atau lokasi</span>
             <MagnifyingGlassIcon size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               autoFocus
               type="search"
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Cari kode aset, nama aset, atau lokasi…"
+              placeholder="Cari kode bangunan, nama bangunan, atau lokasi…"
               className="h-11 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-4 text-xs font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
             />
           </label>
@@ -315,7 +315,7 @@ export default function DataSpasialPage() {
             <div className="min-w-0">
               <h1 className="admin-page-header__title">Kelola 2D</h1>
               <p className="admin-page-header__description">
-                Pilih aset Pusat Data, lengkapi bidang 2D, lalu gunakan kode 2D untuk menambahkan bangunan 3D.
+                Pilih bangunan di Pusat Data, lengkapi bidang 2D, lalu gunakan kode 2D untuk menambahkan bangunan 3D.
               </p>
             </div>
           </div>
@@ -351,7 +351,7 @@ export default function DataSpasialPage() {
                 type="search"
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder="Cari kode 2D, kode aset, nama, atau lokasi…"
+                placeholder="Cari kode 2D, kode bangunan, nama, atau lokasi…"
                 className="h-10 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-3 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
               />
             </label>
@@ -364,8 +364,8 @@ export default function DataSpasialPage() {
               <option value="updated_at:DESC">Terakhir diperbarui</option>
               <option value="created_at:DESC">Terbaru ditambahkan</option>
               <option value="kode_2d:ASC">Kode 2D A–Z</option>
-              <option value="kode_aset:ASC">Kode aset A–Z</option>
-              <option value="nama_aset:ASC">Nama aset A–Z</option>
+              <option value="kode_aset:ASC">Kode bangunan A–Z</option>
+              <option value="nama_aset:ASC">Nama bangunan A–Z</option>
             </select>
             <button
               type="button"
@@ -421,7 +421,7 @@ export default function DataSpasialPage() {
             <table className="admin-data-table min-w-[1080px]">
               <thead>
                 <tr className="border-b border-border bg-surface-secondary">
-                  <th className="px-4 py-3 text-left">Kode 2D / Aset</th>
+                  <th className="px-4 py-3 text-left">Kode 2D / Bangunan</th>
                   <th className="px-4 py-3 text-left">Nama dan Lokasi</th>
                   <th className="px-4 py-3 text-left">Koordinat</th>
                   <th className="px-4 py-3 text-left">Kelengkapan</th>
@@ -439,7 +439,7 @@ export default function DataSpasialPage() {
                     <td colSpan="6" className="px-6 py-14 text-center">
                       <GlobeHemisphereWestIcon size={32} className="mx-auto text-text-muted" />
                       <p className="mt-3 text-xs font-black text-text-primary">Belum ada bidang di Kelola 2D</p>
-                      <p className="mt-1 text-[10px] text-text-muted">Pilih aset dari Pusat Data untuk membuat kode bidang 2D.</p>
+                      <p className="mt-1 text-[10px] text-text-muted">Pilih bangunan dari Pusat Data untuk membuat kode bidang 2D.</p>
                     </td>
                   </tr>
                 ) : items.map((item) => (
@@ -448,10 +448,10 @@ export default function DataSpasialPage() {
                       <span className="inline-flex rounded-lg bg-cyan-500/10 px-2.5 py-1.5 font-mono text-[10px] font-black text-cyan-700 dark:text-cyan-300">
                         {item.kode_2d}
                       </span>
-                      <p className="mt-1 font-mono text-[8px] font-bold text-text-muted">Aset {item.asset?.kode_aset || "—"}</p>
+                      <p className="mt-1 font-mono text-[8px] font-bold text-text-muted">ID {item.id_aset ?? item.asset?.id_aset ?? "-"} &bull; Bangunan {item.asset?.kode_aset || "—"}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="max-w-72 truncate text-[10px] font-bold text-text-primary">{item.asset?.nama_aset || "Nama aset belum diisi"}</p>
+                      <p className="max-w-72 truncate text-[10px] font-bold text-text-primary">{item.asset?.nama_aset || "Nama bangunan belum diisi"}</p>
                       <p className="mt-1 flex max-w-72 items-center gap-1 truncate text-[9px] text-text-muted"><MapPinIcon size={10} /> {item.asset?.lokasi || item.asset?.desa_kelurahan || "Lokasi belum diisi"}</p>
                     </td>
                     <td className="px-4 py-3 font-mono text-[9px] text-text-secondary">

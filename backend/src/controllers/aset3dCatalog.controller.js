@@ -302,10 +302,11 @@ export const exportCsv = async (req, res) => {
       order: catalogOrder(req.query.sort, req.query.order),
     });
     const headers = [
-      "kode_2d", "kode_3d", "kode_aset", "nama_bangunan_3d", "nama_aset", "kategori", "status_katalog", "status_model",
+      "id_primary_key", "kode_2d", "kode_3d", "kode_bangunan", "nama_bangunan_3d", "nama_bangunan", "kategori", "status_katalog", "status_model",
       "format", "center_x", "center_y", "url_model", "dibuat", "diperbarui",
     ];
     const body = rows.map(serializeCatalog).map((item) => [
+      item.asset?.id_aset,
       item.kode_2d,
       item.kode_3d,
       item.asset?.kode_aset,

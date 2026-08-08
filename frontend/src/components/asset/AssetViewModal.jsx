@@ -551,7 +551,7 @@ export default function AssetViewModal({
         <nav aria-label="Navigasi data lengkap" className="shrink-0 overflow-x-auto border-b border-border bg-surface px-4 py-2 md:px-6">
           <div
             role="tablist"
-            aria-label="Bagian data aset"
+            aria-label="Bagian data bangunan"
             onKeyDown={handleDetailTabKeyDown}
             className="flex min-w-max items-center gap-1"
           >
@@ -589,9 +589,10 @@ export default function AssetViewModal({
                 columns={3}
                 hidden={activeDetailTab !== "detail-identitas-aset"}
               >
-                <InfoItem label="Kode Aset" value={asset.kode_aset} highlight />
+                <InfoItem label="ID Primary Key" value={asset.id_aset ?? asset.id} highlight />
+                <InfoItem label="Kode Bangunan" value={asset.kode_aset} highlight />
                 <InfoItem label="Kode Bidang 2D" value={asset.kode_2d} highlight />
-                <InfoItem label="Nama Aset" value={asset.nama_aset} highlight />
+                <InfoItem label="Nama Bangunan" value={asset.nama_aset} highlight />
                 <InfoItem label="Kode BMD" value={asset.kode_bmd} />
                 <InfoItem label="Jenis Aset" value={asset.jenis_aset} />
                 <InfoItem label="Asal Data (audit)" value={asset.sumber} />

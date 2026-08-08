@@ -122,7 +122,7 @@ export default function SewaDiajukanPage() {
             type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Cari nama aset atau tujuan sewa"
+            placeholder="Cari nama bangunan atau tujuan sewa"
             className="w-full h-11 rounded-xl border border-border bg-surface-secondary pl-10 pr-4 text-sm text-text-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/10"
           />
         </div>
@@ -192,6 +192,11 @@ function RequestCard({ item }) {
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
         <div className="min-w-0">
           <h2 className="font-bold text-text-primary truncate">{item.nama_aset}</h2>
+          {(item.aset?.id_aset ?? item.sewa?.id_aset ?? item.id_aset) && (
+            <p className="mt-1 font-mono text-[10px] font-semibold text-text-muted">
+              ID {item.aset?.id_aset ?? item.sewa?.id_aset ?? item.id_aset}
+            </p>
+          )}
           <p className="text-sm text-text-muted mt-1 line-clamp-2">
             {item.tujuan_sewa}
           </p>

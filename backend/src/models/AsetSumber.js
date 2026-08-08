@@ -35,7 +35,7 @@ const AsetSumber = sequelize.define(
     source_identifier: {
       type: DataTypes.STRING(150),
       allowNull: true,
-      comment: "Identifier asal seperti kode aset, NIB, atau nomor hak",
+      comment: "Identifier asal seperti kode bangunan, NIB, atau nomor hak",
     },
     import_batch: {
       type: DataTypes.STRING(100),

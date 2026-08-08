@@ -132,7 +132,7 @@ function DetailModal({ item, onClose, onUpdate }) {
   };
 
   const validateEdit = () => {
-    if (!formData.nama_aset.trim()) return "Nama aset wajib diisi";
+    if (!formData.nama_aset.trim()) return "Nama bangunan wajib diisi";
     if (!formData.nama_pemohon.trim()) return "Nama pemohon wajib diisi";
     if (!formData.no_telepon.trim()) return "Nomor telepon wajib diisi";
     if (!formData.tujuan_sewa.trim()) return "Tujuan sewa wajib diisi";
@@ -208,7 +208,7 @@ function DetailModal({ item, onClose, onUpdate }) {
             </h4>
             <div>
               <label className="block text-xs text-text-muted mb-1">
-                Nama Aset
+                Nama Bangunan
               </label>
               <div className="relative">
                 <StorefrontIcon

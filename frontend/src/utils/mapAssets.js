@@ -14,6 +14,12 @@ export function normalizeMapMarker(marker) {
     id: marker.id,
     kode_aset: marker.kode,
     kode_3d: marker.kode_3d || null,
+    kode_3d_list: Array.isArray(marker.kode_3d_list)
+      ? marker.kode_3d_list.filter(Boolean)
+      : [],
+    kode_2d: marker.kode_2d || null,
+    building_count_3d: Number(marker.building_count_3d) || 0,
+    building_name_3d: marker.building_name_3d || null,
     nib: marker.nib || null,
     nama_aset: marker.nama,
     lokasi: marker.lokasi,
