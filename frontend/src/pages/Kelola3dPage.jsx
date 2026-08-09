@@ -792,8 +792,8 @@ export default function Kelola3dPage() {
               <thead>
                 <tr className="border-b border-border bg-linear-to-r from-surface-secondary to-surface">
                   {[
-                    ["kode_2d", "Kode Bidang 2D"],
                     ["kode_3d", "Kode Bangunan 3D"],
+                    ["kode_2d", "Kode Bidang 2D"],
                     ["nama", "Nama / Kategori"],
                     ["lokasi", "Lokasi"],
                     ["data_bangunan", "Data Bangunan"],
@@ -834,8 +834,8 @@ export default function Kelola3dPage() {
                   <tr><td colSpan="10" className="px-6 py-14 text-center"><CubeIcon size={32} className="mx-auto text-text-muted" /><p className="mt-3 text-xs font-black text-text-primary">Belum ada data bangunan</p><p className="mt-1 text-[10px] text-text-muted">Pilih bidang 2D lalu tambahkan bangunan 3D pertama.</p></td></tr>
                 ) : sortedItems.map((item) => (
                   <tr key={item.kode_3d} className="group transition hover:bg-accent/[0.025]">
-                    <td className="px-4 py-3"><span className="inline-flex rounded-lg bg-sky-50 px-2.5 py-1.5 font-mono text-[10px] font-black text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">{item.kode_2d || "—"}</span></td>
                     <td className="px-4 py-3"><span className="inline-flex rounded-lg bg-violet-50 px-2.5 py-1.5 font-mono text-[10px] font-black text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">{item.kode_3d || "—"}</span></td>
+                    <td className="px-4 py-3"><span className="inline-flex rounded-lg bg-sky-50 px-2.5 py-1.5 font-mono text-[10px] font-black text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">{item.kode_2d || "—"}</span></td>
                     <td className="px-4 py-3"><p className="max-w-64 truncate text-[10px] font-bold text-text-primary">{item.building_name || "Nama bangunan belum diisi"}</p><p className="mt-1 text-[8px] font-bold uppercase text-text-muted">ID {item.asset?.id_aset ?? "-"} · {item.asset?.kode_aset || "—"} · {item.category || "Bangunan"} · {item.model_format || "Tanpa model"}</p></td>
                     <td className="px-4 py-3"><p className="flex max-w-64 items-center gap-1 truncate text-[9px] text-text-secondary"><MapPinIcon size={10} /> {item.asset?.lokasi || item.asset?.desa_kelurahan || "—"}</p><p className="mt-1 max-w-64 truncate text-[8px] text-text-muted">{item.asset?.opd_pengguna || "OPD belum diisi"}</p></td>
                     <td className="px-4 py-3">

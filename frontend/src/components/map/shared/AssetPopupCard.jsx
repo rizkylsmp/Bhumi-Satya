@@ -36,6 +36,7 @@ const formatNumber = (value, suffix = "") => {
 };
 
 const formatValue = (item) => {
+  if (!hasPopupValue(item.value)) return "-";
   if (item.format === "currency") {
     const numeric = Number(item.value);
     return Number.isFinite(numeric)
@@ -52,6 +53,7 @@ const formatValue = (item) => {
         })
       : String(item.value);
   }
+  if (item.format === "height") return formatNumber(item.value, "m");
   return String(item.value);
 };
 
@@ -156,7 +158,10 @@ function ModelDetails({ model, statusLabel }) {
     { label: "Tinggi", value: model.height, format: "height" },
     { label: "Jumlah Lantai", value: model.floors },
     { label: "CRS Sumber", value: model.sourceCrs },
-  ].filter((item) => hasPopupValue(item.value));
+  ].map((item) => ({
+    ...item,
+    value: hasPopupValue(item.value) ? item.value : "-",
+  }));
 
   return (
     <>
@@ -223,7 +228,9 @@ export default function AssetPopupCard({
   showModel3d = true,
   visibleSectionIds = null,
 }) {
-  const [openSections, setOpenSections] = useState(() => new Set(["general"]));
+  const [openSections, setOpenSections] = useState(
+    () => new Set(["general", "model3d"]),
+  );
 
   if (!asset) return null;
 
@@ -262,62 +269,74 @@ export default function AssetPopupCard({
   const modelStatusLabel = popup.model.active
     ? "Ditampilkan di peta"
     : "Preview versi belum aktif";
-  const hasSpatial2d = spatialRows.length > 0;
-  const hasSpatial3d = showModel3d && popup.model.available;
+  const isBuildingPopup = popup.context === "3d";
+  const hasModelSection = showModel3d && isBuildingPopup;
   const sections = [
     {
       id: "general",
-      icon: InfoIcon,
-      title: "Data Umum",
+      icon: isBuildingPopup ? BuildingsIcon : InfoIcon,
+      title: isBuildingPopup ? "Data Umum Bangunan" : "Data Umum Tanah",
       summary: `${popup.general.length} informasi`,
-      visible: popup.general.length > 0 || popup.location || popup.description,
+      visible: true,
+    },
+    {
+      id: "model3d",
+      icon: CubeIcon,
+      title: "Data Model 3D",
+      summary:
+        [popup.model.lod, popup.model.format]
+          .filter(hasPopupValue)
+          .join(" · ") || "Belum lengkap",
+      visible: hasModelSection,
+    },
+    {
+      id: "land",
+      icon: MapPinIcon,
+      title: "Lokasi & Bidang Tanah",
+      summary: popup.parcelCode || popup.assetCode || "Belum terhubung",
+      visible: isBuildingPopup,
     },
     {
       id: "legal",
       icon: SealCheckIcon,
       title: "Data Legal & Pertanahan",
       summary: `${popup.legal.length} informasi`,
-      visible: popup.legal.length > 0,
+      visible: true,
     },
     {
       id: "physical",
       icon: RulerIcon,
       title: "Data Fisik",
       summary: `${popup.physical.length} informasi`,
-      visible: popup.physical.length > 0,
+      visible: true,
     },
     {
       id: "kib",
       icon: DatabaseIcon,
       title: "Data KIB",
       summary: `${popup.kib.length} informasi`,
-      visible: popup.kib.length > 0,
+      visible: true,
     },
     {
       id: "administrative",
       icon: FileTextIcon,
       title: "Data Administratif",
       summary: `${popup.administrative.length} informasi`,
-      visible: popup.administrative.length > 0,
+      visible: true,
     },
     {
       id: "spatial",
       icon: MapTrifoldIcon,
-      title: "Data Spasial",
-      summary:
-        hasSpatial2d && hasSpatial3d
-          ? "Data 2D & 3D"
-          : hasSpatial3d
-            ? "Data 3D"
-            : "Data 2D",
-      visible: hasSpatial2d || hasSpatial3d,
+      title: isBuildingPopup ? "Data Spasial Tanah" : "Data Spasial",
+      summary: `${spatialRows.length} informasi`,
+      visible: true,
     },
     {
       id: "tax",
       icon: ReceiptIcon,
       title: "Data Pajak",
       summary: `${popup.tax.length} informasi`,
-      visible: popup.tax.length > 0,
+      visible: true,
     },
   ].filter(
     (section) =>
@@ -411,7 +430,7 @@ export default function AssetPopupCard({
                     ))}
                   </dl>
                 )}
-                {popup.location && (
+                {!isBuildingPopup && (
                   <div className="flex items-start gap-2 border-t border-border/50 px-3 py-2.5">
                     <MapPinIcon
                       size={13}
@@ -422,12 +441,12 @@ export default function AssetPopupCard({
                         Lokasi
                       </p>
                       <p className="mt-1 text-[11px] font-semibold leading-relaxed text-text-secondary">
-                        {popup.location}
+                        {popup.location || "-"}
                       </p>
                     </div>
                   </div>
                 )}
-                {popup.description && (
+                {!isBuildingPopup && (
                   <div className="flex items-start gap-2 border-t border-border/50 px-3 py-2.5">
                     <NoteIcon
                       size={13}
@@ -438,43 +457,38 @@ export default function AssetPopupCard({
                         Keterangan
                       </p>
                       <p className="mt-1 text-[10px] leading-relaxed text-text-secondary">
-                        {popup.description}
+                        {popup.description || "-"}
                       </p>
                     </div>
                   </div>
                 )}
               </>
             )}
+            {section.id === "model3d" && (
+              <ModelDetails
+                model={popup.model}
+                statusLabel={modelStatusLabel}
+              />
+            )}
+            {section.id === "land" && (
+              <dl>
+                {popup.landContext.map((item) => (
+                  <DetailRow key={item.label} {...item} />
+                ))}
+              </dl>
+            )}
             {section.id === "spatial" && (
-              <>
-                {hasSpatial2d && (
-                  <SpatialDataGroup
-                    icon={MapPinIcon}
-                    title="Data 2D"
-                    summary={`${spatialRows.length} informasi`}
-                  >
-                    <dl>
-                      {spatialRows.map((item) => (
-                        <DetailRow key={item.label} {...item} />
-                      ))}
-                    </dl>
-                  </SpatialDataGroup>
-                )}
-                {hasSpatial3d && (
-                  <SpatialDataGroup
-                    icon={CubeIcon}
-                    title="Data 3D"
-                    summary={[popup.model.lod, popup.model.format]
-                      .filter(hasPopupValue)
-                      .join(" · ")}
-                  >
-                    <ModelDetails
-                      model={popup.model}
-                      statusLabel={modelStatusLabel}
-                    />
-                  </SpatialDataGroup>
-                )}
-              </>
+              <SpatialDataGroup
+                icon={MapPinIcon}
+                title={isBuildingPopup ? "Data Bidang Tanah" : "Data Bidang"}
+                summary={`${spatialRows.length} informasi`}
+              >
+                <dl>
+                  {spatialRows.map((item) => (
+                    <DetailRow key={item.label} {...item} />
+                  ))}
+                </dl>
+              </SpatialDataGroup>
             )}
             {[
               "legal",

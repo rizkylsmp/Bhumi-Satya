@@ -11,6 +11,7 @@ import { petaService, asetService } from "../services/api";
 import { downloadAssetPdf } from "../utils/pdfExport";
 import { downloadAssetGeojson } from "../utils/geojsonExport";
 import { normalizeMapMarkers } from "../utils/mapAssets";
+import { searchMapRecords } from "../utils/mapSearch";
 import { RENTAL_FEATURE_ENABLED } from "../config/featureFlags";
 import {
   CaretDownIcon,
@@ -284,6 +285,7 @@ export default function MapPage({ publicMode = false }) {
   const [focusKey, setFocusKey] = useState(0);
   const [focus3dTarget, setFocus3dTarget] = useState(null);
   const [focus3dKey, setFocus3dKey] = useState(null);
+  const [temporarySearchAsset, setTemporarySearchAsset] = useState(null);
   const [mapSearchResults, setMapSearchResults] = useState([]);
   const [isMapSearchLoading, setIsMapSearchLoading] = useState(false);
 
@@ -374,24 +376,8 @@ export default function MapPage({ publicMode = false }) {
       return undefined;
     }
 
-    const normalizedTerm = term.toLowerCase();
-    const results = assets
-      .filter((asset) =>
-        [
-          asset.nama_aset,
-          asset.kode_aset,
-          asset.kode_3d,
-          asset.nib,
-          asset.nibar,
-          asset.nomor_sertifikat,
-          asset.opd_pengguna,
-          asset.lokasi,
-          asset.kecamatan,
-          asset.desa_kelurahan,
-        ].some((value) =>
-          String(value || "").toLowerCase().includes(normalizedTerm),
-        ),
-      )
+    const results = searchMapRecords(assets, term)
+      .map((result) => result.record)
       .slice(0, 8);
 
     setMapSearchResults(results);
@@ -430,6 +416,7 @@ export default function MapPage({ publicMode = false }) {
   };
 
   const handleSelectSearchAsset = (asset, searchMode = "2d") => {
+    setTemporarySearchAsset(asset);
     if (searchMode === "3d") {
       const selectedModel = asset.active_model_3d
         || asset.active_models_3d?.[0]
@@ -440,10 +427,12 @@ export default function MapPage({ publicMode = false }) {
         kode3d: asset.kode_3d || selectedModel?.kode_3d || null,
       });
       setFocus3dKey((prev) => (prev ?? 0) + 1);
+      setFocusAssetId(null);
       return;
     }
 
-    setFocusAssetId(asset.id);
+    setFocus3dTarget(null);
+    setFocusAssetId(asset.id_aset || asset.id);
     setFocusKey((prev) => prev + 1);
   };
 
@@ -463,7 +452,17 @@ export default function MapPage({ publicMode = false }) {
 
   const handleCloseSelectedPanel = () => {
     setSelectedPanelAsset(null);
+    setTemporarySearchAsset(null);
+    setFocusAssetId(null);
+    setFocus3dTarget(null);
     setMapSelectionClearKey((prev) => prev + 1);
+  };
+
+  const handleClearMapSelection = () => {
+    setSelectedPanelAsset(null);
+    setTemporarySearchAsset(null);
+    setFocusAssetId(null);
+    setFocus3dTarget(null);
   };
 
   const handleCloseViewModal = () => {
@@ -572,8 +571,18 @@ export default function MapPage({ publicMode = false }) {
       assetById.set(String(asset.id), asset);
     });
 
+    if (temporarySearchAsset) {
+      const temporaryId = temporarySearchAsset.id_aset ?? temporarySearchAsset.id;
+      if (temporaryId !== null && temporaryId !== undefined) {
+        const key = String(temporaryId);
+        if (!assetById.has(key) && hasMapGeometry(temporarySearchAsset)) {
+          assetById.set(key, temporarySearchAsset);
+        }
+      }
+    }
+
     return Array.from(assetById.values());
-  }, [filteredAssets, mapSearchResults]);
+  }, [filteredAssets, mapSearchResults, temporarySearchAsset]);
 
   const data2dControlProps = {
     filteredAssets,
@@ -643,7 +652,7 @@ export default function MapPage({ publicMode = false }) {
           onAsset3dPanelOpenChange={handleAsset3dPanelOpenChange}
           onAsset3dModeChange={handleAsset3dModeChange}
           onFeatureClick={(asset) => setSelectedPanelAsset(asset)}
-          onOtherLayerClick={() => setSelectedPanelAsset(null)}
+          onOtherLayerClick={handleClearMapSelection}
           clearSelectionKey={mapSelectionClearKey}
           popupSectionScope={publicMode ? "general" : "all"}
           showControls={false}
@@ -693,7 +702,9 @@ export default function MapPage({ publicMode = false }) {
             onClose={handleCloseSelectedPanel}
             onViewDetail={publicMode ? null : handleViewDetail}
             showModel3d={sidePanelMode === "3d"}
-            visibleSectionIds={publicMode ? ["general"] : null}
+            visibleSectionIds={
+              publicMode ? ["general", "model3d", "land"] : null
+            }
           />
         )}
       </div>

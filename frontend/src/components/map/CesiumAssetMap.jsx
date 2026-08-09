@@ -341,6 +341,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     polygonGeoJson,
     pointGeoJson,
     detailedModels = [],
+    visibleLocationIds = null,
     showMarkers = true,
     showPolygons = true,
     onFeatureClick,
@@ -363,6 +364,11 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
   const pointDataSourceRef = useRef(null);
   const showMarkersRef = useRef(showMarkers);
   const showPolygonsRef = useRef(showPolygons);
+  const visibleLocationIdsRef = useRef(
+    visibleLocationIds === null
+      ? null
+      : new Set(visibleLocationIds.map(String)),
+  );
   const shadowEnabledRef = useRef(shadowEnabled);
   const shadowDateTimeRef = useRef(shadowDateTime);
   const basemapIdRef = useRef(basemapId);
@@ -419,6 +425,21 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     }
     viewer.scene.requestRender();
   }, [showMarkers, showPolygons]);
+
+  useEffect(() => {
+    const visibleIds = visibleLocationIds === null
+      ? null
+      : new Set(visibleLocationIds.map(String));
+    visibleLocationIdsRef.current = visibleIds;
+
+    const viewer = viewerRef.current;
+    if (!viewer || viewer.isDestroyed()) return;
+
+    targetModelByLocationIdRef.current.forEach((model, locationId) => {
+      model.show = visibleIds === null || visibleIds.has(String(locationId));
+    });
+    viewer.scene.requestRender();
+  }, [visibleLocationIds]);
 
   useEffect(() => {
     shadowEnabledRef.current = shadowEnabled;
@@ -866,6 +887,9 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
             tileset.assetId = model.assetId;
             tileset.modelData = model;
             tileset.shadows = ShadowMode.ENABLED;
+            tileset.show = visibleLocationIdsRef.current === null
+              || !model.locationId
+              || visibleLocationIdsRef.current.has(String(model.locationId));
             viewer.scene.primitives.add(tileset);
             setModelVisualState(tileset);
             targetSpheres.push(tileset.boundingSphere);
@@ -898,6 +922,9 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
             primitive.assetId = model.assetId;
             primitive.modelData = model;
             primitive.shadows = ShadowMode.ENABLED;
+            primitive.show = visibleLocationIdsRef.current === null
+              || !model.locationId
+              || visibleLocationIdsRef.current.has(String(model.locationId));
             viewer.scene.primitives.add(primitive);
             await waitForModelReady(primitive);
             setModelVisualState(primitive);
@@ -963,7 +990,11 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       } else if (!cancelled && detailedModels.length > 0 && focusCoordinates(
         viewer,
         (() => {
-          const model = detailedModels[0];
+          const visibleIds = visibleLocationIdsRef.current;
+          const model = detailedModels.find((candidate) =>
+            visibleIds === null
+            || !candidate.locationId
+            || visibleIds.has(String(candidate.locationId))) || detailedModels[0];
           const location = resolveModelOffsetLocation(model);
           return {
             longitude: location.longitude,

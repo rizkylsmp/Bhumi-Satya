@@ -14,12 +14,27 @@ export default defineConfig(({ mode }) => {
     process.env.COOLIFY_COMMIT_SHA ||
     process.env.GITHUB_SHA ||
     new Date().toISOString();
+  const buildMetadataPlugin = {
+    name: "bhumi-satya-build-metadata",
+    generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "build.json",
+        source: JSON.stringify({ buildId }),
+      });
+    },
+  };
 
   return {
     define: {
       "import.meta.env.VITE_BUILD_ID": JSON.stringify(buildId),
     },
-    plugins: [react(), tailwindcss(), cesium({ rebuildCesium: true })],
+    plugins: [
+      react(),
+      tailwindcss(),
+      cesium({ rebuildCesium: true }),
+      buildMetadataPlugin,
+    ],
     server: {
       proxy: {
         "/api": {

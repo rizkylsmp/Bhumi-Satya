@@ -659,31 +659,31 @@ const MapDisplayBPN = ({
     visible3dLocationIds === undefined
       ? default3dLocationIds
       : visible3dLocationIds;
+  const temporarySearchLocationId = focus3dTarget?.modelId
+    ? `model-${focus3dTarget.modelId}`
+    : null;
+  const renderedVisible3dLocationIds = useMemo(() => {
+    if (resolvedVisible3dLocationIds === null) return null;
+    return Array.from(new Set([
+      ...resolvedVisible3dLocationIds.map(String),
+      ...(temporarySearchLocationId ? [temporarySearchLocationId] : []),
+    ]));
+  }, [resolvedVisible3dLocationIds, temporarySearchLocationId]);
   const visible3dLocationIdSet = useMemo(
-    () => resolvedVisible3dLocationIds === null
+    () => renderedVisible3dLocationIds === null
       ? null
-      : new Set(resolvedVisible3dLocationIds.map(String)),
-    [resolvedVisible3dLocationIds],
-  );
-  const visible3dAssetIdSet = useMemo(
-    () => visible3dLocationIdSet === null
-      ? null
-      : new Set(
-          model3dLocations
-            .filter((location) => visible3dLocationIdSet.has(String(location.id)))
-            .map((location) => String(location.assetId)),
-        ),
-    [model3dLocations, visible3dLocationIdSet],
-  );
-  const visible3dAssets = useMemo(
-    () => visible3dAssetIdSet === null
-      ? roleAssets
-      : roleAssets.filter((asset) => visible3dAssetIdSet.has(String(asset?.id_aset || asset?.id))),
-    [roleAssets, visible3dAssetIdSet],
+      : new Set(renderedVisible3dLocationIds.map(String)),
+    [renderedVisible3dLocationIds],
   );
   const assetBuildingGeoJson = EMPTY_FEATURE_COLLECTION;
-  const detailedModels3d = useMemo(
-    () => visible3dAssets
+  // Keep the complete model catalogue mounted in Cesium. LOD/search visibility is
+  // changed in-place so selecting a result does not rebuild or blink the map.
+  const allAssetsResolved = useMemo(
+    () => allAssets || assets || [],
+    [allAssets, assets],
+  );
+  const allDetailedModels3d = useMemo(
+    () => allAssetsResolved
       .flatMap((asset) => {
         const activeModels = Array.isArray(asset?.active_models_3d)
           && asset.active_models_3d.length > 0
@@ -723,13 +723,16 @@ const MapDisplayBPN = ({
         });
       })
       .filter((model) => (model?.public_url || model?.converted_public_url)
-        && (
-          visible3dLocationIdSet === null
-          || visible3dLocationIdSet.has(String(model.locationId))
-        )
         && parseCoordinateValue(model.location_lat) !== null
         && parseCoordinateValue(model.location_long) !== null),
-    [visible3dAssets, visible3dLocationIdSet],
+    [allAssetsResolved],
+  );
+  const detailedModels3d = useMemo(
+    () => visible3dLocationIdSet === null
+      ? allDetailedModels3d
+      : allDetailedModels3d.filter((model) =>
+          visible3dLocationIdSet.has(String(model.locationId))),
+    [allDetailedModels3d, visible3dLocationIdSet],
   );
   const tiledAssetIds = useMemo(
     () => forceDirectModelPreview
@@ -752,11 +755,6 @@ const MapDisplayBPN = ({
         || model.conversion_status !== "ready"
         || !model.converted_public_url),
     [detailedModels3d, forceDirectModelPreview, tileset3dStatus.state],
-  );
-  // Full asset list for highlight/flyTo lookups (falls back to filtered list)
-  const allAssetsResolved = useMemo(
-    () => allAssets || assets || [],
-    [allAssets, assets],
   );
   const analysisFeatureCollection = useMemo(
     () => buildAnalysisFeatureCollection({
@@ -842,7 +840,7 @@ const MapDisplayBPN = ({
   // When both marker & polygon are unchecked, show small dot without labels
   const dotsOnlyMode = !showMarkers && !showPolygons;
   const effectiveShowMarkers = showMarkers || dotsOnlyMode;
-  const effectiveShowPolygons = showPolygons;
+  const effectiveShowPolygons = showPolygons || Boolean(highlightAssetId);
 
   const zntCachedData = useRef(null);
 
@@ -2714,6 +2712,7 @@ const MapDisplayBPN = ({
 
       if (isAsset3dMode && cesiumMapRef.current) {
         cesiumMapRef.current.focus({
+          assetId: targetAsset?.id_aset || targetAsset?.id,
           longitude: lngLat[0],
           latitude: lngLat[1],
         });
@@ -3262,7 +3261,8 @@ const MapDisplayBPN = ({
               buildingGeoJson={assetBuildingGeoJson}
               polygonGeoJson={bidangTanahGeoJson}
               pointGeoJson={visibleDotGeoJson}
-              detailedModels={detailedModels3d}
+              detailedModels={allDetailedModels3d}
+              visibleLocationIds={renderedVisible3dLocationIds}
               showMarkers={effectiveShowMarkers}
               showPolygons={effectiveShowPolygons}
               onFeatureClick={onFeatureClick}

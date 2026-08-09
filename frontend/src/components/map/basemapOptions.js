@@ -17,7 +17,7 @@ export const BASEMAP_OPTIONS = [
   },
   {
     id: "orthophoto",
-    label: "Orthophoto (Clarity)",
+    label: "Orthophoto",
     kind: "imagery",
     tiles: [
       "https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",

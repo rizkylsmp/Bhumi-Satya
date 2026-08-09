@@ -92,11 +92,11 @@ function AddAsset2dDialog({ open, onClose, onAdded }) {
     setAddingCode(asset.kode_aset);
     try {
       const response = await aset2dCatalogService.create(asset.kode_aset);
-      toast.success(response.data?.message || "Aset ditambahkan ke Kelola 2D");
+      toast.success(response.data?.message || "Tanah ditambahkan ke Data Spasial");
       await fetchCandidates();
       await onAdded();
     } catch (error) {
-      toast.error(getErrorMessage(error, "Gagal menambahkan aset ke Kelola 2D"));
+      toast.error(getErrorMessage(error, "Gagal menambahkan tanah ke Data Spasial"));
     } finally {
       setAddingCode(null);
     }
@@ -122,10 +122,10 @@ function AddAsset2dDialog({ open, onClose, onAdded }) {
             </span>
             <div>
               <h2 id="add-asset-2d-title" className="text-base font-black text-text-primary">
-                Pilih Aset untuk Kelola 2D
+                Pilih Tanah untuk Data Spasial
               </h2>
               <p className="mt-1 text-[10px] text-text-muted">
-                Sistem membuat satu kode bidang 2D yang terhubung ke kode bangunan terpilih.
+                Sistem membuat satu Kode Bidang yang terhubung ke Kode Tanah terpilih.
               </p>
             </div>
           </div>
@@ -141,14 +141,14 @@ function AddAsset2dDialog({ open, onClose, onAdded }) {
 
         <div className="border-b border-border p-4">
           <label className="relative block">
-            <span className="sr-only">Cari kode bangunan, nama, atau lokasi</span>
+            <span className="sr-only">Cari kode tanah, nama tanah, atau lokasi</span>
             <MagnifyingGlassIcon size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               autoFocus
               type="search"
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Cari kode bangunan, nama bangunan, atau lokasi…"
+              placeholder="Cari kode tanah, nama tanah, atau lokasi…"
               className="h-11 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-4 text-xs font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
             />
           </label>
@@ -166,7 +166,7 @@ function AddAsset2dDialog({ open, onClose, onAdded }) {
               <CheckCircleIcon size={30} className="mx-auto text-emerald-500" weight="duotone" />
               <p className="mt-3 text-xs font-black text-text-primary">Tidak ada aset yang dapat ditambahkan</p>
               <p className="mt-1 text-[10px] text-text-muted">
-                Semua hasil pencarian sudah berada di Kelola 2D atau belum tersedia di Pusat Data.
+                Semua hasil pencarian sudah berada di Data Spasial atau belum tersedia di Pusat Data Tanah.
               </p>
             </div>
           ) : (
@@ -208,7 +208,7 @@ function AddAsset2dDialog({ open, onClose, onAdded }) {
           )}
         </div>
         <div className="border-t border-border p-4">
-          <Pagination pagination={pagination} onChange={setPage} itemLabel="aset" />
+          <Pagination pagination={pagination} onChange={setPage} itemLabel="tanah" />
         </div>
       </section>
     </div>
@@ -261,7 +261,7 @@ export default function DataSpasialPage() {
       setItems(catalogResponse.data?.data || []);
       setPagination(catalogResponse.data?.pagination || null);
     } catch (error) {
-      toast.error(getErrorMessage(error, "Gagal memuat Kelola 2D"));
+      toast.error(getErrorMessage(error, "Gagal memuat Data Spasial"));
       setItems([]);
     } finally {
       setLoading(false);
@@ -274,8 +274,8 @@ export default function DataSpasialPage() {
 
   const removeItem = async (item) => {
     const approved = await confirm({
-      title: "Keluarkan dari Kelola 2D?",
-      message: `${item.kode_2d} akan dikeluarkan dari Kelola 2D. Data aset di Pusat Data tidak dihapus.`,
+      title: "Keluarkan dari Data Spasial?",
+      message: `${item.kode_2d} akan dikeluarkan dari Data Spasial. Data tanah di Pusat Data Tanah tidak dihapus.`,
       confirmText: "Keluarkan",
       variant: "danger",
     });
@@ -283,7 +283,7 @@ export default function DataSpasialPage() {
     setRemovingCode(item.kode_2d);
     try {
       const response = await aset2dCatalogService.remove(item.kode_2d);
-      toast.success(response.data?.message || "Bidang dikeluarkan dari Kelola 2D");
+      toast.success(response.data?.message || "Bidang dikeluarkan dari Data Spasial");
       if (items.length === 1 && page > 1) setPage((current) => current - 1);
       else await fetchData();
     } catch (error) {
@@ -313,9 +313,9 @@ export default function DataSpasialPage() {
               <GlobeHemisphereWestIcon size={21} weight="duotone" />
             </span>
             <div className="min-w-0">
-              <h1 className="admin-page-header__title">Kelola 2D</h1>
+              <h1 className="admin-page-header__title">Data Spasial</h1>
               <p className="admin-page-header__description">
-                Pilih bangunan di Pusat Data, lengkapi bidang 2D, lalu gunakan kode 2D untuk menambahkan bangunan 3D.
+                Pilih tanah dari Pusat Data Tanah, lengkapi Kode Bidang, lalu hubungkan bangunan 3D bila diperlukan.
               </p>
             </div>
           </div>
@@ -336,7 +336,7 @@ export default function DataSpasialPage() {
                 className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-accent px-3 text-xs font-bold text-surface transition hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <PlusIcon size={15} weight="bold" />
-                Pilih Aset
+                Pilih Tanah
               </button>
             )}
           </div>
@@ -345,13 +345,13 @@ export default function DataSpasialPage() {
         <section className="overflow-hidden rounded-2xl border border-border bg-surface">
           <div className="flex min-w-0 flex-wrap items-center gap-2 border-b border-border p-3">
             <label className="relative min-w-56 flex-1">
-              <span className="sr-only">Cari bidang Kelola 2D</span>
+              <span className="sr-only">Cari data spasial tanah</span>
               <MagnifyingGlassIcon size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
               <input
                 type="search"
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder="Cari kode 2D, kode bangunan, nama, atau lokasi…"
+                placeholder="Cari kode bidang, kode tanah, nama tanah, atau lokasi…"
                 className="h-10 w-full rounded-xl border border-border bg-surface-secondary pl-10 pr-3 text-[10px] font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
               />
             </label>
@@ -363,9 +363,9 @@ export default function DataSpasialPage() {
             >
               <option value="updated_at:DESC">Terakhir diperbarui</option>
               <option value="created_at:DESC">Terbaru ditambahkan</option>
-              <option value="kode_2d:ASC">Kode 2D A–Z</option>
-              <option value="kode_aset:ASC">Kode bangunan A–Z</option>
-              <option value="nama_aset:ASC">Nama bangunan A–Z</option>
+              <option value="kode_2d:ASC">Kode Bidang A–Z</option>
+              <option value="kode_aset:ASC">Kode Tanah A–Z</option>
+              <option value="nama_aset:ASC">Nama Tanah A–Z</option>
             </select>
             <button
               type="button"
@@ -421,7 +421,7 @@ export default function DataSpasialPage() {
             <table className="admin-data-table min-w-[1080px]">
               <thead>
                 <tr className="border-b border-border bg-surface-secondary">
-                  <th className="px-4 py-3 text-left">Kode 2D / Bangunan</th>
+                  <th className="px-4 py-3 text-left">Kode Bidang</th>
                   <th className="px-4 py-3 text-left">Nama dan Lokasi</th>
                   <th className="px-4 py-3 text-left">Koordinat</th>
                   <th className="px-4 py-3 text-left">Kelengkapan</th>
@@ -438,8 +438,8 @@ export default function DataSpasialPage() {
                   <tr>
                     <td colSpan="6" className="px-6 py-14 text-center">
                       <GlobeHemisphereWestIcon size={32} className="mx-auto text-text-muted" />
-                      <p className="mt-3 text-xs font-black text-text-primary">Belum ada bidang di Kelola 2D</p>
-                      <p className="mt-1 text-[10px] text-text-muted">Pilih bangunan dari Pusat Data untuk membuat kode bidang 2D.</p>
+                      <p className="mt-3 text-xs font-black text-text-primary">Belum ada bidang di Data Spasial</p>
+                      <p className="mt-1 text-[10px] text-text-muted">Pilih tanah dari Pusat Data Tanah untuk membuat Kode Bidang.</p>
                     </td>
                   </tr>
                 ) : items.map((item) => (
@@ -448,10 +448,10 @@ export default function DataSpasialPage() {
                       <span className="inline-flex rounded-lg bg-cyan-500/10 px-2.5 py-1.5 font-mono text-[10px] font-black text-cyan-700 dark:text-cyan-300">
                         {item.kode_2d}
                       </span>
-                      <p className="mt-1 font-mono text-[8px] font-bold text-text-muted">ID {item.id_aset ?? item.asset?.id_aset ?? "-"} &bull; Bangunan {item.asset?.kode_aset || "—"}</p>
+                      <p className="mt-1 font-mono text-[8px] font-bold text-text-muted">ID {item.id_aset ?? item.asset?.id_aset ?? "-"} &bull; Tanah {item.asset?.kode_aset || "—"}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="max-w-72 truncate text-[10px] font-bold text-text-primary">{item.asset?.nama_aset || "Nama bangunan belum diisi"}</p>
+                      <p className="max-w-72 truncate text-[10px] font-bold text-text-primary">{item.asset?.nama_aset || "Nama tanah belum diisi"}</p>
                       <p className="mt-1 flex max-w-72 items-center gap-1 truncate text-[9px] text-text-muted"><MapPinIcon size={10} /> {item.asset?.lokasi || item.asset?.desa_kelurahan || "Lokasi belum diisi"}</p>
                     </td>
                     <td className="px-4 py-3 font-mono text-[9px] text-text-secondary">
@@ -495,8 +495,8 @@ export default function DataSpasialPage() {
                             disabled={removingCode === item.kode_2d || item.building_count > 0}
                             onClick={() => removeItem(item)}
                             className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-500/10"
-                            title={item.building_count > 0 ? "Hapus bangunan 3D terlebih dahulu" : "Keluarkan dari Kelola 2D"}
-                            aria-label={`Keluarkan ${item.kode_2d} dari Kelola 2D`}
+                            title={item.building_count > 0 ? "Hapus bangunan 3D terlebih dahulu" : "Keluarkan dari Data Spasial"}
+                            aria-label={`Keluarkan ${item.kode_2d} dari Data Spasial`}
                           >
                             {removingCode === item.kode_2d
                               ? <ArrowsClockwiseIcon size={14} className="animate-spin" />

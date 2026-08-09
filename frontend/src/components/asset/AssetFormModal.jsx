@@ -812,8 +812,8 @@ export default function AssetFormModal({
     e.preventDefault();
 
     const requiredFields = [
-      { name: "kode_aset", label: "Kode Bangunan", section: "identitas" },
-      { name: "nama_aset", label: "Nama Bangunan", section: "identitas" },
+      { name: "kode_aset", label: "Kode Tanah", section: "identitas" },
+      { name: "nama_aset", label: "Nama Tanah", section: "identitas" },
     ];
     const missingField = requiredFields.find((field) => (
       formData[field.name] === null
@@ -1054,7 +1054,7 @@ export default function AssetFormModal({
                       {assetData.nama_aset}
                     </p>
                     <p className="text-xs text-text-muted truncate">
-                      ID {assetData.id_aset ?? assetData.id ?? "-"} &bull; {assetData.kode_aset} &bull; Bangunan &bull;{" "}
+                      ID {assetData.id_aset ?? assetData.id ?? "-"} &bull; {assetData.kode_aset} &bull; Tanah &bull;{" "}
                       {assetData.lokasi || "Lokasi belum diisi"}
                     </p>
                   </div>
@@ -1072,18 +1072,18 @@ export default function AssetFormModal({
                   {/* Row 1: Kode, Nama */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormInput
-                      label="Kode Bangunan"
+                      label="Kode Tanah"
                       name="kode_aset"
-                      placeholder="AST-XXX"
+                      placeholder="TNH-XXX"
                       value={formData.kode_aset}
                       onChange={handleInputChange}
                       required
                       size="lg"
                     />
                     <FormInput
-                      label="Nama Bangunan"
+                      label="Nama Tanah"
                       name="nama_aset"
-                      placeholder="Nama Bangunan"
+                      placeholder="Nama Tanah"
                       value={formData.nama_aset}
                       onChange={handleInputChange}
                       required
@@ -1104,16 +1104,16 @@ export default function AssetFormModal({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <FormInput
-                        label="Kode Bangunan"
+                        label="Kode Tanah"
                         name="kode_aset"
-                        placeholder="Contoh: AST-XXXX"
+                        placeholder="Contoh: TNH-XXXX"
                         value={formData.kode_aset}
                         onChange={handleInputChange}
                         required
                         size="lg"
                       />
                       <FormInput
-                        label="Nama Bangunan"
+                        label="Nama Tanah"
                         name="nama_aset"
                         placeholder="Nama bidang tanah"
                         value={formData.nama_aset}

@@ -511,25 +511,24 @@ export default function SubstansiAssetPage({
             <div className="hidden lg:block overflow-x-auto">
               <table
                 className="admin-data-table"
-                style={{ minWidth: `${560 + columns.length * 160}px` }}
+                style={{ minWidth: `${480 + columns.length * 160}px` }}
               >
                 <thead>
                   <tr className="bg-linear-to-r from-surface-secondary to-surface border-b border-border">
                     <TableHeader className="w-14">No</TableHeader>
-                    <TableHeader className="w-20">ID</TableHeader>
                     <TableHeader
                       sortable
                       column="kode_aset"
                       className="min-w-48"
                     >
-                      Kode Bangunan
+                      Kode Tanah
                     </TableHeader>
                     <TableHeader
                       sortable
                       column="nama_aset"
                       className="min-w-72"
                     >
-                      Nama Bangunan
+                      Nama Tanah
                     </TableHeader>
                     {columns.map((col) => (
                       <TableHeader
@@ -570,20 +569,14 @@ export default function SubstansiAssetPage({
                           </span>
                         </td>
 
-                        <td className="px-4 py-4">
-                          <span className="font-mono text-xs font-semibold text-text-muted">
-                            {asset.id_aset ?? asset.id ?? "-"}
-                          </span>
-                        </td>
-
-                        {/* Kode Bangunan */}
+                        {/* Kode Tanah */}
                         <td className="px-4 py-4">
                           <span className="inline-flex items-center gap-2 px-2.5 py-1 bg-surface-secondary rounded-lg text-sm font-mono font-semibold text-text-primary">
                             {asset.kode_aset}
                           </span>
                         </td>
 
-                        {/* Nama Bangunan */}
+                        {/* Nama Tanah */}
                         <td className="px-4 py-4">
                           <span className="text-sm font-medium text-text-primary wrap-break-word max-w-80">
                             {asset.nama_aset}
@@ -640,9 +633,6 @@ export default function SubstansiAssetPage({
                         <div className="flex items-center gap-2 mb-1">
                           <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[10px] font-bold text-surface">
                             {rowNumber}
-                          </span>
-                          <span className="rounded bg-surface-secondary px-1.5 py-0.5 font-mono text-[9px] font-semibold text-text-muted">
-                            ID {asset.id_aset ?? asset.id ?? "-"}
                           </span>
                           <span className="text-xs font-mono font-semibold text-text-muted bg-surface-secondary px-2 py-0.5 rounded">
                             {asset.kode_aset}

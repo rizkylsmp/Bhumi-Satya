@@ -9,24 +9,10 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { hasUsableAsset3dData } from "../../../utils/asset3dGeojson";
-
-const SEARCH_FIELDS = [
-  "nama_aset",
-  "kode_aset",
-  "kode_2d",
-  "kode_3d",
-  "nib",
-  "nibar",
-  "nomor_sertifikat",
-  "opd_pengguna",
-  "lokasi",
-  "kecamatan",
-  "desa_kelurahan",
-];
-
-function normalizeText(value) {
-  return String(value || "").toLocaleLowerCase("id").trim();
-}
+import {
+  searchMapRecords,
+  splitMapSearchHighlight,
+} from "../../../utils/mapSearch";
 
 function hasCoordinatePair(latitude, longitude) {
   if (
@@ -77,17 +63,26 @@ function has2dGeometry(asset) {
   );
 }
 
-function matchesTerm(asset, term) {
-  if (!term) return true;
-  return SEARCH_FIELDS.some((field) => normalizeText(asset?.[field]).includes(term));
-}
-
 function getAssetLocation(asset) {
   return [asset?.desa_kelurahan, asset?.kecamatan, asset?.lokasi]
     .map((value) => String(value || "").trim())
     .filter(Boolean)
     .filter((value, index, values) => values.indexOf(value) === index)
     .join(" · ") || "Lokasi belum dilengkapi";
+}
+
+function HighlightedText({ text, query }) {
+  return splitMapSearchHighlight(text, query).map((segment, index) =>
+    segment.highlighted ? (
+      <mark
+        key={`${segment.text}-${index}`}
+        className="rounded-sm bg-amber-300/75 px-0.5 text-slate-950 dark:bg-amber-300"
+      >
+        {segment.text}
+      </mark>
+    ) : (
+      <span key={`${segment.text}-${index}`}>{segment.text}</span>
+    ));
 }
 
 function getAssetLods(asset) {
@@ -139,12 +134,10 @@ export default function MapSearchOverlay({
   }), [assets]);
 
   const results = useMemo(() => {
-    const term = normalizeText(query);
-    return assetsByMode[searchMode]
-      .filter((asset) => matchesTerm(asset, term))
+    return searchMapRecords(assetsByMode[searchMode], query)
       .sort((left, right) =>
-        String(left?.nama_aset || left?.kode_aset || "").localeCompare(
-          String(right?.nama_aset || right?.kode_aset || ""),
+        String(left.record?.nama_aset || left.record?.kode_aset || "").localeCompare(
+          String(right.record?.nama_aset || right.record?.kode_aset || ""),
           "id",
         ),
       );
@@ -173,7 +166,13 @@ export default function MapSearchOverlay({
   };
 
   const selectAsset = (asset) => {
-    onSelectAsset?.(asset, searchMode);
+    const matchingModel = searchMode === "3d"
+      ? searchMapRecords(asset.active_models_3d || [], query)[0]?.record
+      : null;
+    onSelectAsset?.(
+      matchingModel ? { ...asset, active_model_3d: matchingModel } : asset,
+      searchMode,
+    );
     setIsOpen(false);
   };
 
@@ -243,7 +242,7 @@ export default function MapSearchOverlay({
                   type="search"
                   value={query}
                   onChange={(event) => updateQuery(event.target.value)}
-                  placeholder="Cari kode bangunan, nama, lokasi, NIBAR…"
+                  placeholder="Cari nama, kode, lokasi, status, LOD, atau data lainnya…"
                   className="h-12 w-full rounded-xl border border-border bg-surface-secondary pl-11 pr-11 text-sm font-semibold text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 placeholder:font-normal placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"
                 />
                 {query && (
@@ -316,8 +315,16 @@ export default function MapSearchOverlay({
             <div className="min-h-0 flex-1 overflow-y-auto p-3 dark:[color-scheme:dark] sm:p-4">
               {results.length > 0 ? (
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {results.map((asset) => {
+                  {results.map(({ record: asset, matches }) => {
                     const lods = searchMode === "3d" ? getAssetLods(asset) : "";
+                    const displayName = searchMode === "3d"
+                      ? asset.active_model_3d?.building_name
+                        || asset.building_name_3d
+                        || asset.nama_aset
+                      : asset.nama_aset;
+                    const displayCode = searchMode === "3d"
+                      ? asset.kode_3d || asset.active_model_3d?.kode_3d
+                      : asset.kode_2d || asset.kode_aset;
                     return (
                       <article
                         key={`${searchMode}-${asset.id_aset || asset.id}-${asset.kode_3d || asset.active_model_3d?.id_model_3d || "asset"}`}
@@ -335,10 +342,16 @@ export default function MapSearchOverlay({
                           </span>
                           <div className="min-w-0 flex-1">
                             <h3 className="truncate text-xs font-black text-text-primary">
-                              {asset.nama_aset || "Bangunan tanpa nama"}
+                              <HighlightedText
+                                text={displayName || "Bangunan tanpa nama"}
+                                query={query}
+                              />
                             </h3>
                             <p className="mt-0.5 truncate font-mono text-[9px] font-bold text-accent">
-                              {asset.kode_aset || "Kode bangunan belum tersedia"}
+                              <HighlightedText
+                                text={displayCode || "Kode belum tersedia"}
+                                query={query}
+                              />
                             </p>
                             <p className="mt-0.5 font-mono text-[8px] font-semibold text-text-muted">
                               ID {asset.id_aset ?? asset.id ?? "-"}
@@ -351,8 +364,22 @@ export default function MapSearchOverlay({
                           )}
                         </div>
                         <p className="mt-2 line-clamp-2 text-[10px] leading-relaxed text-text-muted">
-                          {getAssetLocation(asset)}
+                          <HighlightedText text={getAssetLocation(asset)} query={query} />
                         </p>
+                        {matches.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1" aria-label="Data yang cocok">
+                            {matches.slice(0, 3).map((match) => (
+                              <span
+                                key={`${match.label}-${match.value}`}
+                                className="max-w-full truncate rounded-md border border-amber-400/30 bg-amber-300/10 px-1.5 py-1 text-[8px] font-semibold text-text-secondary"
+                                title={`${match.label}: ${match.value}`}
+                              >
+                                <span className="font-black text-text-primary">{match.label}:</span>{" "}
+                                <HighlightedText text={match.value} query={query} />
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         <button
                           type="button"
                           onClick={() => selectAsset(asset)}

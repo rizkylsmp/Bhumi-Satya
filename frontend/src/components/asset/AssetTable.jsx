@@ -226,7 +226,7 @@ export default function AssetTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="admin-data-table min-w-300">
+      <table className="admin-data-table min-w-280">
         <thead>
           <tr className="bg-linear-to-r from-surface-secondary to-surface border-b border-border">
             <TableHeader
@@ -237,13 +237,6 @@ export default function AssetTable({
               No
             </TableHeader>
             <TableHeader
-              className="w-20"
-              columnWidths={columnWidths}
-              onResizeStart={onResizeStart}
-            >
-              ID
-            </TableHeader>
-            <TableHeader
               sortable
               column="kode_aset"
               columnWidths={columnWidths}
@@ -252,7 +245,7 @@ export default function AssetTable({
               sortBy={sortBy}
               sortOrder={sortOrder}
             >
-              Kode Bangunan
+              Kode Tanah
             </TableHeader>
             <TableHeader
               sortable
@@ -264,7 +257,7 @@ export default function AssetTable({
               sortBy={sortBy}
               sortOrder={sortOrder}
             >
-              Nama Bangunan
+              Nama Tanah
             </TableHeader>
             <TableHeader
               className="min-w-50"
@@ -349,20 +342,14 @@ export default function AssetTable({
                   </span>
                 </td>
 
-                <td className="px-4 py-4">
-                  <span className="font-mono text-xs font-semibold text-text-muted">
-                    {asset.id_aset ?? asset.id ?? "-"}
-                  </span>
-                </td>
-
-                {/* Kode Bangunan */}
+                {/* Kode Tanah */}
                 <td className="px-4 py-4">
                   <span className="inline-flex items-center gap-2 px-2.5 py-1 bg-surface-secondary rounded-lg text-sm font-mono font-semibold text-text-primary">
                     {asset.kode_aset}
                   </span>
                 </td>
 
-                {/* Nama Bangunan */}
+                {/* Nama Tanah */}
                 <td className="px-4 py-4">
                   <span className="text-sm font-medium text-text-primary wrap-break-word max-w-80">
                     {asset.nama_aset}

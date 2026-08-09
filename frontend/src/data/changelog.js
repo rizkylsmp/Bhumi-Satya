@@ -1,5 +1,77 @@
 export const changelogEntries = [
   {
+    id: "deployment-cache-and-landing-load-recovery",
+    date: "2026-08-09",
+    type: "perbaikan",
+    title: "Mempercepat dan menstabilkan pemuatan setelah deployment",
+    summary:
+      "Aplikasi kini mendeteksi build terbaru, memulihkan chunk yang macet tanpa spinner permanen, serta menunda pemuatan peta dan mode 3D di landing page sampai diperlukan.",
+    area: "Performa",
+  },
+  {
+    id: "building-code-first-catalog-column",
+    date: "2026-08-09",
+    type: "peningkatan",
+    title: "Memprioritaskan kode bangunan di Pusat Data",
+    summary:
+      "Kode Bangunan 3D kini ditempatkan pada kolom paling kiri agar identitas utama bangunan langsung terlihat saat membuka Pusat Data Bangunan.",
+    area: "Pusat Data Bangunan",
+  },
+  {
+    id: "clear-invalid-legacy-asset-region",
+    date: "2026-08-09",
+    type: "perbaikan",
+    title: "Memperbaiki wilayah tanah yang tidak sesuai",
+    summary:
+      "Data Kecamatan dan Kelurahan lama yang tidak terkait pada tanah berkode 1.3.1.01.01.04.001 telah dibersihkan sehingga field kosong tidak lagi menampilkan wilayah Pasuruan.",
+    area: "Pusat Data Tanah",
+  },
+  {
+    id: "comprehensive-digital-twin-search-highlight",
+    date: "2026-08-09",
+    type: "peningkatan",
+    title: "Melengkapi pencarian Digital Twin",
+    summary:
+      "Pencarian kini mencakup seluruh atribut 2D dan 3D, menyorot informasi yang cocok, serta menampilkan sementara objek yang tersembunyi oleh filter atau pilihan LOD.",
+    area: "Digital Twin",
+  },
+  {
+    id: "contextual-building-land-popup",
+    date: "2026-08-09",
+    type: "peningkatan",
+    title: "Menyusun popup berdasarkan objek peta",
+    summary:
+      "Popup bangunan kini memprioritaskan identitas dan model 3D, lalu menampilkan bidang tanah sebagai konteks terpisah; popup bidang tetap berfokus pada data tanah dan jumlah bangunan.",
+    area: "Digital Twin",
+  },
+  {
+    id: "persistent-map-popup-fields",
+    date: "2026-08-09",
+    type: "peningkatan",
+    title: "Menampilkan seluruh informasi popup peta",
+    summary:
+      "Setiap bagian dan field pada popup peta kini tetap terlihat; data yang belum diisi ditampilkan dengan tanda strip agar struktur informasi selalu konsisten.",
+    area: "Digital Twin",
+  },
+  {
+    id: "hide-primary-id-columns",
+    date: "2026-08-09",
+    type: "peningkatan",
+    title: "Meringkas tabel data tanah",
+    summary:
+      "Kolom ID utama dihapus dari seluruh tabel Kelola Tanah agar informasi penting lebih mudah dipindai tanpa mengubah relasi data internal.",
+    area: "Kelola Tanah",
+  },
+  {
+    id: "land-management-identity-terms",
+    date: "2026-08-09",
+    type: "peningkatan",
+    title: "Menyelaraskan istilah data tanah",
+    summary:
+      "Seluruh menu Kelola Tanah kini menggunakan Kode Tanah dan Nama Tanah, sementara identitas spasial ditampilkan ringkas sebagai Kode Bidang.",
+    area: "Kelola Tanah",
+  },
+  {
     id: "building-code-columns-land-actions",
     date: "2026-08-08",
     type: "peningkatan",
@@ -347,7 +419,7 @@ export const changelogEntries = [
     type: "fitur",
     title: "Menambahkan basemap orthophoto",
     summary:
-      "Basemap Orthophoto Clarity kini dapat dipilih pada Digital Twin 2D, mode 3D, dan preview model untuk melihat citra permukaan yang lebih jelas.",
+      "Basemap Orthophoto kini dapat dipilih pada Digital Twin 2D, mode 3D, dan preview model untuk melihat citra permukaan yang lebih jelas.",
     area: "Digital Twin",
   },
   {

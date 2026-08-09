@@ -5,7 +5,7 @@ import {
 } from "./assetPopupData";
 
 describe("asset popup data", () => {
-  it("uses only available asset fields", () => {
+  it("keeps popup fields visible and uses placeholders for empty values", () => {
     const result = buildAssetPopupData({
       id_aset: 17,
       kode_aset: "AST-001",
@@ -21,13 +21,23 @@ describe("asset popup data", () => {
     expect(result.assetCode).toBe("AST-001");
     expect(result.location).toBe("Jl. Tata Bumi");
     expect(result.area).toBe("1250.5");
-    expect(result.details).toEqual([
-      { label: "ID Primary Key", value: 17 },
-      { label: "Kode Bangunan", value: "AST-001" },
-      { label: "Nama Bangunan", value: "Gedung Utama" },
-      { label: "Jenis Aset", value: "Bangunan" },
+    expect(result.general).toContainEqual({
+      label: "Kode Tanah",
+      value: "AST-001",
+    });
+    expect(result.general).toContainEqual({
+      label: "Nama Tanah",
+      value: "Gedung Utama",
+    });
+    expect(result.general).toContainEqual({
+      label: "Kode Bidang",
+      value: "-",
+    });
+    expect(result.details).toEqual(expect.arrayContaining([
+      { label: "Jenis Tanah", value: "Bangunan" },
       { label: "Luas Terdata", value: "1250.5", format: "area" },
-    ]);
+      { label: "Nomor Sertifikat", value: "-" },
+    ]));
   });
 
   it("prioritizes the selected preview model over the published model", () => {
@@ -74,8 +84,19 @@ describe("asset popup data", () => {
     expect(result.catalogCode).toBe("3D-002");
     expect(result.context).toBe("3d");
     expect(result.general).toContainEqual({
-      label: "Nama Bangunan 3D",
+      label: "Nama Bangunan",
       value: "Gedung Laboratorium",
+    });
+    expect(result.general).toContainEqual({
+      label: "Kode Bangunan 3D",
+      value: "3D-002",
+    });
+    expect(result.general.some((item) => item.label === "Kode Tanah")).toBe(
+      false,
+    );
+    expect(result.landContext).toContainEqual({
+      label: "Kode Tanah",
+      value: "AST-001",
     });
     expect(result.model).toMatchObject({
       name: "Gedung Laboratorium",
@@ -93,7 +114,7 @@ describe("asset popup data", () => {
 
     expect(result.parcelCode).toBe("2D-002");
     expect(result.general).toContainEqual({
-      label: "Kode 2D",
+      label: "Kode Bidang",
       value: "2D-002",
     });
     expect(result.general).toContainEqual({
@@ -102,7 +123,7 @@ describe("asset popup data", () => {
     });
   });
 
-  it("creates the tax section only from available tax values", () => {
+  it("keeps every tax field visible when some values are empty", () => {
     const result = buildAssetPopupData({
       pajak_status: "Terverifikasi",
       nop: "35.75.010.001.001-0001.0",
@@ -111,7 +132,7 @@ describe("asset popup data", () => {
       pbb_pemetaan: null,
     });
 
-    expect(result.tax).toEqual([
+    expect(result.tax).toEqual(expect.arrayContaining([
       { label: "Status Objek Pajak", value: "Terverifikasi" },
       {
         label: "NOP",
@@ -122,7 +143,10 @@ describe("asset popup data", () => {
         value: "250000000",
         format: "currency",
       },
-    ]);
+      { label: "Nama Wajib Pajak", value: "-" },
+      { label: "PBB Pemetaan", value: "-", format: "currency" },
+    ]));
+    expect(result.tax).toHaveLength(13);
   });
 
   it("groups physical, KIB, administrative, and spatial data", () => {
@@ -139,29 +163,30 @@ describe("asset popup data", () => {
       kw: "KW1",
     });
 
-    expect(result.physical).toEqual([
+    expect(result.physical).toEqual(expect.arrayContaining([
       { label: "Kecamatan", value: "Mantrijeron" },
       { label: "Batas Utara", value: "Jalan lingkungan" },
-    ]);
-    expect(result.kib).toEqual([
+      { label: "Batas Selatan", value: "-" },
+    ]));
+    expect(result.kib).toEqual(expect.arrayContaining([
       { label: "NIBAR", value: "NBR-12" },
       {
         label: "Harga Perolehan",
         value: "150000000",
         format: "currency",
       },
-    ]);
-    expect(result.administrative).toEqual([
+    ]));
+    expect(result.administrative).toEqual(expect.arrayContaining([
       { label: "Kode BMD", value: "01.03.04" },
       { label: "Nilai Buku", value: "120000000", format: "currency" },
-    ]);
-    expect(result.spatial).toEqual([
+    ]));
+    expect(result.spatial).toEqual(expect.arrayContaining([
       { label: "Kode Wilayah (KW)", value: "KW1" },
       { label: "Latitude", value: "-7.8101", format: "coordinate" },
       { label: "Longitude", value: "110.3612", format: "coordinate" },
       { label: "CRS Koordinat", value: "WGS 84 (EPSG:4326)" },
       { label: "Polygon Bidang", value: "Tersedia" },
-    ]);
+    ]));
   });
 
   it("includes supporting 2D spatial attributes when available", () => {
@@ -176,12 +201,33 @@ describe("asset popup data", () => {
       sumber: "Survei lapangan",
     });
 
-    expect(result.spatial).toEqual([
+    expect(result.spatial).toEqual(expect.arrayContaining([
       { label: "NIB", value: "NIB-001" },
       { label: "Status Plotting", value: "Sudah diplot" },
       { label: "Luas Bidang", value: "875.25", format: "area" },
       { label: "Tapak Bangunan", value: "Tersedia" },
       { label: "Sumber Data", value: "Survei lapangan" },
-    ]);
+    ]));
+  });
+
+  it("returns every popup section for a completely empty record", () => {
+    const result = buildAssetPopupData({});
+
+    expect(result.general).toContainEqual({
+      label: "Jumlah Bangunan 3D",
+      value: "0 bangunan",
+    });
+    expect(
+      result.general
+        .filter((item) => item.label !== "Jumlah Bangunan 3D")
+        .every((item) => item.value === "-"),
+    ).toBe(true);
+    expect(result.landContext.every((item) => item.value === "-")).toBe(true);
+    expect(result.legal.every((item) => item.value === "-")).toBe(true);
+    expect(result.physical.every((item) => item.value === "-")).toBe(true);
+    expect(result.kib.every((item) => item.value === "-")).toBe(true);
+    expect(result.administrative.every((item) => item.value === "-")).toBe(true);
+    expect(result.spatial.every((item) => item.value === "-")).toBe(true);
+    expect(result.tax.every((item) => item.value === "-")).toBe(true);
   });
 });

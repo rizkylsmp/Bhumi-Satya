@@ -10,6 +10,13 @@ const firstValue = (...values) =>
 export const hasPopupValue = (value) =>
   firstValue(value) !== null;
 
+const buildPopupRows = (rows) =>
+  rows.map(([label, value, format]) => ({
+    label,
+    value: hasPopupValue(value) ? value : "-",
+    ...(format ? { format } : {}),
+  }));
+
 export const resolvePopupModel = (asset = {}, modelOverride = null) =>
   modelOverride ||
   asset.active_model_3d ||
@@ -44,38 +51,55 @@ export const buildAssetPopupData = (asset = {}, modelOverride = null) => {
   const buildingCount = Number.isFinite(Number(asset.building_count_3d))
     ? Number(asset.building_count_3d)
     : inferredBuildingCount;
-  const general = [
-    ["ID Primary Key", firstValue(asset.id_aset, asset.id)],
-    ["Kode Bangunan", assetCode],
-    ["Nama Bangunan", assetName],
-    ["Kode 2D", context === "2d" ? parcelCode : null],
-    ["Kode 3D", context === "2d" ? null : catalogCode],
-    ["Nama Bangunan 3D", context === "2d" ? null : buildingName],
-    [
-      "Jumlah Bangunan 3D",
-      context === "2d" ? `${buildingCount} bangunan` : null,
-    ],
-    ["Jenis Aset", firstValue(asset.jenis_aset, asset.jenis)],
-    ["Luas Terdata", asset.luas, "area"],
-    ["Tahun Perolehan", firstValue(asset.tahun_perolehan, asset.tahun)],
-  ]
-    .filter(([, value]) => hasPopupValue(value))
-    .map(([label, value, format]) => ({
-      label,
-      value,
-      ...(format ? { format } : {}),
-    }));
+  const isBuildingContext = context === "3d";
+  const general = buildPopupRows(
+    isBuildingContext
+      ? [
+          ["Kode Bangunan 3D", catalogCode],
+          ["Nama Bangunan", buildingName],
+          [
+            "Kategori",
+            firstValue(model?.category, asset.category, asset.catalog3d?.category, "Bangunan"),
+          ],
+          ["Jumlah Lantai", firstValue(model?.floors, asset.building_floors)],
+          [
+            "Tinggi Bangunan",
+            firstValue(model?.height, asset.building_height_m),
+            "height",
+          ],
+          ["LOD", firstValue(model?.lod, asset.model_3d_lod)],
+          [
+            "Status Model",
+            model ? (model.is_active === false ? "Belum aktif" : "Aktif") : null,
+          ],
+        ]
+      : [
+          ["Kode Bidang", parcelCode],
+          ["Kode Tanah", assetCode],
+          ["Nama Tanah", assetName],
+          ["Jumlah Bangunan 3D", `${buildingCount} bangunan`],
+          ["Jenis Tanah", firstValue(asset.jenis_aset, asset.jenis)],
+          ["Luas Terdata", asset.luas, "area"],
+          ["Tahun Perolehan", firstValue(asset.tahun_perolehan, asset.tahun)],
+        ],
+  );
 
-  const legal = [
+  const landContext = buildPopupRows([
+    ["Kode Bidang", parcelCode],
+    ["Kode Tanah", assetCode],
+    ["Nama Tanah", assetName],
+    ["Lokasi", firstValue(asset.lokasi)],
+    ["Luas Bidang", firstValue(asset.luas_lapangan, asset.luas), "area"],
+  ]);
+
+  const legal = buildPopupRows([
     ["Status Sertifikat", asset.status_sertifikat],
     ["Nomor Sertifikat", asset.nomor_sertifikat],
     ["Jenis Hak", asset.jenis_hak],
     ["Atas Nama", asset.atas_nama],
-  ]
-    .filter(([, value]) => hasPopupValue(value))
-    .map(([label, value]) => ({ label, value }));
+  ]);
 
-  const physical = [
+  const physical = buildPopupRows([
     ["Kecamatan", asset.kecamatan],
     ["Desa/Kelurahan", asset.desa_kelurahan],
     ["Penggunaan Saat Ini", asset.penggunaan_saat_ini],
@@ -84,15 +108,9 @@ export const buildAssetPopupData = (asset = {}, modelOverride = null) => {
     ["Batas Selatan", asset.batas_selatan],
     ["Batas Timur", asset.batas_timur],
     ["Batas Barat", asset.batas_barat],
-  ]
-    .filter(([, value]) => hasPopupValue(value))
-    .map(([label, value, format]) => ({
-      label,
-      value,
-      ...(format ? { format } : {}),
-    }));
+  ]);
 
-  const kib = [
+  const kib = buildPopupRows([
     ["NIBAR", asset.nibar],
     ["ID Pemda", asset.id_pemda],
     ["Kode Barang", asset.kode_barang],
@@ -101,28 +119,16 @@ export const buildAssetPopupData = (asset = {}, modelOverride = null) => {
     ["Harga Perolehan", asset.harga_perolehan, "currency"],
     ["Penggunaan KIB", asset.penggunaan_kib],
     ["Tanggal Scan", asset.tanggal_scan],
-  ]
-    .filter(([, value]) => hasPopupValue(value))
-    .map(([label, value, format]) => ({
-      label,
-      value,
-      ...(format ? { format } : {}),
-    }));
+  ]);
 
-  const administrative = [
+  const administrative = buildPopupRows([
     ["Kode BMD", asset.kode_bmd],
     ["OPD Pengguna", asset.opd_pengguna],
     ["Nilai Aset", asset.nilai_aset, "currency"],
     ["Nilai Buku", asset.nilai_buku, "currency"],
     ["Nilai NJOP", asset.nilai_njop, "currency"],
     ["SK Penetapan", asset.sk_penetapan],
-  ]
-    .filter(([, value]) => hasPopupValue(value))
-    .map(([label, value, format]) => ({
-      label,
-      value,
-      ...(format ? { format } : {}),
-    }));
+  ]);
 
   const latitude = firstValue(asset.koordinat_lat, asset.latitude, asset.lat);
   const longitude = firstValue(
@@ -134,7 +140,7 @@ export const buildAssetPopupData = (asset = {}, modelOverride = null) => {
     hasPopupValue(latitude) && hasPopupValue(longitude);
   const hasParcelPolygon = Boolean(asset.polygon_bidang || asset.polygon);
   const hasBuildingFootprint = Boolean(asset.building_footprint);
-  const spatial = [
+  const spatial = buildPopupRows([
     ["NIB", asset.nib],
     ["Kode Wilayah (KW)", asset.kw],
     ["Status Plotting", asset.plotting_status],
@@ -145,15 +151,9 @@ export const buildAssetPopupData = (asset = {}, modelOverride = null) => {
     ["Polygon Bidang", hasParcelPolygon ? "Tersedia" : null],
     ["Tapak Bangunan", hasBuildingFootprint ? "Tersedia" : null],
     ["Sumber Data", asset.sumber],
-  ]
-    .filter(([, value]) => hasPopupValue(value))
-    .map(([label, value, format]) => ({
-      label,
-      value,
-      ...(format ? { format } : {}),
-    }));
+  ]);
 
-  const tax = [
+  const tax = buildPopupRows([
     ["Status Objek Pajak", asset.pajak_status],
     ["FID Pajak", asset.pajak_fid],
     ["NOP", asset.nop],
@@ -167,17 +167,13 @@ export const buildAssetPopupData = (asset = {}, modelOverride = null) => {
     ["NJOP Bumi Pemetaan", asset.njop_bumi_pemetaan, "currency"],
     ["NJOP Bangunan Pemetaan", asset.njop_bangunan_pemetaan, "currency"],
     ["PBB Pemetaan", asset.pbb_pemetaan, "currency"],
-  ]
-    .filter(([, value]) => hasPopupValue(value))
-    .map(([label, value, format]) => ({
-      label,
-      value,
-      ...(format ? { format } : {}),
-    }));
+  ]);
 
   return {
     context,
-    title: assetName || "Aset tanpa nama",
+    title: isBuildingContext
+      ? buildingName || "Bangunan tanpa nama"
+      : assetName || "Tanah tanpa nama",
     assetCode,
     parcelCode,
     catalogCode,
@@ -186,6 +182,7 @@ export const buildAssetPopupData = (asset = {}, modelOverride = null) => {
     area: firstValue(asset.luas_lapangan, asset.luas),
     year: firstValue(asset.tahun_perolehan, asset.tahun),
     general,
+    landContext,
     legal,
     physical,
     kib,

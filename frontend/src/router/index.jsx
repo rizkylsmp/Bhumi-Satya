@@ -1,6 +1,11 @@
 /* eslint-disable react-refresh/only-export-components -- Router modules intentionally define route wrapper components. */
-import { createHashRouter, Navigate, useLocation } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import {
+  createHashRouter,
+  Navigate,
+  useLocation,
+  useRouteError,
+} from "react-router-dom";
+import { Suspense } from "react";
 
 // Layouts
 import PublicLayout from "../layouts/PublicLayout";
@@ -8,38 +13,10 @@ import RootLayout from "../layouts/RootLayout";
 import { useAuthStore } from "../stores/authStore";
 import { normalizeRole } from "../utils/permissions";
 import { RENTAL_FEATURE_ENABLED } from "../config/featureFlags";
-
-const CHUNK_RELOAD_KEY = "bhumi-satya-chunk-reload-at";
-const CHUNK_RELOAD_COOLDOWN_MS = 60_000;
-
-// Recover once from stale chunks after deployment, then surface the real error.
-const lazyWithRetry = (componentImport) =>
-  lazy(async () => {
-    try {
-      const component = await componentImport();
-      window.sessionStorage.removeItem(CHUNK_RELOAD_KEY);
-      return component;
-    } catch (error) {
-      const lastReloadAt = Number(
-        window.sessionStorage.getItem(CHUNK_RELOAD_KEY) || 0,
-      );
-      const canReload = Date.now() - lastReloadAt > CHUNK_RELOAD_COOLDOWN_MS;
-
-      if (canReload) {
-        window.sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
-        window.location.reload();
-
-        // If an extension blocks reload, stop the permanent spinner and expose
-        // the import error to React Router after a short grace period.
-        return new Promise((_, reject) => {
-          window.setTimeout(() => reject(error), 8_000);
-        });
-      }
-
-      window.sessionStorage.removeItem(CHUNK_RELOAD_KEY);
-      throw error;
-    }
-  });
+import {
+  lazyWithRetry,
+  reloadWithCacheBust,
+} from "../utils/lazyWithRetry";
 
 // Pages - Public (lazy loaded for better initial load)
 const LandingPage = lazyWithRetry(() => import("../pages/LandingPage"));
@@ -101,6 +78,40 @@ function LazyPage({ children }) {
   );
 }
 
+function RouteLoadError() {
+  const error = useRouteError();
+
+  return (
+    <main className="grid min-h-dvh place-items-center bg-surface px-5 py-12 text-text-primary">
+      <section
+        role="alert"
+        className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 text-center"
+      >
+        <div className="mx-auto grid size-11 place-items-center rounded-xl bg-amber-100 text-xl text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+          !
+        </div>
+        <h1 className="mt-4 text-lg font-bold">Halaman belum berhasil dimuat</h1>
+        <p className="mt-2 text-sm leading-relaxed text-text-muted">
+          Versi aplikasi di browser mungkin sudah tertinggal setelah deployment.
+          Muat ulang untuk menggunakan versi terbaru.
+        </p>
+        <button
+          type="button"
+          onClick={() => reloadWithCacheBust()}
+          className="mt-5 inline-flex h-10 items-center justify-center rounded-xl bg-accent px-5 text-sm font-bold text-white transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        >
+          Muat ulang aplikasi
+        </button>
+        {import.meta.env.DEV && error && (
+          <p className="mt-4 break-words text-left text-xs text-red-600">
+            {String(error?.message || error)}
+          </p>
+        )}
+      </section>
+    </main>
+  );
+}
+
 function LegacyMasyarakatLoginRedirect() {
   const location = useLocation();
   if (!RENTAL_FEATURE_ENABLED) {
@@ -155,6 +166,7 @@ const router = createHashRouter([
   // Public routes
   {
     element: <PublicLayout />,
+    errorElement: <RouteLoadError />,
     children: [
       {
         path: "/beranda",
@@ -211,6 +223,7 @@ const router = createHashRouter([
   // Protected routes with Root Layout
   {
     path: "/",
+    errorElement: <RouteLoadError />,
     element: (
       <ProtectedRoute>
         <RootLayout />

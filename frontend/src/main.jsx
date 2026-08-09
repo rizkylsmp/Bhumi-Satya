@@ -3,6 +3,10 @@ import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import "./index.css";
 import { useThemeStore } from "./stores/themeStore";
+import {
+  checkForBuildUpdate,
+  installBuildVersionMonitor,
+} from "./utils/buildVersion";
 
 const BUILD_STORAGE_KEY = "bhumi-satya-build-id";
 
@@ -26,14 +30,32 @@ const clearStaleBrowserAssets = async () => {
   localStorage.setItem(BUILD_STORAGE_KEY, buildId);
 };
 
-// Initialize dark mode on app load
-useThemeStore.getState().initDarkMode();
-clearStaleBrowserAssets().catch(() => {
-  // Cache cleanup is best effort and must never block the application shell.
-});
+const currentBuildId = import.meta.env.VITE_BUILD_ID || "development";
 
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+const startApplication = async () => {
+  if (import.meta.env.PROD) {
+    try {
+      const { hasUpdate } = await checkForBuildUpdate({ currentBuildId });
+      if (hasUpdate) return;
+    } catch {
+      // A temporary metadata outage must not block the application shell.
+    }
+  }
+
+  clearStaleBrowserAssets().catch(() => {
+    // Cache cleanup is best effort and must never block the application shell.
+  });
+
+  useThemeStore.getState().initDarkMode();
+  ReactDOM.createRoot(document.getElementById("root")).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+
+  if (import.meta.env.PROD) {
+    installBuildVersionMonitor({ currentBuildId });
+  }
+};
+
+startApplication();
