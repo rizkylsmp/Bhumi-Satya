@@ -202,7 +202,7 @@ tidak dimulai sebelum keputusan ruang lingkup di atas dikonfirmasi.
 
 1. Terapkan keempat migrasi 3D pada database pengembangan setelah koneksi database dipastikan aman.
 2. Lakukan uji ujung-ke-ujung: unggah KMZ contoh, konversi GLB, aktifkan versi, lalu buka Mode 3D pada peta.
-3. Uji performa LOD tinggi/sedang/ringan dan validasi penempatan ECEF pada data staging di Pasuruan.
+3. Uji performa LOD tinggi/sedang/ringan dan validasi penempatan ECEF pada data staging organisasi.
 4. Jangan memulai analisis Milestone 4 sebelum uji ujung-ke-ujung katalog dan versi model dinyatakan stabil.
 
 ## Catatan pengujian

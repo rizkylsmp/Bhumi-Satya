@@ -4,7 +4,7 @@
 
 ## Project overview
 
-Bhumi Satya is a Node.js monorepo for managing land assets in Kota Pasuruan.
+Bhumi Satya is a Node.js monorepo for managing organizational land assets.
 
 - `frontend/`: React 19, Vite, React Router, Zustand, Tailwind CSS, Leaflet/MapLibre, and Recharts.
 - `backend/`: Express, Sequelize, PostgreSQL, JWT authentication, OTP/MFA, email, and object storage integrations.

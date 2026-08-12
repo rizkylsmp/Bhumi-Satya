@@ -457,6 +457,14 @@ export default function SewaDetailPage() {
               {sewa.nama_aset}
             </h1>
             <div className="flex items-center gap-3 mt-1">
+              <span className="inline-flex items-center gap-1 rounded-full border border-accent/20 bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent">
+                {sewa.kategori_sewa === "Bangunan" ? (
+                  <BuildingsIcon size={12} weight="fill" />
+                ) : (
+                  <PolygonIcon size={12} weight="fill" />
+                )}
+                {sewa.kategori_sewa || "Tanah"}
+              </span>
               <span
                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${sc.bg} ${sc.text} ${sc.border}`}
               >
@@ -471,6 +479,11 @@ export default function SewaDetailPage() {
               {aset?.kode_aset && (
                 <span className="text-xs font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-lg">
                   {aset.kode_aset}
+                </span>
+              )}
+              {sewa.kode_3d && (
+                <span className="rounded-lg bg-violet-500/10 px-2 py-0.5 font-mono text-xs text-violet-600 dark:text-violet-300">
+                  {sewa.kode_3d}
                 </span>
               )}
               {(aset?.id_aset ?? sewa.id_aset) && (

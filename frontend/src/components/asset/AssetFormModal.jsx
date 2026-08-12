@@ -905,12 +905,11 @@ export default function AssetFormModal({
         submitData.jenis_aset = "Bidang Tanah";
         submitData.opd_pengguna = submitData.opd_pengguna || "Pengelola Aset";
         submitData.atas_nama =
-          submitData.atas_nama || "Pemerintah Kota Pasuruan";
+        submitData.atas_nama || "Organisasi Pemilik Aset";
         if (!submitData.lokasi) {
           submitData.lokasi = [
             submitData.desa_kelurahan,
             submitData.kecamatan,
-            "Kota Pasuruan",
           ]
             .filter(Boolean)
             .join(", ");
@@ -1199,7 +1198,7 @@ export default function AssetFormModal({
                       <FormInput
                         label="Atas Nama"
                         name="atas_nama"
-                        placeholder="Pemerintah Kota Pasuruan"
+                        placeholder="Organisasi Pemilik Aset"
                         value={formData.atas_nama}
                         onChange={handleInputChange}
                         size="lg"

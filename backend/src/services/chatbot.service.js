@@ -9,7 +9,7 @@ const FAQ_RESPONSES = [
   },
   {
     keywords: ["bhumi satya", "bhumi", "apa ini", "tentang aplikasi"],
-    response: "Bhumi Satya adalah sistem terpadu untuk mengelola data aset tanah Kota Pasuruan. Data aset dikelola dalam satu pusat data dan digunakan untuk peta, verifikasi pertanahan, pelaporan, serta layanan penyewaan aset.",
+    response: "Bhumi Satya adalah sistem terpadu untuk mengelola data aset tanah organisasi. Data aset dikelola dalam satu pusat data dan digunakan untuk peta, verifikasi pertanahan, pelaporan, serta layanan penyewaan aset.",
     kategori: "fitur",
   },
   {
@@ -19,7 +19,7 @@ const FAQ_RESPONSES = [
   },
   {
     keywords: ["aset", "tanah", "bidang", "sertifikat"],
-    response: "Bhumi Satya mengelola data aset tanah milik Pemkot Pasuruan dalam satu master aset. Anda dapat melihat data aset, status sertifikat, lokasi bidang tanah, dan informasi lainnya melalui menu navigasi. Untuk pertanyaan spesifik, hubungi pengelola aset atau administrator Bhumi Satya.",
+    response: "Bhumi Satya mengelola data aset tanah organisasi dalam satu master aset. Anda dapat melihat data aset, status sertifikat, lokasi bidang tanah, dan informasi lainnya melalui menu navigasi. Untuk pertanyaan spesifik, hubungi pengelola aset atau administrator Bhumi Satya.",
     kategori: "aset",
   },
   {

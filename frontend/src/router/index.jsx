@@ -12,7 +12,10 @@ import PublicLayout from "../layouts/PublicLayout";
 import RootLayout from "../layouts/RootLayout";
 import { useAuthStore } from "../stores/authStore";
 import { normalizeRole } from "../utils/permissions";
-import { RENTAL_FEATURE_ENABLED } from "../config/featureFlags";
+import {
+  ORTHOPHOTO_MANAGEMENT_ENABLED,
+  RENTAL_FEATURE_ENABLED,
+} from "../config/featureFlags";
 import {
   lazyWithRetry,
   reloadWithCacheBust,
@@ -341,12 +344,14 @@ const router = createHashRouter([
       },
       {
         path: "orthophoto",
-        element: (
+        element: ORTHOPHOTO_MANAGEMENT_ENABLED ? (
           <RoleGuard menuId="aset">
             <LazyPage>
               <OrthophotoPage />
             </LazyPage>
           </RoleGuard>
+        ) : (
+          <Navigate to="/peta" replace />
         ),
       },
       {

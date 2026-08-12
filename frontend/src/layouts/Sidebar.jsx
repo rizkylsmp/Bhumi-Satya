@@ -3,7 +3,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import { useSessionStore } from "../stores/sessionStore";
 import { canAccessMenu } from "../utils/permissions";
-import { RENTAL_FEATURE_ENABLED } from "../config/featureFlags";
+import {
+  ORTHOPHOTO_MANAGEMENT_ENABLED,
+  RENTAL_FEATURE_ENABLED,
+} from "../config/featureFlags";
 import {
   ChartBarIcon,
   PolygonIcon,
@@ -144,13 +147,10 @@ export default function Sidebar({
           label: "Digital Twin",
           path: "/peta",
         },
-        canAccessMenu(userRole, "aset") && {
+        ORTHOPHOTO_MANAGEMENT_ENABLED && canAccessMenu(userRole, "aset") && {
           icon: ImageIcon,
           label: "Kelola Orthophoto",
           path: "/orthophoto",
-          disabled: true,
-          status: "Dev",
-          description: "Dalam proses pengembangan",
         },
       ].filter(Boolean),
     },

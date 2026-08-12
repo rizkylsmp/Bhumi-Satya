@@ -1465,7 +1465,7 @@ export default function LandingPage() {
                 </a>
 
                 <a
-                  href="tel:+623435421111"
+                  href="#"
                   className="flex items-center gap-3 group"
                 >
                   <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-500/15 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
@@ -1484,7 +1484,7 @@ export default function LandingPage() {
                 </a>
 
                 <a
-                  href="mailto:bpkad@pasuruankota.go.id"
+                  href="#"
                   className="flex items-center gap-3 group"
                 >
                   <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-500/15 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
@@ -1515,7 +1515,7 @@ export default function LandingPage() {
                   className="text-red-500 mt-0.5 shrink-0"
                 />
                 <p className="text-sm text-text-secondary leading-relaxed">
-                  Jl. Pahlawan No. 20, Kota Pasuruan, Jawa Timur 67126
+                  Informasi alamat belum tersedia
                 </p>
               </div>
             </div>

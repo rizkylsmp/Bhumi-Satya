@@ -23,6 +23,10 @@ const PERIODE_BAYAR_OPTIONS = new Set([
 const normalizePeriodeBayar = (periode) =>
   PERIODE_BAYAR_OPTIONS.has(periode) ? periode : "Tahunan";
 
+const RENTAL_CATEGORIES = new Set(["Tanah", "Bangunan"]);
+export const normalizeRentalCategory = (category, fallback = "Tanah") =>
+  RENTAL_CATEGORIES.has(category) ? category : fallback;
+
 let sewaDiprosesStatusEnsured = false;
 
 const ensureSewaDiprosesStatus = async () => {
@@ -88,6 +92,8 @@ const ensureMasyarakatPermintaanColumns = async () => {
 
 const publicAvailableAttributes = [
   "id_sewa",
+  "kategori_sewa",
+  "kode_3d",
   "nama_aset",
   "lokasi_aset",
   "no_lot",
@@ -108,10 +114,11 @@ export const getPublicAvailable = async (req, res) => {
   try {
     await autoExpireIfActive();
 
-    const { search = "", kecamatan, jenis_aset } = req.query;
+    const { search = "", kecamatan, jenis_aset, kategori } = req.query;
 
     const where = { status: { [Op.in]: ["Tersedia", "Disewakan"] } };
     const asetWhere = {};
+    if (RENTAL_CATEGORIES.has(kategori)) where.kategori_sewa = kategori;
 
     if (search) {
       where[Op.or] = [
@@ -166,9 +173,10 @@ export const getAvailableForMasyarakat = async (req, res) => {
   try {
     await autoExpireIfActive();
 
-    const { search = "", kecamatan, jenis_aset } = req.query;
+    const { search = "", kecamatan, jenis_aset, kategori } = req.query;
     const where = { status: "Tersedia" };
     const asetWhere = {};
+    if (RENTAL_CATEGORIES.has(kategori)) where.kategori_sewa = kategori;
 
     if (search) {
       where[Op.or] = [
@@ -229,12 +237,14 @@ export const getApprovedForMasyarakat = async (req, res) => {
       page = 1,
       limit = 12,
       search = "",
+      kategori,
       sortBy = "created_at",
       sortOrder = "desc",
     } = req.query;
 
     const offset = (Number(page) - 1) * Number(limit);
     const where = { status: { [Op.in]: ["Disewakan", "Akan Berakhir"] } };
+    if (RENTAL_CATEGORIES.has(kategori)) where.kategori_sewa = kategori;
 
     if (search) {
       where[Op.or] = [
@@ -300,6 +310,8 @@ export const getApprovedForMasyarakat = async (req, res) => {
       ],
       attributes: [
         "id_sewa",
+        "kategori_sewa",
+        "kode_3d",
         "nama_aset",
         "lokasi_aset",
         "no_lot",
@@ -351,6 +363,7 @@ export const getAll = async (req, res) => {
       limit = 10,
       search = "",
       status,
+      kategori,
       sortBy = "created_at",
       sortOrder = "desc",
     } = req.query;
@@ -374,6 +387,7 @@ export const getAll = async (req, res) => {
     } else {
       where.status = { [Op.in]: ["Tersedia", "Diproses", "Disewakan"] };
     }
+    if (RENTAL_CATEGORIES.has(kategori)) where.kategori_sewa = kategori;
 
     const { rows: data, count: total } = await SewaAset.findAndCountAll({
       where,
@@ -495,6 +509,10 @@ export const getStats = async (req, res) => {
     await autoExpireIfActive();
     await ensureSewaDiprosesStatus();
 
+    const categoryWhere = RENTAL_CATEGORIES.has(req.query.kategori)
+      ? { kategori_sewa: req.query.kategori }
+      : {};
+    const withStatus = (status) => ({ ...categoryWhere, status });
     const [
       total,
       tersedia,
@@ -505,15 +523,18 @@ export const getStats = async (req, res) => {
       dikembalikan,
       activeSewas,
     ] = await Promise.all([
-      SewaAset.count(),
-      SewaAset.count({ where: { status: "Tersedia" } }),
-      SewaAset.count({ where: { status: "Diproses" } }),
-      SewaAset.count({ where: { status: "Disewakan" } }),
-      SewaAset.count({ where: { status: "Akan Berakhir" } }),
-      SewaAset.count({ where: { status: "Berakhir" } }),
-      SewaAset.count({ where: { status: "Dikembalikan" } }),
+      SewaAset.count({ where: categoryWhere }),
+      SewaAset.count({ where: withStatus("Tersedia") }),
+      SewaAset.count({ where: withStatus("Diproses") }),
+      SewaAset.count({ where: withStatus("Disewakan") }),
+      SewaAset.count({ where: withStatus("Akan Berakhir") }),
+      SewaAset.count({ where: withStatus("Berakhir") }),
+      SewaAset.count({ where: withStatus("Dikembalikan") }),
       SewaAset.findAll({
-        where: { status: { [Op.in]: ["Disewakan", "Akan Berakhir"] } },
+        where: {
+          ...categoryWhere,
+          status: { [Op.in]: ["Disewakan", "Akan Berakhir"] },
+        },
         attributes: ["nilai_sewa", "periode_bayar"],
         include: [
           {
@@ -577,6 +598,7 @@ export const getPengembalian = async (req, res) => {
       limit = 10,
       search = "",
       kondisi,
+      kategori,
       sortBy = "tanggal_pengembalian",
       sortOrder = "desc",
     } = req.query;
@@ -598,6 +620,7 @@ export const getPengembalian = async (req, res) => {
     if (kondisi) {
       where.kondisi_pengembalian = kondisi;
     }
+    if (RENTAL_CATEGORIES.has(kategori)) where.kategori_sewa = kategori;
 
     const { rows: data, count: total } = await SewaAset.findAndCountAll({
       where,
@@ -654,6 +677,8 @@ export const create = async (req, res) => {
   try {
     const {
       id_aset,
+      kategori_sewa,
+      kode_3d,
       nama_aset,
       lokasi_aset,
       dokumen_pendukung,
@@ -672,6 +697,12 @@ export const create = async (req, res) => {
         error: "Pilih aset yang akan disediakan untuk disewa",
       });
     }
+    const normalizedCategory = normalizeRentalCategory(kategori_sewa);
+    if (normalizedCategory === "Bangunan" && !kode_3d) {
+      return res.status(400).json({
+        error: "Pilih bangunan yang akan disediakan untuk disewa",
+      });
+    }
     const normalizedPeriodeBayar = normalizePeriodeBayar(periode_bayar);
     const resolvedNilaiSewa = await resolveNilaiSewa({
       idAset: id_aset,
@@ -685,6 +716,8 @@ export const create = async (req, res) => {
 
     const newSewa = await SewaAset.create({
       id_aset,
+      kategori_sewa: normalizedCategory,
+      kode_3d: normalizedCategory === "Bangunan" ? kode_3d : null,
       nama_aset,
       lokasi_aset,
       dokumen_pendukung: dokumen_pendukung || null,
@@ -719,6 +752,8 @@ export const update = async (req, res) => {
 
     const {
       id_aset,
+      kategori_sewa,
+      kode_3d,
       nama_aset,
       lokasi_aset,
       nama_penyewa,
@@ -743,6 +778,13 @@ export const update = async (req, res) => {
     const normalizedPeriodeBayar = normalizePeriodeBayar(
       periode_bayar || sewa.periode_bayar,
     );
+    const normalizedCategory = normalizeRentalCategory(
+      kategori_sewa,
+      sewa.kategori_sewa || "Tanah",
+    );
+    if (normalizedCategory === "Bangunan" && !(kode_3d || sewa.kode_3d)) {
+      return res.status(400).json({ error: "Pilih bangunan yang akan disewa" });
+    }
     if (status === "Diproses") {
       await ensureSewaDiprosesStatus();
     }
@@ -754,6 +796,8 @@ export const update = async (req, res) => {
 
     await sewa.update({
       id_aset,
+      kategori_sewa: normalizedCategory,
+      kode_3d: normalizedCategory === "Bangunan" ? kode_3d || sewa.kode_3d : null,
       nama_aset,
       lokasi_aset,
       nama_penyewa,

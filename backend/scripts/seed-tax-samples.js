@@ -5,16 +5,16 @@ import User from "../src/models/User.js";
 sequelize.options.logging = false;
 
 const names = [
-  ["Tanah Kantor Pelayanan", "Badan Pendapatan Daerah", "Purworejo"],
-  ["Gedung Pelayanan Terpadu", "Pemerintah Kota Pasuruan", "Bugul Kidul"],
-  ["Tanah Fasilitas Pendidikan", "Dinas Pendidikan", "Gadingrejo"],
-  ["Gedung Pusat Kesehatan", "Dinas Kesehatan", "Panggungrejo"],
-  ["Tanah Ruang Terbuka Hijau", "Dinas Lingkungan Hidup", "Purworejo"],
-  ["Gedung Balai Pertemuan", "Kecamatan Bugul Kidul", "Bugul Kidul"],
-  ["Tanah Sarana Olahraga", "Dinas Pemuda dan Olahraga", "Gadingrejo"],
-  ["Gedung Perpustakaan Daerah", "Dinas Perpustakaan", "Panggungrejo"],
-  ["Tanah Gudang Logistik", "Badan Penanggulangan Bencana", "Purworejo"],
-  ["Gedung Sentra UMKM", "Dinas Perindustrian dan Perdagangan", "Bugul Kidul"],
+  ["Tanah Kantor Pelayanan", "Badan Pendapatan Daerah", "Area Operasional D"],
+  ["Gedung Pelayanan Terpadu", "Organisasi Pemilik Aset", "Area Operasional A"],
+  ["Tanah Fasilitas Pendidikan", "Dinas Pendidikan", "Area Operasional B"],
+  ["Gedung Pusat Kesehatan", "Dinas Kesehatan", "Area Operasional C"],
+  ["Tanah Ruang Terbuka Hijau", "Dinas Lingkungan Hidup", "Area Operasional D"],
+  ["Gedung Balai Pertemuan", "Kecamatan Area Operasional A", "Area Operasional A"],
+  ["Tanah Sarana Olahraga", "Dinas Pemuda dan Olahraga", "Area Operasional B"],
+  ["Gedung Perpustakaan Daerah", "Dinas Perpustakaan", "Area Operasional C"],
+  ["Tanah Gudang Logistik", "Badan Penanggulangan Bencana", "Area Operasional D"],
+  ["Gedung Sentra UMKM", "Dinas Perindustrian dan Perdagangan", "Area Operasional A"],
 ];
 
 const samples = names.map(([assetName, taxpayerName, district], index) => {
@@ -29,9 +29,9 @@ const samples = names.map(([assetName, taxpayerName, district], index) => {
   return {
     kode_aset: `PAJAK-SAMPLE-${String(number).padStart(2, "0")}`,
     nama_aset: assetName,
-    lokasi: `Jl. Bhumi Satya No. ${number}, Kecamatan ${district}, Kota Pasuruan`,
-    koordinat_lat: -7.645 + index * 0.0021,
-    koordinat_long: 112.905 + index * 0.0023,
+    lokasi: `Area Operasional ${number}, ${district}`,
+    koordinat_lat: null,
+    koordinat_long: null,
     luas: mappedLandArea,
     status: "Aktif",
     jenis_aset: number % 2 === 0 ? "Gedung dan Bangunan" : "Tanah",
@@ -43,7 +43,7 @@ const samples = names.map(([assetName, taxpayerName, district], index) => {
     status_sertifikat: "Telah Bersertifikat",
     keterangan: `Data sampel pajak Bhumi Satya nomor ${number}`,
     jenis_hak: "HAK PAKAI",
-    atas_nama: "Pemerintah Kota Pasuruan",
+    atas_nama: "Organisasi Pemilik Aset",
     kecamatan: district,
     desa_kelurahan: `Kelurahan Sampel ${number}`,
     luas_lapangan: mappedLandArea,

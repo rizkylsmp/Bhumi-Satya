@@ -18,6 +18,8 @@ import {
   ProhibitIcon,
   CurrencyDollarIcon,
   DownloadSimpleIcon,
+  BuildingsIcon,
+  PolygonIcon,
 } from "@phosphor-icons/react";
 import { formatCurrency } from "../../utils/format";
 import toast from "react-hot-toast";
@@ -119,6 +121,7 @@ export default function PenyewaanPage() {
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("Tanah");
   const [stats, setStats] = useState(null);
   const [openDownloadMenu, setOpenDownloadMenu] = useState(null);
 
@@ -135,10 +138,11 @@ export default function PenyewaanPage() {
           limit: itemsPerPage,
           search: searchTerm,
           status: statusFilter,
+          kategori: categoryFilter,
           sortBy: "created_at",
           sortOrder: "desc",
         }),
-        sewaService.getStats(),
+        sewaService.getStats({ kategori: categoryFilter }),
       ]);
       setData(res.data.data || []);
       setTotalPages(res.data.pagination?.totalPages || 1);
@@ -149,7 +153,7 @@ export default function PenyewaanPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, itemsPerPage, searchTerm, statusFilter]);
+  }, [categoryFilter, currentPage, itemsPerPage, searchTerm, statusFilter]);
 
   useEffect(() => {
     fetchData();
@@ -258,10 +262,10 @@ export default function PenyewaanPage() {
           </div>
           <div>
             <h1 className="admin-page-header__title">
-              Penyewaan Aset
+              Penyewaan {categoryFilter}
             </h1>
             <p className="admin-page-header__description">
-              Aset dan kontrak penyewaan.
+              Kelola objek dan kontrak penyewaan {categoryFilter.toLowerCase()}.
             </p>
           </div>
         </div>
@@ -287,6 +291,39 @@ export default function PenyewaanPage() {
             Tambah Aset Sewa
           </button>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-surface p-2">
+        {[
+          { value: "Tanah", icon: PolygonIcon, description: "Bidang dan lahan" },
+          { value: "Bangunan", icon: BuildingsIcon, description: "Gedung dan bangunan 3D" },
+        ].map((category) => {
+          const CategoryIcon = category.icon;
+          const active = categoryFilter === category.value;
+          return (
+            <button
+              key={category.value}
+              type="button"
+              onClick={() => {
+                setCategoryFilter(category.value);
+                setCurrentPage(1);
+              }}
+              className={`flex items-center justify-center gap-3 rounded-xl px-4 py-3 text-left transition ${
+                active
+                  ? "bg-accent text-white shadow-lg shadow-accent/20"
+                  : "text-text-secondary hover:bg-surface-secondary"
+              }`}
+            >
+              <CategoryIcon size={22} weight={active ? "fill" : "duotone"} />
+              <span>
+                <span className="block text-sm font-bold">Penyewaan {category.value}</span>
+                <span className={`block text-[10px] ${active ? "text-white/75" : "text-text-muted"}`}>
+                  {category.description}
+                </span>
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Summary Nilai */}
@@ -354,7 +391,7 @@ export default function PenyewaanPage() {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Cari nama bangunan, penyewa, nomor kontrak..."
+              placeholder={`Cari ${categoryFilter.toLowerCase()}, penyewa, atau nomor kontrak...`}
               className="h-9 w-full rounded-lg border border-border bg-surface-secondary pl-9 pr-9 text-xs text-text-primary placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/15"
             />
             {searchInput && (
@@ -397,7 +434,7 @@ export default function PenyewaanPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-text-primary">
-            Aset Sewa
+            Sewa {categoryFilter}
           </span>
           <span className="px-2.5 py-0.5 bg-accent/10 text-accent text-xs font-semibold rounded-full">
             {totalItems} data
@@ -511,7 +548,9 @@ export default function PenyewaanPage() {
                       {item.nama_aset}
                     </h3>
                     <p className="mt-1 font-mono text-[9px] font-semibold text-text-muted">
-                      ID {item.aset?.id_aset ?? item.id_aset ?? "-"}
+                      {item.kategori_sewa === "Bangunan" && item.kode_3d
+                        ? item.kode_3d
+                        : `ID ${item.aset?.id_aset ?? item.id_aset ?? "-"}`}
                     </p>
                     {item.lokasi_aset && (
                       <p className="flex items-center gap-1 text-xs text-text-muted mt-1">
@@ -665,6 +704,7 @@ export default function PenyewaanPage() {
         onClose={() => setShowForm(false)}
         onSubmit={handleCreate}
         isLoading={formLoading}
+        defaultCategory={categoryFilter}
       />
     </div>
   );

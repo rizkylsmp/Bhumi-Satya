@@ -1,5 +1,23 @@
 export const changelogEntries = [
   {
+    id: "disable-orthophoto-management",
+    date: "2026-08-12",
+    type: "peningkatan",
+    title: "Menonaktifkan pengelolaan Orthophoto",
+    summary:
+      "Menu, halaman, dan akses API pengelolaan Orthophoto dinonaktifkan sementara tanpa mengganggu pilihan citra yang sudah dipublikasikan pada Digital Twin.",
+    area: "Digital Twin",
+  },
+  {
+    id: "remove-legacy-region-content",
+    date: "2026-08-09",
+    type: "peningkatan",
+    title: "Menetralkan identitas wilayah lama",
+    summary:
+      "Label, kontak, bantuan, data contoh, dan batas wilayah lama telah dihapus agar sistem tidak lagi terikat pada identitas daerah sebelumnya.",
+    area: "Sistem",
+  },
+  {
     id: "deployment-cache-and-landing-load-recovery",
     date: "2026-08-09",
     type: "perbaikan",
@@ -23,7 +41,7 @@ export const changelogEntries = [
     type: "perbaikan",
     title: "Memperbaiki wilayah tanah yang tidak sesuai",
     summary:
-      "Data Kecamatan dan Kelurahan lama yang tidak terkait pada tanah berkode 1.3.1.01.01.04.001 telah dibersihkan sehingga field kosong tidak lagi menampilkan wilayah Pasuruan.",
+      "Data Kecamatan dan Kelurahan lama yang tidak terkait pada tanah berkode 1.3.1.01.01.04.001 telah dibersihkan sehingga field kosong tidak lagi menampilkan wilayah sebelumnya.",
     area: "Pusat Data Tanah",
   },
   {

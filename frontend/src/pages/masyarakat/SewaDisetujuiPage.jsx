@@ -15,6 +15,7 @@ import {
 import { sewaService } from "../../services/api";
 import Pagination from "../../components/asset/Pagination";
 import { formatCurrency, formatNumber } from "../../utils/format";
+import RentalCategoryTabs from "../../components/sewa/RentalCategoryTabs";
 
 function formatDate(dateStr) {
   if (!dateStr) return "-";
@@ -85,6 +86,7 @@ export default function SewaDisetujuiPage() {
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("Tanah");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -97,6 +99,7 @@ export default function SewaDisetujuiPage() {
         page,
         limit: itemsPerPage,
         search,
+        kategori: category,
         sortBy: "created_at",
         sortOrder: "desc",
       });
@@ -110,7 +113,7 @@ export default function SewaDisetujuiPage() {
     } finally {
       setLoading(false);
     }
-  }, [itemsPerPage, page, search]);
+  }, [category, itemsPerPage, page, search]);
 
   useEffect(() => {
     fetchData();
@@ -141,7 +144,7 @@ export default function SewaDisetujuiPage() {
             Portal Masyarakat
           </p>
           <h1 className="admin-page-header__title">
-            Sewa Aset Disetujui
+            Sewa {category} Disetujui
           </h1>
           <p className="admin-page-header__description">
             Sewa yang telah disetujui dan aktif.
@@ -162,6 +165,14 @@ export default function SewaDisetujuiPage() {
         </div>
       </div>
 
+      <RentalCategoryTabs
+        value={category}
+        onChange={(value) => {
+          setCategory(value);
+          setPage(1);
+        }}
+      />
+
       <div className="bg-surface border border-border rounded-2xl p-4">
         <div className="relative max-w-xl">
           <MagnifyingGlassIcon
@@ -173,7 +184,7 @@ export default function SewaDisetujuiPage() {
             type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Cari nama bangunan, lokasi, LOT, atau penyewa"
+            placeholder={`Cari ${category.toLowerCase()}, lokasi, LOT, atau penyewa`}
             className="w-full h-11 rounded-xl border border-border bg-surface-secondary pl-10 pr-4 text-sm text-text-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/10"
           />
         </div>

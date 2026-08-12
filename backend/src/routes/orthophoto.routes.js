@@ -9,6 +9,7 @@ import {
 } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
+const ORTHOPHOTO_MANAGEMENT_ENABLED = false;
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 150 * 1024 * 1024, files: 1 },
@@ -39,6 +40,13 @@ const receiveUpload = (req, res, next) => {
 };
 
 router.get("/published", OrthophotoController.published);
+router.use((_req, res, next) => {
+  if (ORTHOPHOTO_MANAGEMENT_ENABLED) return next();
+  return res.status(404).json({
+    success: false,
+    error: "Fitur pengelolaan orthophoto sedang dinonaktifkan",
+  });
+});
 router.use(authMiddleware);
 router.get("/", canViewAset, OrthophotoController.list);
 router.post(

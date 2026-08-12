@@ -11,14 +11,14 @@ test("pusat-data adapter maps master asset fields to the legacy read shape", () 
   const result = toLegacyPusatData({
     id_aset: 12,
     lokasi: "Jl. Merdeka",
-    desa_kelurahan: "Kebonsari",
+    desa_kelurahan: "Area Operasional",
     penggunaan_saat_ini: "Kantor",
     opd_pengguna: "BPKA",
   });
 
   assert.equal(result.id_pusat_data, 12);
   assert.equal(result.alamat, "Jl. Merdeka");
-  assert.equal(result.kelurahan, "Kebonsari");
+  assert.equal(result.kelurahan, "Area Operasional");
   assert.equal(result.penggunaan, "Kantor");
   assert.equal(result.opd, "BPKA");
   assert.equal(result.master_table, "aset");

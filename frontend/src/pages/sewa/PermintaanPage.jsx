@@ -27,6 +27,7 @@ import SortableTableHeader from "../../components/shared/SortableTableHeader";
 import useColumnResize from "../../hooks/useColumnResize";
 import useTableSort from "../../hooks/useTableSort";
 import toast from "react-hot-toast";
+import RentalCategoryTabs from "../../components/sewa/RentalCategoryTabs";
 
 const REQUEST_COLUMN_WIDTHS = {
   nama_pemohon: 210,
@@ -132,7 +133,7 @@ function DetailModal({ item, onClose, onUpdate }) {
   };
 
   const validateEdit = () => {
-    if (!formData.nama_aset.trim()) return "Nama bangunan wajib diisi";
+    if (!formData.nama_aset.trim()) return "Nama objek sewa wajib diisi";
     if (!formData.nama_pemohon.trim()) return "Nama pemohon wajib diisi";
     if (!formData.no_telepon.trim()) return "Nomor telepon wajib diisi";
     if (!formData.tujuan_sewa.trim()) return "Tujuan sewa wajib diisi";
@@ -208,7 +209,7 @@ function DetailModal({ item, onClose, onUpdate }) {
             </h4>
             <div>
               <label className="block text-xs text-text-muted mb-1">
-                Nama Bangunan
+                Nama Objek Sewa
               </label>
               <div className="relative">
                 <StorefrontIcon
@@ -541,6 +542,7 @@ export default function PermintaanPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [category, setCategory] = useState("Tanah");
   const [sortOrder, setSortOrder] = useState("desc");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -569,6 +571,7 @@ export default function PermintaanPage() {
       page,
       limit,
       sortOrder,
+      kategori: category,
     };
     if (debouncedSearch) params.search = debouncedSearch;
     if (status) params.status = status;
@@ -584,7 +587,7 @@ export default function PermintaanPage() {
         setPagination({});
       })
       .finally(() => setLoading(false));
-  }, [page, limit, debouncedSearch, status, sortOrder]);
+  }, [category, page, limit, debouncedSearch, status, sortOrder]);
 
   useEffect(() => {
     // Fetching is the external synchronization performed by this effect.
@@ -620,13 +623,21 @@ export default function PermintaanPage() {
             <StorefrontIcon size={21} weight="duotone" />
           </span>
           <div className="min-w-0">
-            <h1 className="admin-page-header__title">Permintaan Sewa</h1>
+            <h1 className="admin-page-header__title">Permintaan Sewa {category}</h1>
             <p className="admin-page-header__description">
               Permintaan sewa dari masyarakat.
             </p>
           </div>
         </div>
       </div>
+
+      <RentalCategoryTabs
+        value={category}
+        onChange={(value) => {
+          setCategory(value);
+          setPage(1);
+        }}
+      />
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

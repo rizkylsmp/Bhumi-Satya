@@ -27,7 +27,7 @@
 
 - Model di bawah 1.000 segitiga tidak disederhanakan karena overhead LOD lebih besar daripada manfaatnya.
 - Tekstur belum dikompresi ke KTX2 dan tetap mengikuti hasil konversi GLB.
-- Pengujian visual ECEF, heading, tilt, dan roll tetap perlu dilakukan pada data staging di Pasuruan.
+- Pengujian visual ECEF, heading, tilt, dan roll tetap perlu dilakukan pada data staging organisasi.
 
 ## Tahap optimasi berikutnya
 

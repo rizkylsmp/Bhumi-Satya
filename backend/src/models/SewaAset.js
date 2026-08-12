@@ -76,6 +76,17 @@ const SewaAset = sequelize.define(
       ),
       defaultValue: "Tahunan",
     },
+    kategori_sewa: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      defaultValue: "Tanah",
+      validate: { isIn: [["Tanah", "Bangunan"]] },
+    },
+    kode_3d: {
+      type: DataTypes.STRING(40),
+      allowNull: true,
+      references: { model: "aset_3d_catalog", key: "kode_3d" },
+    },
 
     // Kontrak
     nomor_kontrak: {

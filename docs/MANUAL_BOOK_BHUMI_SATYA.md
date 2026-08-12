@@ -1,14 +1,13 @@
 # MANUAL BOOK APLIKASI BHUMI SATYA
 
-**Sistem Informasi Pengelolaan Aset Tanah dan Digital Twin Kota Pasuruan**
+**Sistem Informasi Pengelolaan Aset Tanah dan Digital Twin**
 
 | Informasi Dokumen | Keterangan |
 |---|---|
 | Nama aplikasi | Bhumi Satya |
 | Jenis dokumen | Manual Book / Panduan Pengguna |
-| Instansi | Pemerintah Kota Pasuruan |
-| Versi acuan aplikasi | Kondisi aplikasi per 9 Agustus 2026 |
-| Tanggal pembaruan | 9 Agustus 2026 |
+| Instansi | Organisasi Pengelola Aset |
+| Tanggal penyusunan | 6 Agustus 2026 |
 | Status dokumen | Draf siap dipindahkan ke Microsoft Word |
 
 ---
@@ -29,47 +28,7 @@
 
 | No. | Tanggal | Uraian Perubahan | Penyusun |
 |---:|---|---|---|
-| 2 | 9 Agustus 2026 | Penyesuaian menyeluruh dengan navigasi, istilah, Digital Twin, orthophoto, Data Spasial, dan pengelolaan bangunan 3D terbaru | ____________________ |
 | 1 | 6 Agustus 2026 | Penyusunan awal manual book | ____________________ |
-
----
-
-## Kata Pengantar
-
-Modul ini disusun sebagai pedoman pelatihan dan panduan kerja bagi pengguna Bhumi Satya. Materi disajikan dari pengenalan aplikasi, praktik penggunaan setiap halaman, sampai latihan terpadu. Setiap prosedur dilengkapi ruang screenshot agar dokumen dapat disempurnakan di Microsoft Word menggunakan tampilan aplikasi dan data contoh yang telah disetujui instansi.
-
-Dokumen ini mengikuti pendekatan modul pelatihan: pengguna terlebih dahulu mengenali tujuan dan antarmuka, menyiapkan data, mengikuti langkah kerja, memeriksa hasil, lalu mengerjakan latihan mandiri. Isi harus ditinjau ulang apabila konfigurasi hak akses atau fitur aplikasi berubah.
-
-## Petunjuk Penggunaan Modul
-
-### Sasaran Peserta
-
-- Admin aplikasi;
-- Pengelola Aset;
-- Verifikator Aset;
-- Viewer atau pimpinan yang memerlukan akses baca; dan
-- petugas teknis pemetaan 2D serta pengelolaan model bangunan 3D.
-
-### Alat dan Bahan
-
-- perangkat dengan browser modern;
-- koneksi ke server Bhumi Satya;
-- akun pelatihan sesuai peran;
-- dokumen sumber aset yang telah diverifikasi;
-- GeoJSON bidang tanah untuk latihan spasial bila tersedia;
-- GeoTIFF untuk latihan orthophoto bila tersedia; dan
-- berkas model KMZ, GLB, atau 3D Tiles untuk latihan bangunan 3D bila tersedia.
-
-### Capaian Pembelajaran
-
-Setelah mengikuti modul, peserta diharapkan mampu:
-
-1. mengakses aplikasi dengan aman;
-2. membaca dashboard dan menelusuri data melalui Digital Twin;
-3. mengelola data induk tanah beserta data legal, fisik, KIB, administratif, pajak, dan spasial;
-4. mengelola orthophoto dan katalog bangunan 3D sesuai kewenangan;
-5. memeriksa riwayat serta notifikasi; dan
-6. menjalankan fungsi administrasi sistem sesuai peran.
 
 ---
 
@@ -82,16 +41,16 @@ Setelah mengikuti modul, peserta diharapkan mampu:
 5. Halaman Publik
 6. Masuk dan Keluar dari Aplikasi
 7. Dashboard
-8. Peta dan Digital Twin
-9. Pusat Data Tanah
+8. Digital Twin
+9. Pusat Data
 10. Pendaftaran dan Pengelolaan Data Aset
 11. Data Legal
 12. Data Fisik
 13. Data KIB
 14. Data Administratif
 15. Data Pajak
-16. Data Spasial dan Editor 2D
-17. Pusat Data Bangunan dan Model 3D
+16. Kelola 2D
+17. Kelola 3D
 18. Riwayat Aktivitas
 19. Notifikasi
 20. Backup dan Restore
@@ -99,7 +58,7 @@ Setelah mengikuti modul, peserta diharapkan mampu:
 22. Pengaturan
 23. Manajemen User
 24. Penanganan Kendala
-25. Latihan Terpadu dan Praktik Penggunaan yang Baik
+25. Praktik Penggunaan yang Baik
 26. Lampiran
 
 > **Petunjuk untuk penyunting dokumen:** setelah dipindahkan ke Microsoft Word, gunakan fitur *References > Table of Contents* untuk membuat daftar isi otomatis dari struktur heading.
@@ -110,7 +69,7 @@ Setelah mengikuti modul, peserta diharapkan mampu:
 
 ## 1.1 Tentang Bhumi Satya
 
-Bhumi Satya adalah aplikasi pengelolaan aset tanah Pemerintah Kota Pasuruan. Aplikasi menggabungkan data identitas, legal, fisik, Kartu Inventaris Barang (KIB), administratif, pajak, data spasial 2D, dan model 3D dalam satu sistem.
+Bhumi Satya adalah aplikasi pengelolaan aset tanah organisasi. Aplikasi menggabungkan data identitas, legal, fisik, Kartu Inventaris Barang (KIB), administratif, pajak, data spasial 2D, dan model 3D dalam satu sistem.
 
 Fungsi utama aplikasi meliputi:
 

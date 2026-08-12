@@ -111,7 +111,7 @@ describe("PDF export template", () => {
         id_aset: 17,
         kode_aset: "TNH-001",
         nama_aset: "Kompleks Pelayanan",
-        lokasi: "Kota Pasuruan",
+        lokasi: "Area Operasional",
         building_height_m: 12,
       },
     });

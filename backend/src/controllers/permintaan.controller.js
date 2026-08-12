@@ -13,6 +13,7 @@ const normalizePeriodeBayar = (periode) =>
   PERIODE_BAYAR_OPTIONS.has(periode) ? periode : "Tahunan";
 
 const STATUS_OPTIONS = new Set(["Baru", "Diproses", "Disetujui", "Ditolak"]);
+const RENTAL_CATEGORIES = new Set(["Tanah", "Bangunan"]);
 let sewaDiprosesStatusEnsured = false;
 
 const ensureSewaDiprosesStatus = async () => {
@@ -149,7 +150,7 @@ export const submitRequest = async (req, res) => {
     if (!nama_aset || !nama_pemohon || !no_telepon || !tujuan_sewa) {
       return res.status(400).json({
         error:
-          "Nama bangunan, nama pemohon, nomor telepon, dan tujuan sewa wajib diisi",
+          "Nama objek, nama pemohon, nomor telepon, dan tujuan sewa wajib diisi",
       });
     }
 
@@ -205,6 +206,7 @@ export const getForMasyarakat = async (req, res) => {
       limit = 10,
       search = "",
       status,
+      kategori,
       sortBy = "created_at",
       sortOrder = "desc",
     } = req.query;
@@ -243,7 +245,19 @@ export const getForMasyarakat = async (req, res) => {
         {
           model: SewaAset,
           as: "sewa",
-          attributes: ["id_sewa", "nama_aset", "no_lot", "status", "foto_sewa"],
+          required: RENTAL_CATEGORIES.has(kategori),
+          where: RENTAL_CATEGORIES.has(kategori)
+            ? { kategori_sewa: kategori }
+            : undefined,
+          attributes: [
+            "id_sewa",
+            "kategori_sewa",
+            "kode_3d",
+            "nama_aset",
+            "no_lot",
+            "status",
+            "foto_sewa",
+          ],
         },
       ],
       order: [[safeSortBy, safeSortOrder]],
@@ -277,6 +291,7 @@ export const getAll = async (req, res) => {
       limit = 10,
       search = "",
       status,
+      kategori,
       sortBy = "created_at",
       sortOrder = "desc",
     } = req.query;
@@ -421,7 +436,18 @@ export const updateStatus = async (req, res) => {
         {
           model: SewaAset,
           as: "sewa",
-          attributes: ["id_sewa", "nama_aset", "no_lot", "status"],
+          required: RENTAL_CATEGORIES.has(kategori),
+          where: RENTAL_CATEGORIES.has(kategori)
+            ? { kategori_sewa: kategori }
+            : undefined,
+          attributes: [
+            "id_sewa",
+            "kategori_sewa",
+            "kode_3d",
+            "nama_aset",
+            "no_lot",
+            "status",
+          ],
         },
       ],
     });
@@ -452,7 +478,7 @@ export const update = async (req, res) => {
     }
 
     if (updateData.nama_aset !== undefined && !updateData.nama_aset) {
-      return res.status(400).json({ error: "Nama bangunan wajib diisi" });
+      return res.status(400).json({ error: "Nama objek sewa wajib diisi" });
     }
 
     if (updateData.nama_pemohon !== undefined && !updateData.nama_pemohon) {
@@ -478,7 +504,18 @@ export const update = async (req, res) => {
         {
           model: SewaAset,
           as: "sewa",
-          attributes: ["id_sewa", "nama_aset", "no_lot", "status"],
+          required: RENTAL_CATEGORIES.has(kategori),
+          where: RENTAL_CATEGORIES.has(kategori)
+            ? { kategori_sewa: kategori }
+            : undefined,
+          attributes: [
+            "id_sewa",
+            "kategori_sewa",
+            "kode_3d",
+            "nama_aset",
+            "no_lot",
+            "status",
+          ],
         },
       ],
     });

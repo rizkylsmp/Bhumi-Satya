@@ -15,7 +15,7 @@ const PermintaanSewa = sequelize.define(
       allowNull: true,
       references: { model: "sewa_aset", key: "id_sewa" },
     },
-    // Nama bangunan yang diminta
+    // Nama tanah atau bangunan yang diminta
     nama_aset: {
       type: DataTypes.STRING(200),
       allowNull: false,

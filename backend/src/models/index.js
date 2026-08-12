@@ -86,6 +86,18 @@ Aset.hasMany(SewaAset, {
   as: "sewas",
 });
 
+SewaAset.belongsTo(Aset3dCatalog, {
+  foreignKey: "kode_3d",
+  targetKey: "kode_3d",
+  as: "bangunan",
+});
+
+Aset3dCatalog.hasMany(SewaAset, {
+  foreignKey: "kode_3d",
+  sourceKey: "kode_3d",
+  as: "sewas",
+});
+
 // SewaAset belongs to User (creator)
 SewaAset.belongsTo(User, {
   foreignKey: "created_by",

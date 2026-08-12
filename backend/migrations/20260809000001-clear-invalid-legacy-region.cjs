@@ -12,14 +12,13 @@ module.exports = {
           "desa_kelurahan" = NULL,
           "updated_at" = CURRENT_TIMESTAMP
         WHERE "kode_aset" = :assetCode
-          AND LOWER(BTRIM(COALESCE("kecamatan", ''))) = 'bugul kidul'
-          AND LOWER(BTRIM(COALESCE("desa_kelurahan", ''))) = 'bakalan'
+          AND ("kecamatan" IS NOT NULL OR "desa_kelurahan" IS NOT NULL)
       `,
       { replacements: { assetCode: TARGET_ASSET_CODE } },
     );
   },
 
   // This is an invalid legacy location correction. Restoring the incorrect
-  // Pasuruan values during rollback would reintroduce the data issue.
+  // regional values during rollback would reintroduce the data issue.
   async down() {},
 };

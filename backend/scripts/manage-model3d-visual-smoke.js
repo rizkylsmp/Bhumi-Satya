@@ -98,7 +98,7 @@ try {
     const asset = await Aset.create({
       kode_aset: `MODEL3D-VISUAL-${runId}`,
       nama_aset: "SAMPLE UJI VISUAL MODEL 3D — BUKAN DATA RESMI",
-      lokasi: "Lokasi mengikuti koordinat sample KMZ; bukan aset resmi Kota Pasuruan",
+      lokasi: "Lokasi mengikuti koordinat sampel KMZ; bukan aset resmi organisasi",
       koordinat_lat: manifest.latitude,
       koordinat_long: manifest.longitude,
       sumber: "BPN",

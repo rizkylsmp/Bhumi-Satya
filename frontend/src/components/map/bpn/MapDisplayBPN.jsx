@@ -1799,18 +1799,10 @@ const MapDisplayBPN = ({
         data: "/data/batas_kecamatan.geojson",
         generateId: true,
       });
-      const kecFilter = [
-        "in",
-        "WADMKC",
-        "PURWOREJO",
-        "GADINGREJO",
-        "BUGUL KIDUL",
-      ];
       map.current.addLayer({
         id: "batas_kecamatan_fill",
         type: "fill",
         source: "batas_kecamatan",
-        filter: kecFilter,
         paint: {
           "fill-color": "#8b5cf6",
           "fill-opacity": [
@@ -1825,7 +1817,6 @@ const MapDisplayBPN = ({
         id: "batas_kecamatan_line",
         type: "line",
         source: "batas_kecamatan",
-        filter: kecFilter,
         paint: {
           "line-color": [
             "case",
@@ -1847,7 +1838,6 @@ const MapDisplayBPN = ({
         id: "batas_kecamatan_label",
         type: "symbol",
         source: "batas_kecamatan",
-        filter: kecFilter,
         layout: {
           "text-field": ["get", "WADMKC"],
           "text-size": 14,
@@ -1927,18 +1917,10 @@ const MapDisplayBPN = ({
         data: "/data/batas_wilayah.geojson",
         generateId: true,
       });
-      const kelKecFilter = [
-        "in",
-        "WADMKC",
-        "PURWOREJO",
-        "GADINGREJO",
-        "BUGUL KIDUL",
-      ];
       map.current.addLayer({
         id: "batas_wilayah_fill",
         type: "fill",
         source: "batas_wilayah",
-        filter: kelKecFilter,
         paint: {
           "fill-color": "#10b981",
           "fill-opacity": [
@@ -1953,7 +1935,6 @@ const MapDisplayBPN = ({
         id: "batas_wilayah_line",
         type: "line",
         source: "batas_wilayah",
-        filter: kelKecFilter,
         paint: {
           "line-color": "#10b981",
           "line-width": [
@@ -1969,7 +1950,6 @@ const MapDisplayBPN = ({
         id: "batas_wilayah_label",
         type: "symbol",
         source: "batas_wilayah",
-        filter: kelKecFilter,
         layout: {
           "text-field": ["get", "NAMOBJ"],
           "text-size": 12,
