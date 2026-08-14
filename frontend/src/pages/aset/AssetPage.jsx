@@ -111,7 +111,7 @@ export default function AssetPage() {
       setTotalItems(pagination?.totalItems || 0);
     } catch (error) {
       console.error("Error fetching assets:", error);
-      toast.error("Gagal memuat data aset");
+      toast.error("Gagal memuat data tanah");
       setAssets([]);
     } finally {
       setLoading(false);
@@ -137,7 +137,7 @@ export default function AssetPage() {
     const targetAssetId = asset?.id_aset || asset?.id;
     if (!targetAssetId) {
       toast.error(
-        "Aset tidak memiliki ID yang valid untuk ditampilkan di peta",
+        "Tanah tidak memiliki ID yang valid untuk ditampilkan di peta",
       );
       return;
     }
@@ -194,7 +194,7 @@ export default function AssetPage() {
       setIsViewModalOpen(true);
     } catch (error) {
       console.error("Error fetching asset:", error);
-      toast.error("Gagal memuat data aset");
+      toast.error("Gagal memuat data tanah");
     }
   };
 
@@ -213,26 +213,26 @@ export default function AssetPage() {
   };
 
   const handleDownloadAssetGeojson = async (asset) => {
-    const toastId = toast.loading("Menyiapkan GeoJSON aset...");
+    const toastId = toast.loading("Menyiapkan GeoJSON tanah...");
     try {
       const assetId = asset?.id_aset || asset?.id;
       const response = assetId ? await asetService.getById(assetId) : null;
       const fullAsset = response?.data?.data || asset;
       const downloaded = downloadAssetGeojson(fullAsset);
       if (!downloaded) {
-        toast.error("Aset belum memiliki polygon untuk diekspor", {
+        toast.error("Tanah belum memiliki polygon untuk diekspor", {
           id: toastId,
         });
         return;
       }
-      toast.success("GeoJSON aset mulai diunduh", { id: toastId });
+      toast.success("GeoJSON tanah mulai diunduh", { id: toastId });
     } catch (error) {
       console.error("Error preparing asset GeoJSON:", error);
       const downloaded = downloadAssetGeojson(asset);
       if (downloaded) {
         toast.success("GeoJSON dibuat dari data tabel", { id: toastId });
       } else {
-        toast.error("Aset belum memiliki polygon untuk diekspor", {
+        toast.error("Tanah belum memiliki polygon untuk diekspor", {
           id: toastId,
         });
       }
@@ -246,9 +246,9 @@ export default function AssetPage() {
 
   const handleDeleteAsset = async (assetId) => {
     const confirmed = await confirm({
-      title: "Hapus Aset",
+      title: "Hapus Tanah",
       message:
-        "Apakah Anda yakin ingin menghapus aset ini? Data yang dihapus tidak dapat dikembalikan.",
+        "Apakah Anda yakin ingin menghapus tanah ini? Data yang dihapus tidak dapat dikembalikan.",
       confirmText: "Hapus",
       cancelText: "Batal",
       type: "danger",
@@ -257,11 +257,11 @@ export default function AssetPage() {
 
     try {
       await asetService.delete(assetId);
-      toast.success("Aset berhasil dihapus");
+      toast.success("Tanah berhasil dihapus");
       fetchAssets();
     } catch (error) {
       console.error("Error deleting asset:", error);
-      const errorMsg = error.response?.data?.error || "Gagal menghapus aset";
+      const errorMsg = error.response?.data?.error || "Gagal menghapus tanah";
       toast.error(errorMsg);
     }
   };
@@ -349,7 +349,7 @@ export default function AssetPage() {
               className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-accent px-3 text-xs font-bold text-surface transition hover:bg-accent/90"
             >
               <PlusIcon size={15} weight="bold" />
-              Daftarkan Aset Baru
+              Daftarkan Tanah Baru
             </button>
           )}
         </div>
@@ -368,7 +368,7 @@ export default function AssetPage() {
         <div className="flex items-center justify-between border-b border-border bg-surface-secondary/50 px-4 py-3 lg:px-6">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-text-primary">
-              Daftar Aset Terdaftar
+              Daftar Tanah Terdaftar
             </span>
             <span className="px-2.5 py-0.5 bg-accent/10 text-accent text-xs font-semibold rounded-full">
               {totalItems} data
@@ -422,10 +422,10 @@ export default function AssetPage() {
               />
             </div>
             <h3 className="text-lg font-semibold text-text-primary mb-2">
-              Belum ada aset terdaftar
+              Belum ada tanah terdaftar
             </h3>
             <p className="text-text-muted text-sm max-w-sm mx-auto mb-5">
-              Daftarkan aset baru terlebih dahulu, kemudian lengkapi data
+              Daftarkan tanah baru terlebih dahulu, kemudian lengkapi data
               substansinya di masing-masing menu.
             </p>
             {canCreate && (
@@ -434,7 +434,7 @@ export default function AssetPage() {
                 className="inline-flex items-center gap-2 bg-linear-to-r from-accent to-accent/90 text-surface px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-accent/30 transition-all text-sm font-medium"
               >
                 <PlusIcon size={18} weight="bold" />
-                Daftarkan Aset Baru
+                Daftarkan Tanah Baru
               </button>
             )}
           </div>
@@ -565,7 +565,7 @@ export default function AssetPage() {
                           column="nilai_aset"
                           className="min-w-[130px]"
                         >
-                          Nilai Aset
+                          Nilai Tanah
                         </TableHeader>
                         <TableHeader className="min-w-[120px]">
                           Penyertifikatan
@@ -1175,7 +1175,7 @@ export default function AssetPage() {
                           </div>
                           <div>
                             <p className="text-[10px] font-medium text-text-muted uppercase tracking-wider mb-0.5">
-                              Nilai Aset
+                              Nilai Tanah
                             </p>
                             <p className="text-xs text-text-secondary">
                               {asset.nilai_aset
@@ -1283,7 +1283,7 @@ export default function AssetPage() {
             onItemsPerPageChange={handleItemsPerPageChange}
             pageSizeOptions={[10, 20, 50]}
             embedded
-            itemLabel="aset"
+            itemLabel="tanah"
           />
         )}
       </div>

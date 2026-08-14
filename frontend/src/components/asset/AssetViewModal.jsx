@@ -456,7 +456,7 @@ export default function AssetViewModal({
               </div>
               <div className="min-w-0">
                 <p className="mb-1 text-[10px] font-black uppercase tracking-[0.12em] text-accent">
-                  Data Lengkap Aset · {asset.kode_aset}
+                  Data Lengkap Tanah · {asset.kode_aset}
                 </p>
                 <h2 className="truncate text-lg font-black text-text-primary md:text-xl">{asset.nama_aset}</h2>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -582,9 +582,9 @@ export default function AssetViewModal({
           <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             {/* Main Content */}
             <div className={`${activeDetailTab === "detail-identitas-aset" ? "xl:col-span-3" : "xl:col-span-4"} space-y-6`}>
-              {/* Identitas Aset */}
+              {/* Identitas Tanah */}
               <Section
-                title="Identitas Aset"
+                title="Identitas Tanah"
                 icon={ClipboardTextIcon}
                 columns={3}
                 hidden={activeDetailTab !== "detail-identitas-aset"}
@@ -594,7 +594,7 @@ export default function AssetViewModal({
                 <InfoItem label="Kode Bidang" value={asset.kode_2d} highlight />
                 <InfoItem label="Nama Tanah" value={asset.nama_aset} highlight />
                 <InfoItem label="Kode BMD" value={asset.kode_bmd} />
-                <InfoItem label="Jenis Aset" value={asset.jenis_aset} />
+                <InfoItem label="Jenis Tanah" value={asset.jenis_aset} />
                 <InfoItem label="Asal Data (audit)" value={asset.sumber} />
                 <InfoItem
                   label="Status Rekonsiliasi"
@@ -716,7 +716,7 @@ export default function AssetViewModal({
                 hidden={activeDetailTab !== "detail-data-administratif"}
               >
                 <InfoItem
-                  label="Nilai Aset"
+                  label="Nilai Tanah"
                   value={formatOptionalCurrency(asset.nilai_aset)}
                   highlight
                 />
@@ -865,7 +865,7 @@ export default function AssetViewModal({
                 <div id="detail-data-spasial" role="tabpanel" aria-labelledby="tab-detail-data-spasial" className="rounded-2xl border border-dashed border-border bg-surface p-10 text-center">
                   <MapTrifoldIcon size={30} className="mx-auto text-text-muted" />
                   <p className="mt-3 text-sm font-bold text-text-primary">Data spasial belum tersedia</p>
-                  <p className="mt-1 text-xs text-text-muted">Tambahkan koordinat atau polygon bidang melalui halaman edit aset.</p>
+                  <p className="mt-1 text-xs text-text-muted">Tambahkan koordinat atau polygon bidang melalui halaman kelola tanah.</p>
                 </div>
               )}
 
@@ -1065,12 +1065,12 @@ export default function AssetViewModal({
 
             {/* Sidebar - 1 column */}
             {activeDetailTab === "detail-identitas-aset" && <div className="space-y-6">
-              {/* Nilai Aset Card */}
+              {/* Nilai Tanah Card */}
               <div className="bg-linear-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 text-white">
                 <div className="flex items-center gap-2 mb-3">
                   <CurrencyDollarIcon size={20} weight="bold" />
                   <span className="text-xs font-semibold uppercase tracking-wide opacity-80">
-                    Nilai Aset
+                    Nilai Tanah
                   </span>
                 </div>
                 <div className="space-y-3">
@@ -1152,7 +1152,7 @@ export default function AssetViewModal({
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-text-primary">
-                          Foto Aset
+                          Foto Tanah
                         </p>
                         <p className="text-xs text-text-muted">
                           Klik untuk melihat

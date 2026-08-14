@@ -101,7 +101,7 @@ export default function AssetFormPage() {
       .catch((error) => {
         if (!active) return;
         console.error("Error fetching asset form data:", error);
-        setLoadError(error.response?.data?.error || "Gagal memuat data aset");
+        setLoadError(error.response?.data?.error || "Gagal memuat data tanah");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -142,8 +142,8 @@ export default function AssetFormPage() {
 
       toast.success(
         model3dFile
-          ? "Aset dan model 3D berhasil disimpan"
-          : `Aset berhasil ${isEdit ? "diperbarui" : "ditambahkan"}`,
+          ? "Tanah dan model 3D berhasil disimpan"
+          : `Tanah berhasil ${isEdit ? "diperbarui" : "ditambahkan"}`,
       );
       const locationWarning = modelResponse?.data?.data?.manifest?.locationAssessment;
       if (locationWarning?.status === "warning") {
@@ -158,10 +158,10 @@ export default function AssetFormPage() {
       navigate(returnPath, { replace: true });
     } catch (error) {
       console.error("Error saving asset:", error);
-      const errorMessage = error.response?.data?.error || "Gagal menyimpan aset";
+      const errorMessage = error.response?.data?.error || "Gagal menyimpan tanah";
       toast.error(
         assetWasSaved
-          ? `Aset tersimpan, tetapi model 3D gagal: ${errorMessage}`
+          ? `Tanah tersimpan, tetapi model 3D gagal: ${errorMessage}`
           : errorMessage,
       );
     } finally {
@@ -174,7 +174,7 @@ export default function AssetFormPage() {
       <div className="flex min-h-[55vh] items-center justify-center p-6">
         <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-5 py-4 text-sm font-semibold text-text-secondary shadow-sm">
           <CircleNotchIcon size={20} className="animate-spin text-accent" />
-          Memuat data aset…
+          Memuat data tanah…
         </div>
       </div>
     );
@@ -187,8 +187,8 @@ export default function AssetFormPage() {
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300">
             <WarningCircleIcon size={24} weight="duotone" />
           </span>
-          <h1 className="mt-4 text-lg font-black text-text-primary">Data aset tidak dapat dibuka</h1>
-          <p className="mt-1 text-sm text-text-muted">{loadError || "Aset tidak ditemukan"}</p>
+          <h1 className="mt-4 text-lg font-black text-text-primary">Data tanah tidak dapat dibuka</h1>
+          <p className="mt-1 text-sm text-text-muted">{loadError || "Tanah tidak ditemukan"}</p>
           <button
             type="button"
             onClick={() => navigate(returnPath)}
@@ -208,10 +208,10 @@ export default function AssetFormPage() {
   const pageTitle = isEdit
     ? activeSubstansi
       ? `${isManage ? "Kelola" : "Edit"} Data ${
-          visibleSections[0]?.label || "Aset"
+          visibleSections[0]?.label || "Tanah"
         }`
-      : "Edit Data Aset"
-    : "Tambah Data Aset";
+      : "Edit Data Tanah"
+    : "Tambah Data Tanah";
 
   const activeSectionIndex = Math.max(
     0,
@@ -235,13 +235,13 @@ export default function AssetFormPage() {
       <div className="mx-auto max-w-[1600px] space-y-4">
         <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-text-muted">
           <button type="button" onClick={() => navigate("/aset")} className="transition hover:text-accent">
-            Kelola Aset
+            Kelola Tanah
           </button>
           <CaretRightIcon size={12} />
           {returnPath !== "/aset" && (
             <>
               <button type="button" onClick={() => navigate(returnPath)} className="transition hover:text-accent">
-                {visibleSections[0]?.label || "Data Aset"}
+                {visibleSections[0]?.label || "Data Tanah"}
               </button>
               <CaretRightIcon size={12} />
             </>
@@ -259,7 +259,7 @@ export default function AssetFormPage() {
               </span>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.14em] text-accent">
-                  {isEdit ? asset?.kode_aset : "Registrasi aset baru"}
+                  {isEdit ? asset?.kode_aset : "Registrasi tanah baru"}
                 </p>
                 <h1 className="text-lg font-black text-text-primary md:text-xl">{pageTitle}</h1>
               </div>
@@ -279,7 +279,7 @@ export default function AssetFormPage() {
           <nav aria-label="Navigasi bagian form" className="sticky top-0 z-20 overflow-x-auto rounded-xl border border-border bg-surface/95 p-2 backdrop-blur">
             <div
               role="tablist"
-              aria-label="Bagian form aset"
+              aria-label="Bagian form tanah"
               onKeyDown={handleSectionKeyDown}
               className="flex min-w-max items-center gap-1.5"
             >
@@ -313,10 +313,10 @@ export default function AssetFormPage() {
 
         <div className="sr-only" aria-live="polite">
           {isEdit
-            ? `${isManage ? "Mengelola" : "Mengedit"} aset ${
+            ? `${isManage ? "Mengelola" : "Mengedit"} tanah ${
                 asset?.kode_aset || id
               }`
-            : "Menambahkan aset baru"}
+            : "Menambahkan tanah baru"}
         </div>
         {activeSubstansi && (
           <span id={`form-tab-${activeSubstansi}`} className="sr-only">

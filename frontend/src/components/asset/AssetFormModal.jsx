@@ -102,7 +102,7 @@ const Building3dFields = ({
             {modelFile ? modelFile.name : "Belum ada file model KMZ baru"}
           </p>
           <p className="text-xs text-text-muted">
-            KMZ akan diperiksa dan diunggah sebagai versi baru setelah aset disimpan.
+            KMZ akan diperiksa dan diunggah sebagai versi baru setelah tanah disimpan.
           </p>
           {modelFile && (
             <p className="mt-1 text-xs font-medium text-accent" aria-live="polite">
@@ -800,7 +800,7 @@ export default function AssetFormModal({
         model_3d_lod: prev.model_3d_lod || "LOD1",
         model_3d_source_crs: prev.model_3d_source_crs || "EPSG:4326",
       }));
-      toast.success("Model KMZ siap diunggah setelah aset disimpan");
+      toast.success("Model KMZ siap diunggah setelah tanah disimpan");
     } finally {
       e.target.value = "";
     }
@@ -903,9 +903,9 @@ export default function AssetFormModal({
           submitData.status_sertifikat ||
           deriveCertificateStatus(submitData.nomor_sertifikat);
         submitData.jenis_aset = "Bidang Tanah";
-        submitData.opd_pengguna = submitData.opd_pengguna || "Pengelola Aset";
+        submitData.opd_pengguna = submitData.opd_pengguna || "Pengelola Tanah";
         submitData.atas_nama =
-        submitData.atas_nama || "Organisasi Pemilik Aset";
+          submitData.atas_nama || "Organisasi Pemilik Tanah";
         if (!submitData.lokasi) {
           submitData.lokasi = [
             submitData.desa_kelurahan,
@@ -941,12 +941,12 @@ export default function AssetFormModal({
   const substansiConfig = {
     legal: {
       title: "Edit Data Legal",
-      subtitle: "Perbarui informasi sertifikat dan status hukum aset",
+      subtitle: "Perbarui informasi sertifikat dan status hukum tanah",
       icon: ScalesIcon,
     },
     fisik: {
       title: "Edit Data Fisik",
-      subtitle: "Perbarui informasi lokasi dan kondisi fisik aset",
+      subtitle: "Perbarui informasi lokasi dan kondisi fisik tanah",
       icon: MapPinIcon,
     },
     kib: {
@@ -961,12 +961,12 @@ export default function AssetFormModal({
     },
     administratif: {
       title: "Edit Administratif",
-      subtitle: "Perbarui informasi administratif dan pengelolaan aset",
+      subtitle: "Perbarui informasi administratif dan pengelolaan tanah",
       icon: CurrencyDollarIcon,
     },
     spasial: {
       title: "Edit Data Spasial",
-      subtitle: "Perbarui koordinat dan informasi geospasial aset",
+      subtitle: "Perbarui koordinat dan informasi geospasial tanah",
       icon: MapPinIcon,
     },
   };
@@ -1004,27 +1004,27 @@ export default function AssetFormModal({
                       ? currentSubstansi.title
                       : isLegacyCompactForm
                         ? assetData
-                          ? "Edit Data Aset"
-                          : "Tambah Data Aset"
+                          ? "Edit Data Tanah"
+                          : "Tambah Data Tanah"
                         : assetData
-                          ? "Edit Data Aset"
-                          : "Daftarkan Aset Baru"}
+                          ? "Edit Data Tanah"
+                          : "Daftarkan Tanah Baru"}
                   </h2>
                   <p className="text-sm opacity-80 mt-0.5">
                     {currentSubstansi
                       ? currentSubstansi.subtitle
                       : isLegacyCompactForm
-                        ? "Lengkapi data aset sesuai kebutuhan operasional"
+                        ? "Lengkapi data tanah sesuai kebutuhan operasional"
                         : assetData
-                          ? "Perbarui informasi aset yang sudah ada"
-                          : "Masukkan data inti aset — data substansi diisi melalui menu masing-masing"}
+                          ? "Perbarui informasi tanah yang sudah ada"
+                          : "Masukkan data inti tanah — data substansi diisi melalui menu masing-masing"}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label={isPage ? "Kembali ke daftar aset" : "Tutup form"}
+                aria-label={isPage ? "Kembali ke daftar tanah" : "Tutup form"}
                 className="p-2.5 hover:bg-surface/20 rounded-lg transition-colors"
               >
                 {isPage
@@ -1060,12 +1060,12 @@ export default function AssetFormModal({
                 </div>
               )}
 
-              {/* ========== IDENTITAS ASET ========== */}
+              {/* ========== IDENTITAS TANAH ========== */}
               {isFullForm && !isLegacyCompactForm && (
                 <div id="identitas" role="tabpanel" aria-labelledby="form-tab-identitas" hidden={isPage && activeSection !== "identitas"} data-form-section="identitas" className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                   <SectionHeader
                     icon={ClipboardTextIcon}
-                    title="Identitas Aset"
+                    title="Identitas Tanah"
                   />
 
                   {/* Row 1: Kode, Nama */}
@@ -1098,7 +1098,7 @@ export default function AssetFormModal({
                   <div className="bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
                     <SectionHeader
                       icon={ClipboardTextIcon}
-                      title="Identitas Aset"
+                      title="Identitas Tanah"
                     />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -1180,7 +1180,7 @@ export default function AssetFormModal({
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                       <FormInput
-                        label="Jenis Aset"
+                        label="Jenis Tanah"
                         name="jenis_aset"
                         placeholder="Bidang Tanah"
                         value={formData.jenis_aset}
@@ -1198,7 +1198,7 @@ export default function AssetFormModal({
                       <FormInput
                         label="Atas Nama"
                         name="atas_nama"
-                        placeholder="Organisasi Pemilik Aset"
+                        placeholder="Organisasi Pemilik Tanah"
                         value={formData.atas_nama}
                         onChange={handleInputChange}
                         size="lg"
@@ -1289,7 +1289,7 @@ export default function AssetFormModal({
                         size="lg"
                       />
                       <FormInput
-                        label="Nilai Aset (Rp)"
+                        label="Nilai Tanah (Rp)"
                         name="nilai_aset"
                         type="number"
                         placeholder="0"
@@ -1312,7 +1312,7 @@ export default function AssetFormModal({
                       <FormInput
                         label="Penggunaan KIB"
                         name="penggunaan_kib"
-                        placeholder="Penggunaan aset menurut KIB"
+                        placeholder="Penggunaan tanah menurut KIB"
                         value={formData.penggunaan_kib}
                         onChange={handleInputChange}
                         size="lg"
@@ -1329,7 +1329,7 @@ export default function AssetFormModal({
                     <FormTextarea
                       label="Lokasi/Alamat Lengkap"
                       name="lokasi"
-                      placeholder="Alamat lengkap aset"
+                      placeholder="Alamat lengkap tanah"
                       value={formData.lokasi}
                       onChange={handleInputChange}
                       rows={2}
@@ -1593,7 +1593,7 @@ export default function AssetFormModal({
                   <FormTextarea
                     label="Lokasi/Alamat Lengkap"
                     name="lokasi"
-                    placeholder="Alamat lengkap aset"
+                    placeholder="Alamat lengkap tanah"
                     value={formData.lokasi}
                     onChange={handleInputChange}
                     rows={2}
@@ -2044,12 +2044,12 @@ export default function AssetFormModal({
               {/* ========== LOKASI DASAR (create mode only) ========== */}
               {isCreateMode && !isLegacyCompactForm && !isFullForm && (
                 <div id="lokasi-dasar" className="scroll-mt-28 bg-surface-secondary border border-border rounded-xl p-5 space-y-5">
-                  <SectionHeader icon={MapPinIcon} title="Lokasi Aset" />
+                  <SectionHeader icon={MapPinIcon} title="Lokasi Tanah" />
 
                   <FormTextarea
                     label="Lokasi/Alamat Lengkap"
                     name="lokasi"
-                    placeholder="Alamat lengkap aset"
+                    placeholder="Alamat lengkap tanah"
                     value={formData.lokasi}
                     onChange={handleInputChange}
                     rows={2}

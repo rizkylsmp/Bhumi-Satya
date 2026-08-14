@@ -1,5 +1,14 @@
 export const changelogEntries = [
   {
+    id: "land-data-center-terminology",
+    date: "2026-08-14",
+    type: "peningkatan",
+    title: "Menyelaraskan istilah Pusat Data Tanah",
+    summary:
+      "Form registrasi, daftar, detail, notifikasi, dan aksi pengelolaan kini konsisten menggunakan istilah tanah.",
+    area: "Pusat Data Tanah",
+  },
+  {
     id: "disable-orthophoto-management",
     date: "2026-08-12",
     type: "peningkatan",

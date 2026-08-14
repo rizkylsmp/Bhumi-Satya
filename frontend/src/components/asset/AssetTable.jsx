@@ -214,10 +214,10 @@ export default function AssetTable({
           <PackageIcon size={40} weight="duotone" className="text-text-muted" />
         </div>
         <h3 className="text-lg font-semibold text-text-primary mb-2">
-          Tidak ada data aset
+          Tidak ada data tanah
         </h3>
         <p className="text-text-muted text-sm max-w-sm mx-auto">
-          Belum ada aset yang terdaftar atau tidak ditemukan hasil yang sesuai
+          Belum ada tanah yang terdaftar atau tidak ditemukan hasil yang sesuai
           dengan filter pencarian Anda.
         </p>
       </div>

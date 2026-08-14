@@ -433,7 +433,7 @@ export default function SubstansiAssetPage({
         Tidak ada data bangunan
       </h3>
       <p className="text-text-muted text-sm max-w-sm mx-auto">
-        Belum ada aset yang terdaftar atau tidak ditemukan hasil yang sesuai
+        Belum ada tanah yang terdaftar atau tidak ditemukan hasil yang sesuai
         dengan filter pencarian Anda.
       </p>
     </div>
@@ -688,7 +688,7 @@ export default function SubstansiAssetPage({
             }}
             pageSizeOptions={[10, 20, 50]}
             embedded
-            itemLabel="aset"
+            itemLabel="tanah"
           />
         )}
       </div>
