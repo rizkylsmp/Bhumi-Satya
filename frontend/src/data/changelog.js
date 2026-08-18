@@ -1,5 +1,14 @@
 export const changelogEntries = [
   {
+    id: "prevent-slow-map-reload-loop",
+    date: "2026-08-18",
+    type: "perbaikan",
+    title: "Menstabilkan pemuatan website dan Digital Twin",
+    summary:
+      "Peta yang membutuhkan waktu lebih lama tidak lagi memicu muat ulang halaman berulang, sementara logo dan ikon disimpan lebih efisien oleh browser.",
+    area: "Performa",
+  },
+  {
     id: "land-data-center-terminology",
     date: "2026-08-14",
     type: "peningkatan",

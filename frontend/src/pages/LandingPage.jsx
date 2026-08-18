@@ -1,4 +1,4 @@
-import { Suspense, useState, useEffect, useMemo, useRef } from "react";
+import { lazy, Suspense, useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -52,7 +52,9 @@ import {
 import BrandMark from "../components/shared/BrandMark";
 import { lazyWithRetry } from "../utils/lazyWithRetry";
 
-const AssetMapDisplay = lazyWithRetry(
+// The landing map is optional, below-the-fold content. A slow map module must
+// never reload the entire public page.
+const AssetMapDisplay = lazy(
   () => import("../components/map/AssetMapDisplay"),
 );
 const AssetDetailPanel = lazyWithRetry(

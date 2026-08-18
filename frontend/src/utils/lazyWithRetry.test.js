@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildReloadUrl, loadWithTimeout } from "./lazyWithRetry";
+import {
+  buildReloadUrl,
+  canReloadForBuild,
+  loadWithTimeout,
+} from "./lazyWithRetry";
 
 describe("lazy route recovery", () => {
   afterEach(() => {
@@ -32,5 +36,11 @@ describe("lazy route recovery", () => {
 
     await vi.advanceTimersByTimeAsync(100);
     await expectation;
+  });
+
+  it("allows only one automatic reload for the same build", () => {
+    expect(canReloadForBuild("", "build-123")).toBe(true);
+    expect(canReloadForBuild("build-123", "build-123")).toBe(false);
+    expect(canReloadForBuild("build-123", "build-456")).toBe(true);
   });
 });
