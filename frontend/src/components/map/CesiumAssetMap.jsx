@@ -23,6 +23,7 @@ import {
   Matrix4,
   Model,
   Rectangle,
+  SceneTransforms,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
   ShadowMode,
@@ -34,6 +35,7 @@ import {
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import { resolveModelOffsetLocation } from "../../utils/model3dTransform";
+import { getGeometryBoundsCenter } from "../../utils/popupConnector";
 import {
   DEFAULT_BASEMAP_ID,
   getBasemapOption,
@@ -48,6 +50,14 @@ const getModelFormat = (model = {}) =>
 
 const getModelUrl = (model = {}) =>
   model.converted_public_url || model.public_url || null;
+
+const getModelAnchorKey = (model = {}) => String(
+  model?.modelData?.id_model_3d
+  || model?.id_model_3d
+  || model?.modelData?.locationId
+  || model?.locationId
+  || "",
+);
 
 const MODEL_VISUAL_STYLES = {
   default: { color: "#ffffff", blendAmount: 0.18 },
@@ -156,6 +166,95 @@ const createModelMatrix = (model, location) => {
     ),
     matrix,
   );
+};
+
+const weightedMedian = (entries, coordinate) => {
+  const sorted = [...entries].sort(
+    (first, second) => first.center[coordinate] - second.center[coordinate],
+  );
+  const totalWeight = sorted.reduce((sum, entry) => sum + entry.weight, 0);
+  let cumulativeWeight = 0;
+  for (const entry of sorted) {
+    cumulativeWeight += entry.weight;
+    if (cumulativeWeight >= totalWeight / 2) return entry.center[coordinate];
+  }
+  return sorted.at(-1)?.center[coordinate];
+};
+
+const getRenderableModelCenterCartesian = (model) => {
+  const sceneGraph = model?.sceneGraph || model?._sceneGraph;
+  const computedModelMatrix = sceneGraph?._computedModelMatrix;
+  const runtimeNodes = sceneGraph?._runtimeNodes;
+  if (!computedModelMatrix || !Array.isArray(runtimeNodes)) return null;
+
+  const entries = [];
+  runtimeNodes.forEach((runtimeNode) => {
+    if (!runtimeNode || runtimeNode.show === false || !runtimeNode.computedTransform) return;
+    const worldTransform = Matrix4.multiplyTransformation(
+      computedModelMatrix,
+      runtimeNode.computedTransform,
+      new Matrix4(),
+    );
+    runtimeNode.runtimePrimitives?.forEach((runtimePrimitive) => {
+      if (!runtimePrimitive?.boundingSphere?.center) return;
+      const positionAttribute = runtimePrimitive.primitive?.attributes?.find(
+        (attribute) => String(attribute?.semantic || "").toUpperCase() === "POSITION",
+      );
+      const weight = Math.max(1, Number(positionAttribute?.count) || 1);
+      entries.push({
+        center: Matrix4.multiplyByPoint(
+          worldTransform,
+          runtimePrimitive.boundingSphere.center,
+          new Cartesian3(),
+        ),
+        weight,
+      });
+    });
+  });
+  if (entries.length === 0) return null;
+
+  return Cartesian3.fromElements(
+    weightedMedian(entries, "x"),
+    weightedMedian(entries, "y"),
+    weightedMedian(entries, "z"),
+  );
+};
+
+const getModelCenterCartesian = (model) => {
+  const modelData = model?.modelData || model || {};
+  const location = resolveModelOffsetLocation(modelData);
+  const footprintCenter = getGeometryBoundsCenter(modelData.building_footprint);
+  const longitude = Number(footprintCenter?.[0] ?? location?.longitude);
+  const latitude = Number(footprintCenter?.[1] ?? location?.latitude);
+  if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
+    const visibleMidHeight = Math.max(0, Number(modelData.building_height_m) || 0) / 2;
+    return Cartesian3.fromDegrees(
+      longitude,
+      latitude,
+      (Number(location.altitude) || 0) + visibleMidHeight,
+    );
+  }
+  return model?.boundingSphere?.center
+    ? Cartesian3.clone(model.boundingSphere.center)
+    : null;
+};
+
+const getLocationCenterCartesian = (location) => {
+  const longitude = Number(location?.longitude);
+  const latitude = Number(location?.latitude);
+  if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
+  return Cartesian3.fromDegrees(
+    longitude,
+    latitude,
+    Number(location?.altitude) || 0,
+  );
+};
+
+const projectPopupAnchor = (viewer, cartesian) => {
+  if (!viewer || viewer.isDestroyed() || !cartesian) return null;
+  const point = SceneTransforms.worldToWindowCoordinates(viewer.scene, cartesian);
+  if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) return null;
+  return { x: point.x, y: point.y };
 };
 
 const focusSpheres = (viewer, spheres, duration = 0.8, close = false) => {
@@ -384,6 +483,8 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
   const hoveredEntityRef = useRef(null);
   const selectedModelRef = useRef(null);
   const selectedEntityRef = useRef(null);
+  const selectedPopupAnchorRef = useRef(null);
+  const visualAnchorByModelIdRef = useRef(new Map());
   const assetsRef = useRef(assets);
   const onFeatureClickRef = useRef(onFeatureClick);
   const onOtherLayerClickRef = useRef(onOtherLayerClick);
@@ -582,6 +683,20 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
         const targetSphere = location?.id
           ? targetSphereByLocationIdRef.current.get(String(location.id))
           : null;
+        const cachedAnchor = targetModel
+          ? visualAnchorByModelIdRef.current.get(getModelAnchorKey(targetModel))
+          : null;
+        const popupCartesian = (cachedAnchor ? Cartesian3.clone(cachedAnchor) : null)
+          || getRenderableModelCenterCartesian(targetModel)
+          || getModelCenterCartesian(targetModel)
+          || (targetSphere?.center ? Cartesian3.clone(targetSphere.center) : null)
+          || getLocationCenterCartesian(location);
+        selectedPopupAnchorRef.current = location?.assetId && popupCartesian
+          ? {
+              assetId: location.assetId,
+              cartesian: popupCartesian,
+            }
+          : null;
         if (targetSphere && focusSpheres(viewer, [targetSphere], 0.8, true)) {
           pendingFocusLocationRef.current = null;
           return true;
@@ -597,12 +712,18 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
         }
         return false;
       },
+      getPopupAnchor() {
+        const viewer = viewerRef.current;
+        const selected = selectedPopupAnchorRef.current;
+        return projectPopupAnchor(viewer, selected?.cartesian);
+      },
       clearSelection() {
         const viewer = viewerRef.current;
         const previousSelected = selectedModelRef.current;
         const previousSelectedEntity = selectedEntityRef.current;
         selectedModelRef.current = null;
         selectedEntityRef.current = null;
+        selectedPopupAnchorRef.current = null;
         setModelVisualState(
           previousSelected,
           previousSelected === hoveredModelRef.current ? "hover" : "default",
@@ -717,6 +838,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
     let resizeObserver;
     let clickHandler;
     let removeBearingListener;
+    let removePopupAnchorListener;
     const targetSpheres = [];
     const targetSphereByLocationId = new Map();
     const targetModelByLocationId = new Map();
@@ -794,6 +916,16 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       };
       removeBearingListener = viewer.camera.changed.addEventListener(reportBearing);
       reportBearing();
+
+      removePopupAnchorListener = viewer.scene.postRender.addEventListener(() => {
+        const selected = selectedPopupAnchorRef.current;
+        if (!selected || viewer.isDestroyed()) return;
+        const point = projectPopupAnchor(viewer, selected.cartesian);
+        if (!point) return;
+        window.dispatchEvent(new CustomEvent("bhumi:popup-anchor-update", {
+          detail: { assetId: selected.assetId, x: point.x, y: point.y },
+        }));
+      });
 
       resizeObserver = new ResizeObserver(() => {
         if (!viewer.isDestroyed()) viewer.resize();
@@ -1157,9 +1289,32 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           setEntityVisualState(selectedEntity, "selected");
           viewer.scene.requestRender();
           const selectedModel = pickedModel?.modelData || null;
+          const selectedCartesian = selectedModel
+            ? (viewer.scene.pickPositionSupported
+                ? viewer.scene.pickPosition(movement.position)
+                : null)
+              || getModelCenterCartesian(pickedModel)
+            : null;
+          const popupAnchor = projectPopupAnchor(viewer, selectedCartesian);
+          selectedPopupAnchorRef.current = selectedCartesian
+            ? {
+                assetId: asset.id_aset || asset.id,
+                cartesian: selectedCartesian,
+              }
+            : null;
+          const anchorKey = getModelAnchorKey(pickedModel);
+          if (anchorKey && selectedCartesian) {
+            visualAnchorByModelIdRef.current.set(
+              anchorKey,
+              Cartesian3.clone(selectedCartesian),
+            );
+          }
           onFeatureClickRef.current?.({
             ...asset,
             popup_context: selectedModel ? "3d" : "2d",
+            ...(selectedModel && popupAnchor
+              ? { popup_anchor: popupAnchor }
+              : {}),
             ...(selectedModel ? { active_model_3d: selectedModel } : {}),
           });
         } else {
@@ -1167,6 +1322,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
           const previousSelectedEntity = selectedEntityRef.current;
           selectedModelRef.current = null;
           selectedEntityRef.current = null;
+          selectedPopupAnchorRef.current = null;
           setModelVisualState(
             previousSelected,
             previousSelected === hoveredModelRef.current ? "hover" : "default",
@@ -1199,6 +1355,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       cancelled = true;
       clickHandler?.destroy();
       removeBearingListener?.();
+      removePopupAnchorListener?.();
       resizeObserver?.disconnect();
       targetSpheresRef.current = [];
       targetSphereByLocationIdRef.current = new Map();
@@ -1206,6 +1363,7 @@ const CesiumAssetMap = forwardRef(function CesiumAssetMap(
       fallbackTargetRef.current = null;
       hoveredModelRef.current = null;
       selectedModelRef.current = null;
+      selectedPopupAnchorRef.current = null;
       polygonDataSourceRef.current = null;
       pointDataSourceRef.current = null;
       appliedBasemapSignatureRef.current = "";

@@ -41,6 +41,7 @@ import {
   getModelFocusZoom,
   resolveModelOffsetLocation,
 } from "../../../utils/model3dTransform";
+import { getGeometryBoundsCenter } from "../../../utils/popupConnector";
 import {
   createJakartaShadowDateTime,
   getJakartaDateTimeParts,
@@ -450,6 +451,7 @@ const MapDisplayBPN = ({
   const hoveredBidangId = useRef(null);
   const hoveredAsset3dId = useRef(null);
   const selectedBidangId = useRef(null);
+  const selectedPopupAnchorRef = useRef(null);
   const analysisStateRef = useRef({ tool: null, points: [] });
   const baseLayerVisibilityRef = useRef(new Map());
   const isBPKAMode = mode === "bpka";
@@ -717,6 +719,8 @@ const MapDisplayBPN = ({
             ...model,
             assetId: asset?.id_aset || asset?.id,
             locationId: `model-${model.id_model_3d}`,
+            building_footprint: asset?.building_footprint || null,
+            building_height_m: asset?.building_height_m || null,
             location_lat: modelLatitude ?? fallbackLatitude,
             location_long: modelLongitude ?? fallbackLongitude,
           };
@@ -1420,11 +1424,35 @@ const MapDisplayBPN = ({
               (model) => String(model?.id_model_3d) === String(modelIdFromFeature),
             ) || matched.active_model_3d || null
           : null;
+        const modelLocation = selectedModel
+          ? resolveModelOffsetLocation(selectedModel)
+          : null;
+        const buildingCenter = getGeometryBoundsCenter(feature.geometry)
+          || getGeometryBoundsCenter(matched.building_footprint)
+          || (
+            Number.isFinite(Number(modelLocation?.longitude))
+            && Number.isFinite(Number(modelLocation?.latitude))
+              ? [Number(modelLocation.longitude), Number(modelLocation.latitude)]
+              : null
+          );
+        const popupAnchor = isBuilding3d && buildingCenter && map.current
+          ? map.current.project(buildingCenter)
+          : null;
         currentOnFeatureClick({
           ...matched,
           popup_context: isBuilding3d ? "3d" : "2d",
+          ...(popupAnchor
+            ? { popup_anchor: { x: popupAnchor.x, y: popupAnchor.y } }
+            : {}),
           ...(selectedModel ? { active_model_3d: selectedModel } : {}),
         });
+        selectedPopupAnchorRef.current = isBuilding3d && buildingCenter
+          ? {
+              assetId: matched.id_aset || matched.id,
+              longitude: buildingCenter[0],
+              latitude: buildingCenter[1],
+            }
+          : null;
         return;
       }
     }
@@ -1508,6 +1536,7 @@ const MapDisplayBPN = ({
     lastClearSelectionKeyRef.current = clearSelectionKey;
     clearSelectedBidangState();
     closeMapPopup();
+    selectedPopupAnchorRef.current = null;
     cesiumMapRef.current?.clearSelection();
   }, [clearSelectionKey, clearSelectedBidangState]);
 
@@ -2426,7 +2455,23 @@ const MapDisplayBPN = ({
     const handleMapRotate = () => {
       updateCompassBearing(map.current?.getBearing() || 0);
     };
+    const updatePopupAnchor = () => {
+      const selected = selectedPopupAnchorRef.current;
+      if (!selected || !map.current) return;
+      const point = map.current.project([
+        selected.longitude,
+        selected.latitude,
+      ]);
+      window.dispatchEvent(new CustomEvent("bhumi:popup-anchor-update", {
+        detail: {
+          assetId: selected.assetId,
+          x: point.x,
+          y: point.y,
+        },
+      }));
+    };
     map.current.on("rotate", handleMapRotate);
+    map.current.on("move", updatePopupAnchor);
 
     return () => {
       // Remove popup FIRST before map to prevent race condition
@@ -2453,6 +2498,7 @@ const MapDisplayBPN = ({
         map.current.off("click", handleMapClick);
         map.current.off("mousemove", handleMouseMove);
         map.current.off("rotate", handleMapRotate);
+        map.current.off("move", updatePopupAnchor);
         map.current.remove();
         map.current = null;
       }
@@ -2777,7 +2823,7 @@ const MapDisplayBPN = ({
             String(candidate?.id_model_3d) === String(location.modelId),
         ) || null
       : null;
-    const selectFocusedAsset = () => {
+    const selectFocusedAsset = (popupAnchor = null) => {
       if (!location || !targetAsset) return;
       closeMapPopup();
       onFeatureClickRef.current?.(
@@ -2786,14 +2832,19 @@ const MapDisplayBPN = ({
               ...targetAsset,
               popup_context: "3d",
               active_model_3d: targetModel,
+              ...(popupAnchor ? { popup_anchor: popupAnchor } : {}),
             }
-          : { ...targetAsset, popup_context: "3d" },
+          : {
+              ...targetAsset,
+              popup_context: "3d",
+              ...(popupAnchor ? { popup_anchor: popupAnchor } : {}),
+            },
       );
     };
 
     if (isAsset3dMode && cesiumMapRef.current) {
       const focused = cesiumMapRef.current.focus(location);
-      selectFocusedAsset();
+      selectFocusedAsset(cesiumMapRef.current.getPopupAnchor?.());
       return focused;
     }
     if (!map.current) return false;
@@ -2819,11 +2870,18 @@ const MapDisplayBPN = ({
     const modelLocation = model
       ? resolveModelOffsetLocation(model)
       : null;
+    const footprintCenter = getGeometryBoundsCenter(targetAsset?.building_footprint);
     const longitude = Number(
-      location?.longitude ?? modelLocation?.longitude ?? fallbackCoords?.[0],
+      footprintCenter?.[0]
+        ?? location?.longitude
+        ?? modelLocation?.longitude
+        ?? fallbackCoords?.[0],
     );
     const latitude = Number(
-      location?.latitude ?? modelLocation?.latitude ?? fallbackCoords?.[1],
+      footprintCenter?.[1]
+        ?? location?.latitude
+        ?? modelLocation?.latitude
+        ?? fallbackCoords?.[1],
     );
     if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return false;
     const targetZoom = Math.min(
@@ -2838,7 +2896,13 @@ const MapDisplayBPN = ({
       duration: 1200,
       essential: true,
     });
-    selectFocusedAsset();
+    selectedPopupAnchorRef.current = {
+      assetId: targetAsset?.id_aset || targetAsset?.id,
+      longitude,
+      latitude,
+    };
+    const projectedCenter = map.current.project([longitude, latitude]);
+    selectFocusedAsset({ x: projectedCenter.x, y: projectedCenter.y });
     return true;
   }, [detailedModels3d, isAsset3dMode, roleAssets]);
 
