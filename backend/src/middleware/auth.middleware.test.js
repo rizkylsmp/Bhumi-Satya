@@ -32,7 +32,7 @@ function createResponse() {
 
 function signUser(payload = {}) {
   return jwt.sign(
-    { id_user: 1, username: "tester", role: "verifikator_aset", ...payload },
+    { id_user: 1, username: "tester", role: "admin", ...payload },
     process.env.JWT_SECRET,
     { expiresIn: "1h" },
   );
@@ -61,7 +61,7 @@ test("authMiddleware rejects missing or malformed Bearer tokens", () => {
 test("authMiddleware attaches normalized roles and matching permissions", () => {
   const req = {
     headers: {
-      authorization: `Bearer ${signUser({ role: " VERIFIKATOR_ASET " })}`,
+      authorization: `Bearer ${signUser({ role: " ADMIN " })}`,
     },
   };
   const res = createResponse();
@@ -71,7 +71,7 @@ test("authMiddleware attaches normalized roles and matching permissions", () => 
 
   assert.equal(res.statusCode, 200);
   assert.equal(next.mock.callCount(), 1);
-  assert.equal(req.user.normalizedRole, "verifikator_aset");
+  assert.equal(req.user.normalizedRole, "admin");
   assert.ok(req.user.permissions.includes(PERMISSIONS.ASET_READ));
 });
 
@@ -98,13 +98,24 @@ test("roleMiddleware and permissionMiddleware protect unauthorized requests", ()
 
   const allowedNext = test.mock.fn();
   const allowedRes = createResponse();
-  permissionMiddleware(PERMISSIONS.ASET_READ)(req, allowedRes, allowedNext);
+  permissionMiddleware(PERMISSIONS.ASET_READ)({ user: { role: "admin" } }, allowedRes, allowedNext);
   assert.equal(allowedRes.statusCode, 200);
   assert.equal(allowedNext.mock.callCount(), 1);
 });
 
 test("hasPermission returns false for unknown roles", () => {
   assert.equal(hasPermission("unknown", PERMISSIONS.ASET_READ), false);
+});
+
+test("old role tokens must sign in again", () => {
+  for (const role of ["masyarakat", "viewer", "pengelola_aset", "verifikator_aset"]) {
+    const res = createResponse();
+    const next = test.mock.fn();
+    authMiddleware({ headers: { authorization: `Bearer ${signUser({ role })}` } }, res, next);
+    assert.equal(res.statusCode, 401);
+    assert.equal(next.mock.callCount(), 0);
+    assert.deepEqual(getPermissions(role), []);
+  }
 });
 
 test("admin receives every website permission", () => {
@@ -117,11 +128,8 @@ test("admin receives every website permission", () => {
 test("getRolesWithPermission resolves notification recipients by responsibility", () => {
   assert.deepEqual(getRolesWithPermission(PERMISSIONS.ASET_DELETE), [
     "admin",
-    "pengelola_aset",
   ]);
   assert.deepEqual(getRolesWithPermission(PERMISSIONS.ASET_UPDATE), [
     "admin",
-    "pengelola_aset",
-    "verifikator_aset",
   ]);
 });

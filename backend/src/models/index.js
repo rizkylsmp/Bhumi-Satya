@@ -19,12 +19,14 @@ import Orthophoto from "./Orthophoto.js";
 // User has many Aset (created_by)
 User.hasMany(Aset, {
   foreignKey: "created_by",
+  onDelete: "SET NULL",
   as: "assets",
 });
 
 // Aset belongs to User (creator)
 Aset.belongsTo(User, {
   foreignKey: "created_by",
+  onDelete: "SET NULL",
   as: "creator",
 });
 
@@ -42,24 +44,28 @@ User.hasMany(Aset, {
 // User has many Riwayat
 User.hasMany(Riwayat, {
   foreignKey: "user_id",
+  onDelete: "SET NULL",
   as: "activities",
 });
 
 // Riwayat belongs to User
 Riwayat.belongsTo(User, {
   foreignKey: "user_id",
+  onDelete: "SET NULL",
   as: "user",
 });
 
 // User has many Notifikasi
 User.hasMany(Notifikasi, {
   foreignKey: "user_id",
+  onDelete: "SET NULL",
   as: "notifications",
 });
 
 // Notifikasi belongs to User
 Notifikasi.belongsTo(User, {
   foreignKey: "user_id",
+  onDelete: "SET NULL",
   as: "user",
 });
 

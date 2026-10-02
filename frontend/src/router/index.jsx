@@ -10,8 +10,6 @@ import { Suspense } from "react";
 // Layouts
 import PublicLayout from "../layouts/PublicLayout";
 import RootLayout from "../layouts/RootLayout";
-import { useAuthStore } from "../stores/authStore";
-import { normalizeRole } from "../utils/permissions";
 import {
   ORTHOPHOTO_MANAGEMENT_ENABLED,
   RENTAL_FEATURE_ENABLED,
@@ -136,27 +134,10 @@ function LegacyMasyarakatLoginRedirect() {
 }
 
 function HomeRedirect() {
-  const user = useAuthStore((state) => state.user);
-  const isMasyarakat = normalizeRole(user?.role) === "masyarakat";
-  const path = isMasyarakat
-    ? RENTAL_FEATURE_ENABLED
-      ? "/sewa/aset-tersedia"
-      : "/beranda"
-    : "/dashboard";
-  return <Navigate to={path} replace />;
+  return <Navigate to="/dashboard" replace />;
 }
 
 function DashboardRoute() {
-  const user = useAuthStore((state) => state.user);
-  if (normalizeRole(user?.role) === "masyarakat") {
-    return (
-      <Navigate
-        to={RENTAL_FEATURE_ENABLED ? "/sewa/aset-tersedia" : "/beranda"}
-        replace
-      />
-    );
-  }
-
   return (
     <LazyPage>
       <DashboardPage />

@@ -1,3 +1,7 @@
+![Cover Manual Book Bhumi Satya](screenshots/manual/00-cover-manual-book.png)
+
+<div style="page-break-after: always;"></div>
+
 # MANUAL BOOK APLIKASI BHUMI SATYA
 
 **Sistem Informasi Pengelolaan Aset Tanah dan Digital Twin**

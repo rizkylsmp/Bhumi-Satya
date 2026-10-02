@@ -2,10 +2,6 @@ import jwt from "jsonwebtoken";
 
 export const ROLES = {
   ADMIN: "admin",
-  PENGELOLA_ASET: "pengelola_aset",
-  VERIFIKATOR_ASET: "verifikator_aset",
-  VIEWER: "viewer",
-  MASYARAKAT: "masyarakat",
 };
 
 // Permission constants
@@ -38,52 +34,12 @@ export const PERMISSIONS = {
   DASHBOARD_LIMITED: "dashboard:limited",
 };
 
-const INTERNAL_READ_PERMISSIONS = [
-  PERMISSIONS.ASET_READ,
-  PERMISSIONS.ASET_READ_ALL,
-  PERMISSIONS.PETA_VIEW,
-  PERMISSIONS.LAYER_UMUM,
-  PERMISSIONS.LAYER_TATA_RUANG,
-  PERMISSIONS.LAYER_POTENSI_BERPERKARA,
-  PERMISSIONS.LAYER_SEBARAN_PERKARA,
-  PERMISSIONS.NOTIFIKASI_VIEW,
-];
-
-const ASSET_WRITE_PERMISSIONS = [
-  PERMISSIONS.ASET_CREATE,
-  PERMISSIONS.ASET_UPDATE,
-  PERMISSIONS.ASET_DELETE,
-];
-
 const ALL_PERMISSIONS = Object.values(PERMISSIONS);
 
 // Role-Permission mapping fungsional. Instansi disimpan di user.instansi
 // untuk identitas/audit, bukan untuk menentukan permission.
 export const ROLE_PERMISSIONS = {
   [ROLES.ADMIN]: ALL_PERMISSIONS,
-
-  [ROLES.PENGELOLA_ASET]: [
-    ...INTERNAL_READ_PERMISSIONS,
-    ...ASSET_WRITE_PERMISSIONS,
-    PERMISSIONS.RIWAYAT_VIEW,
-    PERMISSIONS.DASHBOARD_FULL,
-    PERMISSIONS.SEWA_APPROVED_VIEW,
-  ],
-
-  [ROLES.VERIFIKATOR_ASET]: [
-    ...INTERNAL_READ_PERMISSIONS,
-    PERMISSIONS.ASET_UPDATE,
-    PERMISSIONS.DASHBOARD_LIMITED,
-  ],
-
-  [ROLES.VIEWER]: [
-    ...INTERNAL_READ_PERMISSIONS,
-    PERMISSIONS.DASHBOARD_LIMITED,
-  ],
-
-  [ROLES.MASYARAKAT]: [
-    PERMISSIONS.SEWA_APPROVED_VIEW,
-  ],
 };
 
 // ===========================================
@@ -116,6 +72,9 @@ export const authMiddleware = (req, res, next) => {
 
     // Normalize role to lowercase for permission checking
     const normalizedRole = normalizeRole(decoded.role);
+    if (!ROLE_PERMISSIONS[normalizedRole]) {
+      return res.status(401).json({ error: "Role akun telah berubah. Silakan login kembali." });
+    }
     req.user.normalizedRole = normalizedRole;
 
     // Attach user permissions
@@ -164,6 +123,9 @@ export const expiredTokenMiddleware = (req, res, next) => {
     }
 
     const normalizedRole = normalizeRole(req.user.role);
+    if (!ROLE_PERMISSIONS[normalizedRole]) {
+      return res.status(401).json({ error: "Role akun telah berubah. Silakan login kembali." });
+    }
     req.user.normalizedRole = normalizedRole;
     req.user.permissions = ROLE_PERMISSIONS[normalizedRole] || [];
 

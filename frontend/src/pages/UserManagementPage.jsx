@@ -13,7 +13,6 @@ import Pagination from "../components/asset/Pagination";
 import SortableTableHeader from "../components/shared/SortableTableHeader";
 import useColumnResize from "../hooks/useColumnResize";
 import useTableSort from "../hooks/useTableSort";
-import { RENTAL_FEATURE_ENABLED } from "../config/featureFlags";
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -95,7 +94,7 @@ export default function UserManagementPage() {
     username: "",
     email: "",
     password: "",
-    role: ROLES.VIEWER,
+    role: ROLES.ADMIN,
   });
 
   // Fetch users
@@ -179,7 +178,7 @@ export default function UserManagementPage() {
       username: "",
       email: "",
       password: "",
-      role: ROLES.VIEWER,
+      role: ROLES.ADMIN,
     });
     setIsModalOpen(true);
     setTimeout(
@@ -196,7 +195,7 @@ export default function UserManagementPage() {
       username: user.username || "",
       email: user.email || "",
       password: "",
-      role: user.role || ROLES.VIEWER,
+      role: user.role || ROLES.ADMIN,
     });
     setIsModalOpen(true);
     setTimeout(
@@ -412,12 +411,6 @@ export default function UserManagementPage() {
                   className="w-full border border-border bg-surface text-text-primary rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent focus:border-accent transition-all"
                 >
                   <option value={ROLES.ADMIN}>Admin</option>
-                  <option value={ROLES.PENGELOLA_ASET}>Pengelola Aset</option>
-                  <option value={ROLES.VERIFIKATOR_ASET}>Verifikator Aset</option>
-                  <option value={ROLES.VIEWER}>Viewer</option>
-                  {RENTAL_FEATURE_ENABLED && (
-                    <option value={ROLES.MASYARAKAT}>Masyarakat</option>
-                  )}
                 </select>
               </div>
               <div className="bg-surface-secondary rounded-lg p-3 text-sm">
@@ -431,31 +424,6 @@ export default function UserManagementPage() {
                       <li>
                         • Semua modul, user, audit, backup, dan pengaturan
                       </li>
-                    </>
-                  )}
-                  {formData.role === ROLES.PENGELOLA_ASET && (
-                    <>
-                      <li>• CRUD master data dan administratif</li>
-                      <li>• Kelola data aset sesuai kewenangan</li>
-                    </>
-                  )}
-                  {formData.role === ROLES.VERIFIKATOR_ASET && (
-                    <>
-                      <li>• Update legal, fisik, dan spasial</li>
-                      <li>• Review data rekonsiliasi aset</li>
-                    </>
-                  )}
-                  {formData.role === ROLES.VIEWER && (
-                    <>
-                      <li>• Baca dashboard, aset, dan peta</li>
-                      <li>• Tidak memiliki akses mutasi</li>
-                    </>
-                  )}
-                  {RENTAL_FEATURE_ENABLED &&
-                    formData.role === ROLES.MASYARAKAT && (
-                    <>
-                      <li>• Akses pengajuan dan pemantauan sewa publik</li>
-                      <li>• Tidak memiliki akses internal aset</li>
                     </>
                   )}
                 </ul>

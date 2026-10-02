@@ -1,5 +1,41 @@
 export const changelogEntries = [
   {
+    id: "manual-and-testing-artifacts",
+    date: "2026-10-02",
+    type: "peningkatan",
+    title: "Melengkapi dokumentasi dan bahan pengujian",
+    summary:
+      "Manual pengguna dilengkapi sampul, bersama workbook pengujian, laporan pemindaian keamanan, dan materi banner Bhumi Satya.",
+    area: "Dokumentasi",
+  },
+  {
+    id: "admin-only-users",
+    date: "2026-10-02",
+    type: "peningkatan",
+    title: "Menyederhanakan role pengguna",
+    summary:
+      "Seluruh akun kini menggunakan role Admin dengan akses pengelolaan penuh. Akun baru dibuat oleh admin melalui Kelola Pengguna, tanpa registrasi publik.",
+    area: "Pengguna",
+  },
+  {
+    id: "building-popup-connector-line",
+    date: "2026-10-02",
+    type: "peningkatan",
+    title: "Menghubungkan popup dengan bangunan 3D",
+    summary:
+      "Popup bangunan kini memiliki garis penunjuk yang mengikuti titik model saat kamera bergerak maupun saat popup digeser.",
+    area: "Digital Twin",
+  },
+  {
+    id: "preserve-data-on-user-delete",
+    date: "2026-10-02",
+    type: "perbaikan",
+    title: "Menjaga data saat akun dihapus",
+    summary:
+      "Menghapus akun tidak lagi menghapus data tanah, bangunan, model 3D, riwayat, notifikasi, atau permintaan sewa yang terkait.",
+    area: "Pengguna",
+  },
+  {
     id: "prevent-slow-map-reload-loop",
     date: "2026-08-18",
     type: "perbaikan",

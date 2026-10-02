@@ -2,12 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import chatbotService from "./chatbot.service.js";
 
-test("chatbot explains access through functional roles", () => {
+test("chatbot explains admin-only access", () => {
   const response = chatbotService.findResponse("cara login akun saya");
 
   assert.equal(response.kategori, "akun");
-  assert.match(response.jawaban, /pengelola aset/i);
-  assert.match(response.jawaban, /verifikator aset/i);
+  assert.match(response.jawaban, /role Admin/i);
+  assert.doesNotMatch(response.jawaban, /verifikator|viewer|masyarakat/i);
   assert.doesNotMatch(response.jawaban, /admin\s+(bpn|bpka)/i);
 });
 

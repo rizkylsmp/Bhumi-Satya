@@ -1,0 +1,7 @@
+Section,Title,Type,Priority,Preconditions,Steps,Expected Result,Actual Result,Status,Evidence
+Security Headers,CSP tersedia pada landing page,Security,High,Website production dapat diakses,"Buka landing page; periksa response header",Response memiliki Content-Security-Policy,CSP belum tersedia,Failed,zap-report.html
+Security Headers,Proteksi clickjacking tersedia,Security,High,Website production dapat diakses,"Buka landing page; periksa CSP frame-ancestors atau X-Frame-Options",Halaman tidak dapat ditanam pada frame yang tidak diizinkan,Header proteksi belum tersedia,Failed,zap-report.html
+Security Headers,HSTS aktif pada HTTPS,Security,Medium,Website production menggunakan HTTPS,"Periksa response header halaman dan API publik",Response memiliki Strict-Transport-Security,HSTS belum tersedia,Failed,zap-report.html
+Security Headers,Content sniffing dinonaktifkan,Security,Medium,Website production dapat diakses,"Periksa response header HTML JavaScript dan CSS",Response memiliki X-Content-Type-Options nosniff,Header belum tersedia,Failed,zap-report.html
+Information Disclosure,Identitas framework backend disembunyikan,Security,Medium,Endpoint API publik dapat diakses,"Periksa response header endpoint API publik",Response tidak mengirim X-Powered-By,Endpoint mengirim X-Powered-By Express,Failed,zap-report.html
+Transport,Website publik menggunakan HTTPS,Security,High,Internet tersedia,"Buka https://bhumisatya.web.id",Halaman dapat diakses melalui HTTPS,Halaman berhasil diakses,Passed,zap-report.html

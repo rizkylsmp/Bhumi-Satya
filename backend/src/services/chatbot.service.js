@@ -14,7 +14,7 @@ const FAQ_RESPONSES = [
   },
   {
     keywords: ["login", "masuk", "akun", "password", "kata sandi"],
-    response: "Untuk login ke Bhumi Satya, gunakan username dan password yang telah diberikan. Jika lupa password, hubungi administrator untuk reset akun. Akses ditentukan oleh peran kerja Anda, misalnya admin, pengelola aset, verifikator aset, viewer, atau masyarakat.",
+    response: "Untuk login ke Bhumi Satya, gunakan username dan password yang telah diberikan. Seluruh akun menggunakan role Admin untuk mengelola website. Akun dibuat oleh admin melalui Kelola Pengguna. Jika lupa password, hubungi administrator untuk reset akun.",
     kategori: "akun",
   },
   {

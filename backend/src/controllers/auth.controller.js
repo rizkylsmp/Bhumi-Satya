@@ -20,20 +20,6 @@ function normalizeRole(role) {
   return String(role || "").toLowerCase().trim();
 }
 
-async function ensureMasyarakatRoleEnumValue() {
-  await User.sequelize.query(`
-    DO $$
-    BEGIN
-      IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_users_role') THEN
-        ALTER TYPE "enum_users_role" ADD VALUE IF NOT EXISTS 'masyarakat';
-      END IF;
-
-      IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_Users_role') THEN
-        ALTER TYPE "enum_Users_role" ADD VALUE IF NOT EXISTS 'masyarakat';
-      END IF;
-    END $$;
-  `);
-}
 
 function normalizeOtpChannel(channel) {
   return OTP_CHANNELS.has(channel) ? channel : "email";
@@ -613,77 +599,11 @@ export const logout = async (req, res) => {
  * Register new user
  * POST /api/auth/register
  */
-export const register = async (req, res) => {
-  try {
-    const {
-      username,
-      password,
-      email,
-      nama_lengkap,
-      no_telepon,
-      nik,
-      alamat,
-    } = req.body;
-
-    // Validate required fields
-    if (!username || !password || !email || !nama_lengkap || !no_telepon) {
-      return res.status(400).json({
-        success: false,
-        error: "Username, password, email, nama lengkap, dan nomor WhatsApp wajib diisi",
-      });
-    }
-
-    // Check if user exists
-    const existingUser = await User.findOne({
-      where: {
-        [Op.or]: [
-          { username },
-          { email },
-        ],
-      },
-    });
-
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        error:
-          existingUser.username === username
-            ? "Username sudah digunakan"
-            : "Email sudah digunakan",
-      });
-    }
-
-    await ensureMasyarakatRoleEnumValue();
-
-    const user = await User.create({
-      username,
-      password,
-      email,
-      nama_lengkap,
-      no_telepon,
-      nik,
-      alamat,
-      role: "masyarakat",
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Registrasi berhasil",
-      data: {
-        id_user: user.id_user,
-        username: user.username,
-        email: user.email,
-        nama_lengkap: user.nama_lengkap,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    console.error("Error register:", error);
-    res.status(400).json({
-      success: false,
-      error: error.message,
-    });
-  }
+export const register = async (_req, res) => {
+  return res.status(403).json({
+    success: false,
+    error: "Registrasi publik dinonaktifkan. Akun dibuat melalui kelola pengguna oleh admin.",
+  });
 };
 
 /**

@@ -8,10 +8,6 @@
 
 export const ROLES = {
   ADMIN: "admin",
-  PENGELOLA_ASET: "pengelola_aset",
-  VERIFIKATOR_ASET: "verifikator_aset",
-  VIEWER: "viewer",
-  MASYARAKAT: "masyarakat",
 };
 
 const EMPTY_PERMISSIONS = Object.freeze({});
@@ -56,49 +52,6 @@ const ROLE_PERMISSIONS = {
     backup: { view: true, create: true, restore: true },
     pengaturan: { view: true, edit: true },
     sewaAset: { view: true, create: true, update: true, delete: true },
-  },
-  [ROLES.PENGELOLA_ASET]: {
-    ...INTERNAL_READ,
-    dashboard: { view: true, full: true },
-    aset: { view: true, create: true, update: true, delete: true },
-    pusatData: { view: true, create: true, update: true, delete: true },
-    kelola3d: { view: true, update: true },
-    riwayat: { view: true, full: false },
-    sewaAset: { view: true, create: true, update: true, delete: true },
-  },
-  [ROLES.VERIFIKATOR_ASET]: {
-    ...INTERNAL_READ,
-    aset: { view: true, create: false, update: true, delete: false },
-    asetSubstansi: {
-      legal: true,
-      fisik: true,
-      administratif: true,
-      spasial: true,
-    },
-    pusatData: { view: true, create: false, update: true, delete: false },
-    kelola3d: { view: true, update: true },
-  },
-  [ROLES.VIEWER]: INTERNAL_READ,
-  [ROLES.MASYARAKAT]: {
-    dashboard: { view: false, full: false },
-    aset: { view: false, create: false, update: false, delete: false },
-    asetSubstansi: {
-      legal: false,
-      fisik: false,
-      administratif: false,
-      spasial: false,
-    },
-    pusatData: { view: false, create: false, update: false, delete: false },
-    kelola3d: { view: false, update: false },
-    peta: { view: false, allLayers: false },
-    riwayat: { view: false, full: false },
-    notifikasi: { view: false },
-    user: { view: false, create: false, update: false, delete: false },
-    backup: { view: false, create: false, restore: false },
-    pengaturan: { view: false, edit: false },
-    sewaAset: { view: false, create: false, update: false, delete: false },
-    sewaMasyarakat: { view: true },
-    profil: { view: true, edit: true },
   },
 };
 
@@ -175,10 +128,6 @@ export const canAccessSubstansi = (role, substansi) => {
 export const getRoleDisplayName = (role) => {
   const names = {
     [ROLES.ADMIN]: "Admin",
-    [ROLES.PENGELOLA_ASET]: "Pengelola Aset",
-    [ROLES.VERIFIKATOR_ASET]: "Verifikator Aset",
-    [ROLES.VIEWER]: "Viewer",
-    [ROLES.MASYARAKAT]: "Masyarakat",
   };
   return names[normalizeRole(role)] || role;
 };
@@ -187,14 +136,6 @@ export const getRoleBadgeColor = (role) => {
   const colors = {
     [ROLES.ADMIN]:
       "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400",
-    [ROLES.PENGELOLA_ASET]:
-      "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
-    [ROLES.VERIFIKATOR_ASET]:
-      "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
-    [ROLES.VIEWER]:
-      "bg-slate-100 dark:bg-slate-900/30 text-slate-700 dark:text-slate-400",
-    [ROLES.MASYARAKAT]:
-      "bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400",
   };
   return (
     colors[normalizeRole(role)] ||

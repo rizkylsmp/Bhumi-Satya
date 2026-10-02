@@ -20,14 +20,9 @@ const User = sequelize.define(
       allowNull: false,
     },
     role: {
-      type: DataTypes.ENUM(
-        "admin",
-        "pengelola_aset",
-        "verifikator_aset",
-        "viewer",
-        "masyarakat",
-      ),
-      defaultValue: "viewer",
+      type: DataTypes.ENUM("admin"),
+      defaultValue: "admin",
+      allowNull: false,
     },
     email: {
       type: DataTypes.STRING(100),
